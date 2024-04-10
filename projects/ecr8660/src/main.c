@@ -726,7 +726,7 @@ int main(void)
 
 		/* read page register 0xF40, if return 0x02, spi works correctly! */
 		retWord = ECR8660_Read(SPI_RW_INTERIOR, 0xF40, 1);
-		if((retWord & 0x03) == 0)
+		if((retWord & 0x02) == 0)
 		{
 			error_code = PAGE_TEST_REG_FAIL;
 			printf("\nECR8660 SPI_RW_INTERIOR failed.\n");
