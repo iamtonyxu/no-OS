@@ -66,16 +66,16 @@ uint64_t spi_readwrite(uint32_t write_data1, uint32_t write_data2, uint32_t len)
 		{
 			if(len == 32)
 			{
-				read_data |= data[0] << 3;
-				read_data |= data[1] << 2;
-				read_data |= data[2] << 1;
+				read_data |= data[0] << (3 * 8);
+				read_data |= data[1] << (2 * 8);
+				read_data |= data[2] << (1 * 8);
 				read_data |= data[3] << 0;
 			}
 			else
 			{
-				read_data |= data[0] << 3;
-				read_data |= data[1] << 2;
-				read_data |= data[4] << 1;
+				read_data |= data[2] << (3 * 8);
+				read_data |= data[3] << (2 * 8);
+				read_data |= data[4] << (1 * 8);
 				read_data |= data[5] << 0;
 			}
 		}
