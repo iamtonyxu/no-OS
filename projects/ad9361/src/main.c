@@ -349,7 +349,7 @@ AD9361_InitParam default_init_param = {
 	0,		//elna_gaintable_all_index_enable *** adi,elna-gaintable-all-index-enable
 	/* Digital Interface Control */
 	0,		//digital_interface_tune_skip_mode *** adi,digital-interface-tune-skip-mode
-	0,		//digital_interface_tune_fir_disable *** adi,digital-interface-tune-fir-disable
+	1,		//digital_interface_tune_fir_disable *** adi,digital-interface-tune-fir-disable
 	1,		//pp_tx_swap_enable *** adi,pp-tx-swap-enable
 	1,		//pp_rx_swap_enable *** adi,pp-rx-swap-enable
 	0,		//tx_channel_swap_enable *** adi,tx-channel-swap-enable
@@ -361,12 +361,12 @@ AD9361_InitParam default_init_param = {
 	0,		//fdd_alt_word_order_enable *** adi,fdd-alt-word-order-enable
 	0,		//invert_rx_frame_enable *** adi,invert-rx-frame-enable
 	0,		//fdd_rx_rate_2tx_enable *** adi,fdd-rx-rate-2tx-enable
-	0,		//swap_ports_enable *** adi,swap-ports-enable
+	1,		//swap_ports_enable *** adi,swap-ports-enable
 	0,		//single_data_rate_enable *** adi,single-data-rate-enable
-	1,		//lvds_mode_enable *** adi,lvds-mode-enable
+	0,		//lvds_mode_enable *** adi,lvds-mode-enable
 	0,		//half_duplex_mode_enable *** adi,half-duplex-mode-enable
 	0,		//single_port_mode_enable *** adi,single-port-mode-enable
-	0,		//full_port_enable *** adi,full-port-enable
+	1,		//full_port_enable *** adi,full-port-enable
 	0,		//full_duplex_swap_bits_enable *** adi,full-duplex-swap-bits-enable
 	0,		//delay_rx_data *** adi,delay-rx-data
 	0,		//rx_data_clock_delay *** adi,rx-data-clock-delay
@@ -378,7 +378,7 @@ AD9361_InitParam default_init_param = {
 #else
 	150,	//lvds_bias_mV *** adi,lvds-bias-mV
 #endif
-	1,		//lvds_rx_onchip_termination_enable *** adi,lvds-rx-onchip-termination-enable
+	0,		//lvds_rx_onchip_termination_enable *** adi,lvds-rx-onchip-termination-enable
 	0,		//rx1rx2_phase_inversion_en *** adi,rx1-rx2-phase-inversion-enable
 	0xFF,	//lvds_invert1_control *** adi,lvds-invert1-control
 	0x0F,	//lvds_invert2_control *** adi,lvds-invert2-control
