@@ -1,0 +1,305 @@
+#include    "ECR8660.h"
+#include    "spi.h"
+
+// 瀹氫箟鍩哄湴鍧�鐨�
+INT32U  Base_Addr = 0xFFFFFFFF;
+// 鐢ㄤ簬鎷煎噾鏃跺簭鐨勭┖闂�
+Ecr8660_Fm_Spi_Time_Series_U    ECR8660_spi_time_series[3];
+// 鍩哄湴鍧�鐨勬槧灏勮〃
+INT64U spidata64 = 0;
+Ecr8660_Fm_Base_Addr_Dict_T     ECR8660_BaseAddr_Dict[] = 
+{
+    {0x00000,   0x00},
+    {0x00001,   0x01},
+    {0x00002,   0x02},
+    {0x00003,   0x03},
+    {0x00004,   0x04},
+    {0x00005,   0x05},
+    {0x00006,   0x06},
+    {0x00007,   0x07},
+    {0x00008,   0x08},
+    {0x00009,   0x09},
+    {0x0000A,   0x0A},
+    {0x0000B,   0x0B},
+    {0x0000C,   0x0C},
+    {0x0000D,   0x0D},
+    {0x0000E,   0x0E},
+    {0x0000F,   0x0F},
+    {0x20000,   0x10},
+    {0x20001,   0x11},
+    {0x20002,   0x12},
+    {0x20003,   0x13},
+    {0x20004,   0x14},
+    {0x20005,   0x15},
+    {0x20006,   0x16},
+    {0x20007,   0x17},
+    {0x00200,   0x18},
+    {0x00201,   0x19},
+    {0xFFFFF,   0xFF},
+};
+
+/********************************************************************************
+ * @ Description : ECR8660_Base_Address_Dict_Find
+ * @ Parameter   : Addr : 闇�瑕佹煡璇㈢殑鍦板潃
+ * @ Return      : None
+ * @ Note        : 鍦ㄥ熀鍦板潃瀛楀吀(ECR8660_BaseAddr_Dict)鍐呮煡璇㈠湴鍧�Addr鐨勫熀鍦板潃鏍囧彿
+********************************************************************************/
+INT8U   ECR8660_Base_Address_Dict_Find(INT32U Addr)
+{
+    INT16U i;
+    for(i = 0; (BASE_ADDR_ERR != ECR8660_BaseAddr_Dict[i].Base_Addr) && (ECR8660_BaseAddr_Dict[i].Base_Addr != Addr) ; i++ );
+    return ECR8660_BaseAddr_Dict[i].Base_Log;
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_SPI_WR
+ * @ Parameter   : ReadWrite   : [Spi_Read_Write_E]
+ *                      ECR8660_SPI_READ           0x0 // SPI璇绘ā寮�
+ *                      ECR8660_SPI_WRIT           0x1 // SPI鍐欐ā寮�
+ *                 Trans_size  : [Spi_Trans_Size_E]
+ *                      TRANS_ONEBYTE_DATA         0x0 // 浼犺緭1涓猙yte鏁版嵁
+ *                      TRANS_TWOBYTE_DATA         0x1 // 浼犺緭2涓猙yte鏁版嵁
+ *                      TRANS_FOURBYTE_DATA        0x3 // 浼犺緭4涓猙yte鏁版嵁
+ *                      TRANS_INTERNAL_REGISTER    0x6 // 浣滀负SPI鍐呴儴瀵勫瓨鍣ㄨ鍐欑姸鎬佹寚绀�
+ *                 Addr        : 闇�瑕佹搷浣滅殑鍦板潃
+ *                 Data        : 闇�瑕佸啓鍏ョ殑鍊�
+ * @ Return      : None
+ * @ Note        : 鐢ㄤ簬鎷煎噾鏃跺簭锛屽皢鏃跺簭鎷煎噾涓� Data
+********************************************************************************/
+static  INT8U   ECR8660_SPI_WR(Spi_Read_Write_E Read_write, Spi_Trans_Size_E Trans_size, INT16U Addr, INT64U Data)
+{
+    Ecr8660_Fm_Spi_Cmd_U            ECR8660_spi_cmd;
+    Ecr8660_Fm_Spi_Data_U           ECR8660_spi_data;
+    ECR8660_spi_cmd.Bits.Addr       = ECR8660_SPI_ADDR(Addr);
+    ECR8660_spi_cmd.Bits.Trans_size = Trans_size;
+    ECR8660_spi_cmd.Bits.Read_Write = Read_write;
+    ECR8660_spi_time_series[0].Bits.Hight_Half_Word =   ECR8660_spi_cmd.Word;
+    ECR8660_spi_data.Clear = 0;
+    switch (Trans_size)
+    {
+        case TRANS_ONEBYTE_DATA:
+            ECR8660_spi_data.OneByte.Data                   =   (INT8U)Data;
+            ECR8660_spi_time_series[0].Bits.Low_Half_Word   =   ECR8660_spi_data.Bits.High_16;
+            return (INT8U)USE_ONE_DATAREG;
+        case TRANS_TWOBYTE_DATA:
+        case TRANS_INTERNAL_REGISTER:
+            ECR8660_spi_data.TwoByte.Data                   =   (INT16U)Data;
+            ECR8660_spi_time_series[0].Bits.Low_Half_Word   =   ECR8660_spi_data.Bits.High_16;
+            return (INT8U)USE_ONE_DATAREG;
+        case TRANS_FOURBYTE_DATA:
+            ECR8660_spi_data.FourByte.Data                  =   (INT32U)Data;
+            ECR8660_spi_time_series[0].Bits.Low_Half_Word   =   ECR8660_spi_data.Bits.High_16;
+            ECR8660_spi_time_series[1].Word                 =   ECR8660_spi_data.Bits.Middle_32;
+            return (INT8U)USE_TWO_DATAREG;
+        case TRANS_EIGHTBYTE_DATA:
+            ECR8660_spi_data.EightByte.Data                 =   Data;
+            ECR8660_spi_time_series[0].Bits.Low_Half_Word   =   ECR8660_spi_data.Bits.High_16;
+            ECR8660_spi_time_series[1].Word                 =   ECR8660_spi_data.Bits.Middle_32;
+            ECR8660_spi_time_series[2].Bits.Hight_Half_Word =   ECR8660_spi_data.Bits.Low_16;
+            return (INT8U)USE_THR_DATAREG;
+        default:
+            return (INT8U)FALSE;
+    }
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_read_write_Basic
+ * @ Parameter   : ReadWrite   : [Spi_Read_Write_E]
+ *                      ECR8660_SPI_READ           0x0 // SPI璇绘ā寮�
+ *                      ECR8660_SPI_WRIT           0x1 // SPI鍐欐ā寮�
+ *                 Trans_size  : [Spi_Trans_Size_E]
+ *                      TRANS_ONEBYTE_DATA         0x0 // 浼犺緭1涓猙yte鏁版嵁
+ *                      TRANS_TWOBYTE_DATA         0x1 // 浼犺緭2涓猙yte鏁版嵁
+ *                      TRANS_FOURBYTE_DATA        0x3 // 浼犺緭4涓猙yte鏁版嵁
+ *                      TRANS_INTERNAL_REGISTER    0x6 // 浣滀负SPI鍐呴儴瀵勫瓨鍣ㄨ鍐欑姸鎬佹寚绀�
+ *                 Addr        : 闇�瑕佹搷浣滅殑鍦板潃
+ *                 Data        : 闇�瑕佸啓鍏ョ殑鍊�
+ * @ Return      : 璇诲彇/鍐欏叆 鐨勫��
+ * @ Note        : SPI 璇诲啓鐨勫叕鐢ㄥ嚱鏁�
+********************************************************************************/
+static  INT64U  ECR8660_read_write_Basic(Spi_Read_Write_E ReadWrite, Spi_Trans_Size_E Trans_size, INT32U Addr, INT64U SPI_Data)
+{
+    Global_Spi_Trans_U      data = {0};
+    // 璇ラ儴鍒嗕负瀵� SPI master 鐨勬帶鍒讹紝搴曞眰闇�鏍规嵁瀹為檯鎯呭喌淇敼
+    // 閰嶇疆 鍙戦�� 鐨勬暟鎹殑闀垮害 : MOSI 涓婂皢浼氬彂閫佺殑鐪熷疄 Bit 闀垮害(涓嶈�冭檻鍗犱綅)      // 鍐呴儴鍐欐ā寮忥細2Byte_CMD + 2ByteWriteData  澶栭儴鍐欐ā寮忥細2Byte_CMD + 鍐欐暟鎹殑闀垮害  璇绘ā寮忥細2Byte_CMD
+    data.Bits.writecmdlen   =  (ECR8660_SPI_WRIT == ReadWrite) ? ((TRANS_INTERNAL_REGISTER == Trans_size) ? BYTE_2_BIT(4) : BYTE_2_BIT(Trans_size + 3)) : BYTE_2_BIT(2);
+    // 閰嶇疆 鎺ユ敹 鐨勬暟鎹殑闀垮害 : MISO 涓婂皢浼氭帴鏀剁殑鐪熷疄 Bit 闀垮害(涓嶈�冭檻绉讳綅)      // 鍐呴儴璇绘ā寮忥細2ByteReadData               澶栭儴璇绘ā寮忥細璇绘暟鎹殑闀垮害              鍐欐ā寮忥細0
+    data.Bits.readdatalen   =  (ECR8660_SPI_READ == ReadWrite) ? ((TRANS_INTERNAL_REGISTER == Trans_size) ? BYTE_2_BIT(2) : BYTE_2_BIT(Trans_size + 1)) : BYTE_2_BIT(0);
+    // Clk 鐨勬�绘椂閽熸暟涓� data.Bits.cmdlen + data.Bits.datalen
+    // 鎷煎噾鏃跺簭锛屽皢 ECR8660 鎵�闇�瑕佺殑 SPI 鏃跺簭鎷煎噾涓� Data 鏁版嵁
+    ECR8660_SPI_WR(ReadWrite, Trans_size, Addr, SPI_Data);
+    int len = 0;  
+    if(Trans_size == TRANS_FOURBYTE_DATA)
+    {
+        len = 64;
+    }
+    else
+    {
+        len = 32;
+    }
+    return spi_readwrite(ECR8660_spi_time_series[0].Word,ECR8660_spi_time_series[1].Word,len);
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_Base_Address
+ * @ Parameter   : Addr 鍦板潃
+ * @ Return      : None
+ * @ Note        : 瀵归〉澶栧瘎瀛樺櫒璁块棶鏃讹紝杩涜椤靛垏鎹㈢殑鍑芥暟
+********************************************************************************/
+static  void    ECR8660_Base_Address(INT32U Addr)
+{
+    ECR8660_read_write_Basic(ECR8660_SPI_WRIT, TRANS_INTERNAL_REGISTER, SPI_REG_BASE_ADDR, ECR8660_Base_Address_Dict_Find(ECR8660_SPI_BASE_ADDR(Addr)));
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_read_write
+ * @ Parameter   : ReadWrite   : [Spi_Read_Write_E]
+ *                      ECR8660_SPI_READ           0x0 // SPI璇绘ā寮�
+ *                      ECR8660_SPI_WRIT           0x1 // SPI鍐欐ā寮�
+ *                 Trans_size  : [Spi_Trans_Size_E]
+ *                      TRANS_ONEBYTE_DATA         0x0 // 浼犺緭1涓猙yte鏁版嵁
+ *                      TRANS_TWOBYTE_DATA         0x1 // 浼犺緭2涓猙yte鏁版嵁
+ *                      TRANS_FOURBYTE_DATA        0x3 // 浼犺緭4涓猙yte鏁版嵁
+ *                      TRANS_INTERNAL_REGISTER    0x6 // 浣滀负SPI鍐呴儴瀵勫瓨鍣ㄨ鍐欑姸鎬佹寚绀�
+ *                 Addr        : 闇�瑕佹搷浣滅殑鍦板潃
+ *                 Data        : 闇�瑕佸啓鍏ョ殑鍊�
+ * @ Return      : 璇诲彇/鍐欏叆 鐨勫��
+ * @ Note        : SPI 璇诲啓鐨勫叕鐢ㄥ嚱鏁�
+********************************************************************************/
+INT64U  ECR8660_read_write(Spi_Read_Write_E ReadWrite, Spi_Trans_Size_E Trans_size, INT32U Addr, INT64U SPI_Data)
+{
+    if((TRANS_INTERNAL_REGISTER != Trans_size) && (ECR8660_SPI_BASE_ADDR(Addr) != Base_Addr)){
+        Base_Addr = ECR8660_SPI_BASE_ADDR(Addr);
+        ECR8660_Base_Address(Addr);
+    }
+    return  ECR8660_read_write_Basic(ReadWrite, Trans_size, Addr, SPI_Data);
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_Read
+ * @ Parameter   : ECR8660_mode : [Spi_Reg_Ext_Int_E]
+ *                      SPI_RW_INTERIOR           0x1 // 鎸囩ず椤靛唴瀵勫瓨鍣�
+ *                      SPI_RW_EXTERNAL           0x0 // 椤靛瀵勫瓨鍣�
+ *                 ECR8660_Addr : 闇�瑕佹搷浣滅殑鍦板潃
+ *                 ECR8660_Len  : 闇�瑕佽鍙栫殑鏁版嵁闀垮害(Byte)
+ * @ Return      : ECR8660_Data : 璇诲彇鐨勫��
+ * @ Note        : 瀵� ECR8660 杩涜瀵勫瓨鍣� "璇�" 鎿嶄綔
+********************************************************************************/
+INT64U  ECR8660_Read(Spi_Reg_Ext_Int_E ECR8660_mode, INT32U ECR8660_Addr, INT32U ECR8660_Len)
+{
+    Spi_Trans_Size_E    Spi_Datalen;
+    INT64U  Data, ECR8660_Data = 0;
+    INT32U  i;
+    Spi_Datalen =   (SPI_RW_INTERIOR == ECR8660_mode) ? TRANS_INTERNAL_DATA : USER_ECR8660_SPI_SIZE;
+    for(i = 0; i < ECR8660_Len; i += ECR8660_SPI_BYTE(Spi_Datalen))
+    {
+        Data = ECR8660_read_write(ECR8660_SPI_READ, (SPI_RW_INTERIOR == ECR8660_mode) ? TRANS_INTERNAL_REGISTER : Spi_Datalen, ECR8660_Addr + i, 0);
+        ECR8660_Data <<= BYTE_2_BIT(ECR8660_SPI_BYTE(Spi_Datalen));
+        ECR8660_Data  |= Data;
+    }
+    return ECR8660_Data;
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_write
+ * @ Parameter   : ECR8660_mode : [Spi_Reg_Ext_Int_E]
+ *                      SPI_RW_INTERIOR           0x1 // 鎸囩ず椤靛唴瀵勫瓨鍣�
+ *                      SPI_RW_EXTERNAL           0x0 // 椤靛瀵勫瓨鍣�
+ *                 ECR8660_Addr : 闇�瑕佹搷浣滅殑鍦板潃
+ *                 ECR8660_Data : 闇�瑕佹搷浣滅殑鍊�
+ * @ Return      : None
+ * @ Note        : 瀵� ECR8660 杩涜瀵勫瓨鍣� "鍐�" 鎿嶄綔 [鏃犺浣跨敤鍝妯″紡锛屽潎褰掍竴鍖栦负鍐�
+ *                 32Bit 鐨勫舰寮廬
+********************************************************************************/
+void    ECR8660_write(Spi_Reg_Ext_Int_E ECR8660_mode, INT32U ECR8660_Addr, INT32U ECR8660_Data)
+{
+    Spi_Trans_Size_E    Spi_Datalen;
+    INT32U  i;
+    Spi_Datalen =   (SPI_RW_INTERIOR == ECR8660_mode) ? TRANS_INTERNAL_DATA : USER_ECR8660_SPI_SIZE;
+    for(i = 0;i < ((SPI_RW_INTERIOR == ECR8660_mode) ? ECR8660_SPI_BYTE(TRANS_INTERNAL_DATA) : sizeof(ECR8660_Data));
+        ECR8660_Data >>= BYTE_2_BIT(ECR8660_SPI_BYTE(Spi_Datalen)), i += ECR8660_SPI_BYTE(Spi_Datalen))
+    {
+        ECR8660_read_write(ECR8660_SPI_WRIT, (SPI_RW_INTERIOR == ECR8660_mode) ? TRANS_INTERNAL_REGISTER : Spi_Datalen, ECR8660_Addr + i, ECR8660_Data);
+    }
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_Set_List_Basic
+ * @ Parameter   : List : 闇�瑕佸啓鍏ョ殑瀵勫瓨鍣ㄥ簭鍒�
+ * @ Return      : None
+ * @ Note        : None
+********************************************************************************/
+static userErrorStatus ECR8660_Set_List_Basic(Ecr8660_Reg_List_T List)
+{
+#define DEBUG
+    switch(List.readwrite)
+    {
+        case ECR8660_SPI_WRIT:
+            ECR8660_write(List.mode, List.addr, List.data);
+#ifdef DEBUG
+            printf("%s: ", List.log);
+            printf("spi write: addr = 0x%X, data = 0x%X\n", List.addr, List.data);
+#endif
+            break;
+        case ECR8660_SPI_READ:
+            int ret = ECR8660_Read(List.mode, List.addr, List.data);
+#ifdef DEBUG
+            printf("%s: ", List.log);
+            printf("spi read: addr = 0x%X, data = 0x%X\n", List.addr, ret);
+#endif
+            break;
+        case ECR8660_SPI_SLEEP:
+            //User_Delay_ms(List.data);
+            break;
+        default:
+            return USERERROR;
+    }
+    return USERSUCCESS;
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_Set_List
+ * @ Parameter   : List : 闇�瑕佸啓鍏ョ殑瀵勫瓨鍣ㄥ簭鍒�
+ * @ Return      : None
+ * @ Note        : None
+********************************************************************************/
+void    ECR8660_Set_List(Ecr8660_Reg_List_T *List)
+{
+    INT32U i = 0;
+    for(i = 0; List[i].addr != ECR8660_LIST_END_LOG; i++)
+    {
+        if(ERROR == ECR8660_Set_List_Basic(List[i])) 
+        {
+            return;
+        }
+        Delayms(10);//寤舵椂10ms
+    }  
+}
+
+/********************************************************************************
+ * @ Description : ECR8660_Buff_Write
+ * @ Parameter   : Addr : 闇�瑕佸啓鍏ョ殑 ECR8660 鍦板潃
+ *                 Buff : 闇�瑕佸啓鍏ョ殑鏁版嵁鏁扮粍棣栧湴鍧�
+ *                 Size : 闇�瑕佸啓鍏ョ殑闀垮害
+ *                 Trans_size  : [Spi_Trans_Size_E]
+ *                      TRANS_ONEBYTE_DATA         0x0 // 浼犺緭1涓猙yte鏁版嵁
+ *                      TRANS_TWOBYTE_DATA         0x1 // 浼犺緭2涓猙yte鏁版嵁
+ *                      TRANS_FOURBYTE_DATA        0x3 // 浼犺緭4涓猙yte鏁版嵁
+ *                      TRANS_INTERNAL_REGISTER    0x6 // 浣滀负SPI鍐呴儴瀵勫瓨鍣ㄨ鍐欑姸鎬佹寚绀�
+ * @ Return      : Addr : 鏈熬鍦板潃
+ * @ Note        : 灏� [Buff] 鍐呴暱搴︿负 [Size]Byte 鐨勬暟鎹紝閫氳繃 SPI 鐨� Trans_size 妯″紡鍐欏叆 ECR8660 鐨� [Addr] 鍦板潃
+********************************************************************************/
+INT32U  ECR8660_Buff_Write(Spi_Trans_Size_E Trans_size, INT32U Addr, void *Buff, INT32U Size)
+{
+    INT32U  i;
+    for(i = 0; i < Size; Addr += ECR8660_SPI_BYTE(USER_ECR8660_SPI_SIZE), i += ECR8660_SPI_BYTE(USER_ECR8660_SPI_SIZE) )
+    {
+        if(ECR8660_SPI_BASE_ADDR(Addr) != Base_Addr)
+        {
+            Base_Addr = ECR8660_SPI_BASE_ADDR(Addr);
+            ECR8660_Base_Address(Addr);
+        }
+        ECR8660_read_write_Basic(ECR8660_SPI_WRIT, USER_ECR8660_SPI_SIZE, Addr, *((INT64U *)((INT32U)Buff + i)));
+    }
+    return Addr;
+}
