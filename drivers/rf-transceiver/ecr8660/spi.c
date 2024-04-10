@@ -33,7 +33,7 @@ uint64_t spi_readwrite(uint32_t write_data1, uint32_t write_data2, uint32_t len)
 		}
 		else if(len == 64u)
 		{
-			bytes_number = 8;
+			bytes_number = 6;
 			/* The order of bytes sent
 			 * wr_data1[31]
 			 * wr_data1[30]
@@ -54,7 +54,7 @@ uint64_t spi_readwrite(uint32_t write_data1, uint32_t write_data2, uint32_t len)
 				}
 				else
 				{
-					bit_shift = (bytes_number - 1 - i) * 8;
+					bit_shift = (8 - 1 - i) * 8;
 					data[i] = (write_data2 >> bit_shift) & 0xff;
 				}
 			}

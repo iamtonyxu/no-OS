@@ -1,7 +1,7 @@
 #include    "ECR8660.h"
 #include    "bin2.h"
 
-#if 0
+#if 1
 // ECR8660 鐨勪笂鐢靛簭鍒�
 Ecr8660_Reg_List_T  PwrUp_ECR8660_EN[] = {
     { ECR8660_SPI_WRIT  ,   SPI_RW_INTERIOR ,  SPI_REG_DCXO_EN_L    ,  0x83                 ,  "璁剧疆 DCXO 鍙傛暟" },  // 璁剧疆 DCXO 鍙傛暟
@@ -24,6 +24,7 @@ Ecr8660_Reg_List_T  PwrUp_ECR8660_EN[] = {
 };
 #endif
 
+#if 0
 // ECR8660 power on seq
 Ecr8660_Reg_List_T  PwrUp_ECR8660_EN[] = {
     { ECR8660_SPI_READ  ,   SPI_RW_INTERIOR ,  SPI_REG_DCXO_EN_L    ,  2                 	,  " " 						},
@@ -88,6 +89,7 @@ Ecr8660_Reg_List_T  PwrUp_ECR8660_EN[] = {
 
     { ECR8660_SPI_WRIT  ,   SPI_RW_EXTERNAL ,  ECR8660_LIST_END_LOG ,  ECR8660_LIST_END_LOG ,  "end flag"        		}
 };
+#endif
 
 /********************************************************************************
  * @ Description : ECR8660_Device_Prepare
@@ -104,10 +106,10 @@ userErrorStatus ECR8660_Device_Prepare(ON_OFF Mode)
     INT64U Data;
     if(Mode)
     {
-        Data = ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_HAND, ECR8660_SPI_BYTE(USER_ECR8660_SPI_SIZE));
+        Data = ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_HAND, 1);
     }
     ECR8660_write(SPI_RW_EXTERNAL, MCU_LOG_ADDR_HAND, ECR8660_SPI_REG_LOG);
-    if(ECR8660_SPI_REG_LOG != ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_HAND, ECR8660_SPI_BYTE(USER_ECR8660_SPI_SIZE)))
+    if(ECR8660_SPI_REG_LOG != ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_HAND, 1))
     {
         return USERERROR;
     }
@@ -162,7 +164,7 @@ userErrorStatus ECR8660_CodeDownload()
     ECR8660_read_write(ECR8660_SPI_WRIT, TRANS_INTERNAL_REGISTER, SPI_REG_MCU_RESET, USERSET);
     Delayms(5000);//寤舵椂5s
 
-    testRead = ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_WORK, 4);//璇嗗埆鏄惁涓嬭浇bin鏂囦欢鎴愬姛
+    testRead = ECR8660_Read(SPI_RW_EXTERNAL, MCU_LOG_ADDR_WORK, 1);//璇嗗埆鏄惁涓嬭浇bin鏂囦欢鎴愬姛
 	if(testRead != ECR8660_INIT_OVER)
 	{
 		 return USERERROR;
