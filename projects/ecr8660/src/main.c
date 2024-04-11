@@ -784,15 +784,15 @@ int main(void)
 				printf("\nECR8660_CodeDownload() done.\n");
 		}
 /*
-		write 0 0x20004000 0x00020505       //閰嶇疆 1T1R_FDD 鐨� CH0 妯″紡锛� API 閰嶇疆鍐呴儴甯﹀鍜屼娇鐢ㄩ鐜囨ā寮�
-		write 0 0x20004004 0x00050005      //鍦ㄩ鐜囨ā寮忥紙 IForFREQUE=1锛変笅鍏綉BW:20MHz
-		write 0 0x20004008 1950000           //琛ㄧずrx棰戠偣1950M锛屽鏋滀笉鏀寔10杩涘埗瑕佹敼鎴�16杩涘埗
-		write 0 0x20004018 2350000           //琛ㄧずtx棰戠偣2350M锛屽鏋滀笉鏀寔10杩涘埗瑕佹敼鎴�16杩涘埗
-		write 0 0x20004028 0x00008038     //琛ㄧずrx澧炵泭8001~8038
-		write 0 0x20004030 0x00008023     //琛ㄧずtx澧炵泭8001~8023
-		write 0 0x00201180 0x11110001     //琛ㄧず1妯″紡涓柇锛岃缃�氶亾0 A绔彛杈撳嚭
+		write 0 0x20004000 0x00020505       //闁板秶鐤� 1T1R_FDD 閻拷 CH0 濡�崇础閿涳拷 API 闁板秶鐤嗛崘鍛村劥鐢箑顔旈崪灞煎▏閻€劑顣堕悳鍥佸锟�
+		write 0 0x20004004 0x00050005      //閸︺劑顣堕悳鍥佸蹇ョ礄 IForFREQUE=1閿涘绗呴崗顒傜秹BW:20MHz
+		write 0 0x20004008 1950000           //鐞涖劎銇歳x妫版垹鍋�1950M閿涘苯顩ч弸婊�绗夐弨顖涘瘮10鏉╂稑鍩楃憰浣规暭閹达拷16鏉╂稑鍩�
+		write 0 0x20004018 2350000           //鐞涖劎銇歵x妫版垹鍋�2350M閿涘苯顩ч弸婊�绗夐弨顖涘瘮10鏉╂稑鍩楃憰浣规暭閹达拷16鏉╂稑鍩�
+		write 0 0x20004028 0x00008038     //鐞涖劎銇歳x婢х偟娉�8001~8038
+		write 0 0x20004030 0x00008023     //鐞涖劎銇歵x婢х偟娉�8001~8023
+		write 0 0x00201180 0x11110001     //鐞涖劎銇�1濡�崇础娑擃厽鏌囬敍宀冾啎缂冾噣锟芥岸浜�0 A缁旑垰褰涙潏鎾冲毉
 		delay 100ms
-		write 0 0x00201080 0x30000000    //RF鐜洖锛岃缃産it[29]涓�1
+		write 0 0x00201080 0x30000000    //RF閻滎垰娲栭敍宀冾啎缂冪敚it[29]娑擄拷1
 */
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020505);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004004, 0x00050005);
@@ -1037,7 +1037,6 @@ int main(void)
 
 void parse_spi_command()
 {
-#define ECR8660 0
 	struct xil_uart_init_param platform_uart_init_par = {
 		.type = UART_PS,
 		.irq_id = UART_IRQ_ID
@@ -1083,15 +1082,15 @@ void parse_spi_command()
 				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
 				if(wr_data[0] == 0x5A)
 				{
-#if ECR8660
+#if ECR8660_IN_USE
 					ECR8660_write(spi_mode, spi_addr, spi_data);
 #endif
 				}
 				else if(wr_data[0] == 0x5B)
 				{
-#if ECR8660
+#if ECR8660_IN_USE
 					// spi read
-					spi_data = ECR8660_Read(spi_mode, spi_addr);
+					spi_data = ECR8660_Read(spi_mode, spi_addr, 1);
 #else
 					spi_data = 0xa1b2c3e4;
 #endif
