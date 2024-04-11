@@ -53,6 +53,7 @@
 /******************************************************************************/
 /********************** Macros and Constants Definitions **********************/
 /******************************************************************************/
+#define AXI_DAC_DEBUG					1
 #define AXI_DAC_REG_RSTN				0x40
 #define AXI_DAC_MMCM_RSTN				NO_OS_BIT(1)
 #define AXI_DAC_RSTN					NO_OS_BIT(0)
@@ -924,7 +925,10 @@ int32_t axi_dac_init_finish(struct axi_dac *dac)
 	axi_dac_read(dac, AXI_DAC_REG_CLK_RATIO, &ratio);
 	dac->clock_hz = freq * ratio;
 	dac->clock_hz = (dac->clock_hz * 390625) >> 8;
-
+#if AXI_DAC_DEBUG
+	printf("FPGA side dac_freq = %d, dac_ratio = %d\n", freq, ratio);
+	printf("dac-clock-freq = %d x %d * 390625 / 256 = %"PRIu64" Hz\n", freq, ratio, dac->clock_hz);
+#endif
 	printf("%s: Successfully initialized (%"PRIu64" Hz)\n",
 	       dac->name, dac->clock_hz);
 
@@ -942,7 +946,9 @@ int32_t axi_dac_init(struct axi_dac **dac_core,
 {
 	struct axi_dac *dac;
 	int32_t ret;
-
+#if AXI_DAC_DEBUG
+	printf("\naxi_dac_init start...\n");
+#endif
 	ret = axi_dac_init_begin(&dac, init);
 	if (ret)
 		return ret;
@@ -985,6 +991,9 @@ int32_t axi_dac_data_setup(struct axi_dac *dac)
 		for (i = 0; i < dac->num_channels; i++) {
 			chan = &dac->channels[i];
 			if (chan->sel == AXI_DAC_DATA_SEL_DDS) {
+#if AXI_DAC_DEBUG
+				printf("Dac DDS is selected with %d Hz on ch-%d.\n", chan->dds_frequency_0, i);
+#endif
 				axi_dac_dds_set_frequency(dac, ((i*2)+0), chan->dds_frequency_0);
 				axi_dac_dds_set_phase(dac, ((i*2)+0), chan->dds_phase_0);
 				axi_dac_dds_set_scale(dac, ((i*2)+0), chan->dds_scale_0);
@@ -1003,6 +1012,9 @@ int32_t axi_dac_data_setup(struct axi_dac *dac)
 		}
 	} else {
 		for (i = 0; i < dac->num_channels; i++) {
+#if AXI_DAC_DEBUG
+			printf("Dac DDS is selected with fixed 3MHz single tone as default on ch-%d.\n", i);
+#endif
 			axi_dac_dds_set_frequency(dac, ((i*2)+0), 3*1000*1000);
 			axi_dac_dds_set_frequency(dac, ((i*2)+1), 3*1000*1000);
 			axi_dac_dds_set_phase(dac, ((i*2)+0), (i % 2) ? 0 : 90000);
