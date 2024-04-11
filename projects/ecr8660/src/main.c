@@ -110,7 +110,7 @@ typedef enum
 	ECR8660_DAC_TEST = 2,
 }ECR8660_TestMask;
 
-ECR8660_TestMask ECR8660_TestItem = ECR8660_SPI_TEST;
+ECR8660_TestMask ECR8660_TestItem = ECR8660_SPI_TEST | ECR8660_DAC_TEST;
 
 /******************************************************************************/
 /************************ Variables Definitions *******************************/
@@ -803,11 +803,12 @@ int main(void)
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201180, 0x11110001);
 		no_os_mdelay(100);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
-
+#if 0
 		while(1)
 		{
 			parse_spi_command();
 		}
+#endif
 	}
 
 	if((ECR8660_TestItem & ECR8660_DAC_TEST) == ECR8660_DAC_TEST)
@@ -887,24 +888,11 @@ int main(void)
 
 	printf("\nerror_code = %d\n", error_code);
 
-
-
 	while(1)
 	{
-		uint8_t cmd = 0;
-		scanf("%d", &cmd);
-		if(cmd == 31)
-		{
-			printf("cmd=%d\n", cmd);
-		}
-		/*
-		cmd = getchar();
-		if(cmd == '1')
-		{
-			putchar(cmd);
-		}
-		*/
+		parse_spi_command();
 	}
+
 
 #else
 
