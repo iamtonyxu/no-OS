@@ -127,6 +127,8 @@ const uint16_t sine_lut[128] = {
 	0xCF0, 0xD4E, 0xDAD, 0xE0E, 0xE70, 0xED3, 0xF37, 0xF9B
 };
 
+uint32_t zero_lut_iq[1024] = {0u};
+
 const uint32_t sine_lut_iq[1024] = {
 	0x00002666, 0x01E2265A, 0x03C32636, 0x05A225FB, 0x077D25A9,
 	0x0954253F, 0x0B2524BE, 0x0CEF2427, 0x0EB12379, 0x106A22B6,
@@ -868,6 +870,52 @@ int32_t axi_dac_load_custom_data(struct axi_dac *dac,
 
 			index_mem++;
 		}
+	}
+
+	for (chan = 0; chan < dac->num_channels; chan++) {
+		axi_dac_write(dac, AXI_DAC_REG_DATA_SELECT((chan*2)+0), 0x2);
+		axi_dac_write(dac, AXI_DAC_REG_DATA_SELECT((chan*2)+1), 0x2);
+	}
+	axi_dac_write(dac, AXI_DAC_REG_SYNC_CONTROL, AXI_DAC_SYNC);
+
+	return 0;
+}
+
+/**
+ * @brief AXI DAC Load different custom waveforms to tx0 and tx1.
+ * @param dac - The device structure.
+ * @param custom_data_iq - The custom data array in I/Q format.
+ * @param custom_tx_count - The custom data array size.
+ * @param address - The address where the data is loaded.
+ * @return Returns 0 in case of success or negative error code otherwise.
+ */
+int32_t axi_dac_load_custom_data_v2(struct axi_dac *dac,
+				 const uint32_t *custom_data_iq_tx0,
+				 const uint32_t *custom_data_iq_tx1,
+				 uint32_t custom_tx_count,
+				 uint32_t address)
+{
+	uint32_t index, index_mem = 0;
+	uint8_t chan;
+	uint8_t num_tx_channels = dac->num_channels / 2;
+
+	// data_iq		index_mem(=2n)	index_mem(=2n+1)
+	//	iq_n			tx0			tx1
+	if(num_tx_channels == 2)
+	{
+		for(index = 0; index < custom_tx_count; index++)
+		{
+			/* Send custom_data_iq_tx0 to ch-0 */
+			no_os_axi_io_write(address, index_mem * sizeof(uint32_t), custom_data_iq_tx0[index]);
+			index_mem++;
+			/* Send custom_data_iq_tx1 to ch-1 */
+			no_os_axi_io_write(address, index_mem * sizeof(uint32_t), custom_data_iq_tx1[index]);
+			index_mem++;
+		}
+	}
+	else
+	{
+		return -1;
 	}
 
 	for (chan = 0; chan < dac->num_channels; chan++) {

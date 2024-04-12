@@ -649,9 +649,15 @@ int main(void)
 	axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
 	extern const uint32_t sine_lut_iq[1024];
 	axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
+#if 0
 	axi_dac_load_custom_data(ad9361_phy->tx_dac, sine_lut_iq,
 				 NO_OS_ARRAY_SIZE(sine_lut_iq),
 				 (uintptr_t)dac_buffer);
+#else
+	axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, zero_lut_iq,
+				 NO_OS_ARRAY_SIZE(sine_lut_iq),
+				 (uintptr_t)dac_buffer);
+#endif
 #ifdef XILINX_PLATFORM
 	Xil_DCacheFlush();
 #endif

@@ -103,8 +103,8 @@ struct axi_dac_channel {
 };
 
 extern const uint16_t sine_lut[128];
-
 extern const uint32_t sine_lut_iq[1024];
+extern uint32_t zero_lut_iq[1024];
 
 /******************************************************************************/
 /************************ Functions Declarations ******************************/
@@ -174,6 +174,12 @@ int32_t axi_dac_dds_set_calib_phase(struct axi_dac *dac,
 /** AXI DAC Load Custom Data */
 int32_t axi_dac_load_custom_data(struct axi_dac *dac,
 				 const uint32_t *custom_data_iq,
+				 uint32_t custom_tx_count,
+				 uint32_t address);
+/** AXI DAC Load Custom Data to different tx channels */
+int32_t axi_dac_load_custom_data_v2(struct axi_dac *dac,
+				 const uint32_t *custom_data_iq_tx0,
+				 const uint32_t *custom_data_iq_tx1,
 				 uint32_t custom_tx_count,
 				 uint32_t address);
 /** Setup the AXI DAC Data */
