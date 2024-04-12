@@ -91,6 +91,9 @@ static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
 
 #endif // IIO_SUPPORT
 
+#include "no_os_uart.h"
+#include "xilinx_uart.h"
+
 #if defined(DMA_EXAMPLE) || defined(SYSID_BASEADDR)
 #include <string.h>
 #endif
@@ -518,6 +521,7 @@ struct ad9361_rf_phy *ad9361_phy;
 struct ad9361_rf_phy *ad9361_phy_b;
 #endif
 
+void parse_spi_command(struct no_os_spi_desc *spi);
 
 /***************************************************************************//**
  * @brief main
@@ -573,6 +577,20 @@ int main(void)
 #ifdef ADI_RF_SOM_CMOS
 	if (AD9361_DEVICE)
 		default_init_param.swap_ports_enable = 1;
+	default_init_param.lvds_mode_enable = 0;
+	default_init_param.lvds_rx_onchip_termination_enable = 0;
+	default_init_param.full_port_enable = 1;
+	default_init_param.digital_interface_tune_fir_disable = 1;
+#endif
+
+#if AD9361_LVDS_INTERFACE
+	default_init_param.swap_ports_enable = 0;
+	default_init_param.lvds_mode_enable = 1;
+	default_init_param.lvds_rx_onchip_termination_enable = 1;
+	default_init_param.full_port_enable = 0;
+	default_init_param.digital_interface_tune_fir_disable = 0;
+#else
+	default_init_param.swap_ports_enable = 1;
 	default_init_param.lvds_mode_enable = 0;
 	default_init_param.lvds_rx_onchip_termination_enable = 0;
 	default_init_param.full_port_enable = 1;
@@ -816,351 +834,12 @@ int main(void)
 #endif
 #endif
 
-#ifdef IIO_SUPPORT
-#ifdef SYSID_BASEADDR
-	struct axi_sysid *sysid_core;
-	char *name = NULL;
-	struct axi_sysid_init_param sysid_init = {
-		.base = SYSID_BASEADDR,
-	};
-#endif
-
-	/**
-	 * iio application configurations.
-	 */
-	struct xil_uart_init_param platform_uart_init_par = {
-#ifdef XPAR_XUARTLITE_NUM_INSTANCES
-		.type = UART_PL,
-#else
-		.type = UART_PS,
-		.irq_id = UART_IRQ_ID
-#endif
-	};
-
-	struct no_os_uart_init_param iio_uart_ip = {
-		.device_id = UART_DEVICE_ID,
-		.irq_id = UART_IRQ_ID,
-		.baud_rate = UART_BAUDRATE,
-		.size = NO_OS_UART_CS_8,
-		.parity = NO_OS_UART_PAR_NO,
-		.stop = NO_OS_UART_STOP_1_BIT,
-		.extra = &platform_uart_init_par,
-		.platform_ops = &xil_uart_ops
-	};
-
-#ifdef SYSID_BASEADDR
-	status = axi_sysid_init(&sysid_core, &sysid_init);
-	if (status)
-		return status;;
-
-	name = axi_sysid_get_fpga_board(sysid_core);
-	if (!strcmp("zed", name))
-		iio_uart_ip.baud_rate = 115200;
-
-	status = axi_sysid_remove(sysid_core);
-	if (status)
-		return status;
-#endif
-
-	struct iio_app_desc *app;
-	struct iio_app_init_param app_init_param = { 0 };
-
-	/**
-	 * iio axi adc configurations.
-	 */
-	struct iio_axi_adc_init_param iio_axi_adc_init_par;
-#ifdef FMCOMMS5
-	struct iio_axi_adc_init_param iio_axi_adc_b_init_par;
-#endif
-
-	/**
-	 * iio axi dac configurations.
-	 */
-	struct iio_axi_dac_init_param iio_axi_dac_init_par;
-#ifdef FMCOMMS5
-	struct iio_axi_dac_init_param iio_axi_dac_b_init_par;
-#endif
-
-	/**
-	 * iio ad9361 configurations.
-	 */
-	struct iio_ad9361_init_param iio_ad9361_init_param;
-#ifdef FMCOMMS5
-	struct iio_ad9361_init_param iio_ad9361_b_init_param;
-#endif
-
-	/**
-	 * iio instance descriptor.
-	 */
-	struct iio_axi_adc_desc *iio_axi_adc_desc;
-#ifdef FMCOMMS5
-	struct iio_axi_adc_desc *iio_axi_adc_b_desc;
-#endif
-
-	/**
-	 * iio instance descriptor.
-	 */
-	struct iio_axi_dac_desc *iio_axi_dac_desc;
-#ifdef FMCOMMS5
-	struct iio_axi_dac_desc *iio_axi_dac_b_desc;
-#endif
-
-	/**
-	 * iio ad9361 instance descriptor.
-	 */
-	struct iio_ad9361_desc *iio_ad9361_desc;
-#ifdef FMCOMMS5
-	struct iio_ad9361_desc *iio_ad9361_b_desc;
-#endif
-
-	/**
-	 * iio devices corresponding to every device.
-	 */
-	struct iio_device *adc_dev_desc, *dac_dev_desc, *ad9361_dev_desc;
-#ifdef FMCOMMS5
-	struct iio_device *adc_b_dev_desc, *dac_b_dev_desc, *ad9361_b_dev_desc;
-#endif
-
-	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
-	if(status < 0)
-		return status;
-
-	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
-		.rx_adc = ad9361_phy->rx_adc,
-		.rx_dmac = rx_dmac,
-#ifndef PLATFORM_MB
-		.dcache_invalidate_range = (void (*)(uint32_t,
-						     uint32_t))Xil_DCacheInvalidateRange
-#endif
-	};
-
-	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
-	if(status < 0)
-		return status;
-	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
-
-	struct iio_data_buffer read_buff = {
-		.buff = (void *)ADC_DDR_BASEADDR,
-		.size = 0xFFFFFFFF,
-	};
-
-#ifdef FMCOMMS5
-	iio_axi_adc_b_init_par = (struct iio_axi_adc_init_param) {
-		.rx_adc = ad9361_phy_b->rx_adc,
-	};
-
-	status = iio_axi_adc_init(&iio_axi_adc_b_desc, &iio_axi_adc_b_init_par);
-	if(status < 0)
-		return status;
-	iio_axi_adc_get_dev_descriptor(iio_axi_adc_b_desc, &adc_b_dev_desc);
-#endif
-
-	iio_axi_dac_init_par = (struct iio_axi_dac_init_param) {
-		.tx_dac = ad9361_phy->tx_dac,
-		.tx_dmac = tx_dmac,
-#ifndef PLATFORM_MB
-		.dcache_flush_range = (void (*)(uint32_t, uint32_t))Xil_DCacheFlushRange,
-#endif
-	};
-
-	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
-	if (status < 0)
-		return status;
-	iio_axi_dac_get_dev_descriptor(iio_axi_dac_desc, &dac_dev_desc);
-
-	struct iio_data_buffer write_buff = {
-		.buff = (void *)DAC_DDR_BASEADDR,
-		.size = 0xFFFFFFFF,
-	};
-
-#ifdef FMCOMMS5
-	iio_axi_dac_b_init_par = (struct iio_axi_dac_init_param) {
-		.tx_dac = ad9361_phy_b->tx_dac,
-	};
-
-	status = iio_axi_dac_init(&iio_axi_dac_b_desc, &iio_axi_dac_b_init_par);
-	if (status < 0)
-		return status;
-	iio_axi_dac_get_dev_descriptor(iio_axi_dac_b_desc, &dac_b_dev_desc);
-#endif
-
-	iio_ad9361_init_param = (struct iio_ad9361_init_param) {
-		.ad9361_phy = ad9361_phy,
-	};
-
-	status = iio_ad9361_init(&iio_ad9361_desc, &iio_ad9361_init_param);
-	if (status < 0)
-		return status;
-	iio_ad9361_get_dev_descriptor(iio_ad9361_desc, &ad9361_dev_desc);
-
-#ifdef FMCOMMS5
-	iio_ad9361_b_init_param = (struct iio_ad9361_init_param) {
-		.ad9361_phy = ad9361_phy_b,
-	};
-
-	status = iio_ad9361_init(&iio_ad9361_b_desc, &iio_ad9361_b_init_param);
-	if (status < 0)
-		return status;
-	iio_ad9361_get_dev_descriptor(iio_ad9361_b_desc, &ad9361_b_dev_desc);
-#endif
-
-	struct iio_app_device devices[] = {
-		IIO_APP_DEVICE("cf-ad9361-lpc", iio_axi_adc_desc, adc_dev_desc, &read_buff, NULL, NULL),
-		IIO_APP_DEVICE("cf-ad9361-dds-core-lpc", iio_axi_dac_desc, dac_dev_desc, NULL, &write_buff, NULL),
-		IIO_APP_DEVICE("ad9361-phy", ad9361_phy, ad9361_dev_desc, NULL, NULL, NULL),
-#ifdef FMCOMMS5
-		IIO_APP_DEVICE("cf-ad9361-B", iio_axi_adc_b_desc, adc_b_dev_desc, &read_buff, NULL, NULL),
-		IIO_APP_DEVICE("cf-ad9361-dds-core-B", iio_axi_dac_b_desc, dac_b_dev_desc, NULL, &write_buff, NULL),
-		IIO_APP_DEVICE("ad9361-phy-B", ad9361_phy_b, ad9361_b_dev_desc, NULL, NULL, NULL)
-#endif
-	};
-
-	app_init_param.devices = devices;
-	app_init_param.nb_devices = NO_OS_ARRAY_SIZE(devices);
-	app_init_param.uart_init_params = iio_uart_ip;
-
-	status = iio_app_init(&app, app_init_param);
-	if (status)
-		return status;
-
-	iio_app_run(app);
-
-#endif // IIO_SUPPORT
-
 	printf("Done.\n");
 
-#ifdef TDD_SWITCH_STATE_EXAMPLE
-	uint32_t ensm_mode;
-	struct no_os_gpio_init_param  gpio_init = {
-		.platform_ops = GPIO_OPS,
-		.extra = GPIO_PARAM
-	};
-	struct no_os_gpio_desc 	*gpio_enable_pin;
-	struct no_os_gpio_desc 	*gpio_txnrx_pin;
-	if (!ad9361_phy->pdata->fdd) {
-		if (ad9361_phy->pdata->ensm_pin_ctrl) {
-			gpio_init.number = GPIO_ENABLE_PIN;
-			status = no_os_gpio_get(&gpio_enable_pin, &gpio_init);
-			if (status != 0) {
-				printf("no_os_gpio_get() error: %"PRIi32"\n", status);
-				return status;
-			}
-			no_os_gpio_direction_output(gpio_enable_pin, 1);
-			gpio_init.number = GPIO_TXNRX_PIN;
-			status = no_os_gpio_get(&gpio_txnrx_pin, &gpio_init);
-			if (status != 0) {
-				printf("no_os_gpio_get() error: %"PRIi32"\n", status);
-				return status;
-			}
-			no_os_gpio_direction_output(gpio_txnrx_pin, 0);
-			no_os_udelay(10);
-			ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-			printf("TXNRX control - Alert: %s\n",
-			       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-			no_os_mdelay(1000);
-
-			if (ad9361_phy->pdata->ensm_pin_pulse_mode) {
-				while(1) {
-					no_os_gpio_set_value(gpio_txnrx_pin, 0);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX Pulse control - RX: %s\n",
-					       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX Pulse control - Alert: %s\n",
-					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_txnrx_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX Pulse control - TX: %s\n",
-					       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX Pulse control - Alert: %s\n",
-					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-					no_os_mdelay(1000);
-				}
-			} else {
-				while(1) {
-					no_os_gpio_set_value(gpio_txnrx_pin, 0);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX control - RX: %s\n",
-					       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					no_os_udelay(10);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX control - Alert: %s\n",
-					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_txnrx_pin, 1);
-					no_os_udelay(10);
-					no_os_gpio_set_value(gpio_enable_pin, 1);
-					no_os_udelay(10);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX control - TX: %s\n",
-					       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
-					no_os_mdelay(1000);
-
-					no_os_gpio_set_value(gpio_enable_pin, 0);
-					no_os_udelay(10);
-					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-					printf("TXNRX control - Alert: %s\n",
-					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-					no_os_mdelay(1000);
-				}
-			}
-		} else {
-			while(1) {
-				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_RX);
-				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-				printf("SPI control - RX: %s\n",
-				       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
-				no_os_mdelay(1000);
-
-				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_ALERT);
-				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-				printf("SPI control - Alert: %s\n",
-				       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-				no_os_mdelay(1000);
-
-				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_TX);
-				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-				printf("SPI control - TX: %s\n",
-				       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
-				no_os_mdelay(1000);
-
-				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_ALERT);
-				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
-				printf("SPI control - Alert: %s\n",
-				       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
-				no_os_mdelay(1000);
-			}
-		}
+	while(1)
+	{
+		parse_spi_command(ad9361_phy->spi);
 	}
-#endif
 
 	ad9361_remove(ad9361_phy);
 #ifdef FMCOMMS5
@@ -1180,4 +859,90 @@ int main(void)
 #endif
 
 	return 0;
+}
+
+
+
+void parse_spi_command(struct no_os_spi_desc *spi)
+{
+	struct xil_uart_init_param platform_uart_init_par = {
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+	};
+
+	struct no_os_uart_init_param uart_param = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+	struct no_os_uart_desc *uart_desc;
+#define MAX_SIZE 10240
+	uint32_t bytes_number = 10;
+	uint8_t wr_data[MAX_SIZE] = {0};
+	uint32_t bytes_recv = 0;
+	int32_t error = 0;
+
+	uint8_t spi_mode = 0u;
+	uint32_t spi_addr = 0;
+	uint32_t spi_data = 0;
+
+	error = no_os_uart_init(&uart_desc, &uart_param);
+
+	if(error == 0)
+	{
+		while(1)
+		{
+			bytes_number = 10; // length of spi_write and spi_read
+			// receive data
+			bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+
+			if(bytes_recv == bytes_number)
+			{
+				// spi write
+				spi_mode = wr_data[1];
+				spi_addr = (wr_data[2] << 3*8) | (wr_data[3] << 2*8) | (wr_data[4] << 1*8) | wr_data[5];
+				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
+				if(wr_data[0] == 0x5A)
+				{
+#if AD9361_DEVICE
+					ad9361_spi_write(spi, spi_addr, spi_data);
+#endif
+				}
+				else if(wr_data[0] == 0x5B)
+				{
+#if AD9361_DEVICE
+					// spi read
+					spi_data = ad9361_spi_read(spi, spi_addr);
+#else
+					spi_data = 0xa1b2c3e4;
+#endif
+					// send data
+					wr_data[6] = (spi_data >> 3*8) & 0xff;
+					wr_data[7] = (spi_data >> 2*8) & 0xff;
+					wr_data[8] = (spi_data >> 1*8) & 0xff;
+					wr_data[9] = (spi_data >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x5C)
+				{
+					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					no_os_mdelay(10);
+				}
+				else if(wr_data[0] == 0x5D)
+				{
+					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					no_os_mdelay(10);
+				}
+			}
+		}
+	}
+	no_os_uart_remove(&uart_desc);
 }
