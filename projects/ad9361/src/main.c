@@ -166,7 +166,7 @@ struct axi_dac_init tx_dac_init = {
 	TX_CORE_BASEADDR,
 	4,
 	NULL,
-	3
+	1
 };
 struct axi_dmac_init rx_dmac_init = {
 	"rx_dmac",
@@ -188,6 +188,19 @@ struct axi_dmac_init tx_dmac_init = {
 #endif
 };
 struct axi_dmac *tx_dmac;
+struct axi_dma_transfer transfer = {
+	// Number of bytes to write/read
+	.size = sizeof(sine_lut_iq),
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = CYCLIC,
+	// Address of data source
+	.src_addr = (uintptr_t)dac_buffer,
+	// Address of data destination
+	.dest_addr = 0
+};
+uint8_t tx_is_transfering = 0u;
 
 AD9361_InitParam default_init_param = {
 	/* Device selection */
@@ -755,24 +768,12 @@ int main(void)
 		return status;
 #endif
 
-	struct axi_dma_transfer transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(sine_lut_iq),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = CYCLIC,
-		// Address of data source
-		.src_addr = (uintptr_t)dac_buffer,
-		// Address of data destination
-		.dest_addr = 0
-	};
-
 	/* Transfer the data. */
 	axi_dmac_transfer_start(tx_dmac, &transfer);
 
 	/* Flush cache data. */
 	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+	tx_is_transfering = 1u;
 
 	no_os_mdelay(1000);
 
@@ -939,11 +940,42 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				{
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					if(bytes_number/4 == 1024)
+					{
+						for(int sample = 0; sample < 1024; sample++)
+						{
+							uint32_t iq = (wr_data[sample*4 + 1] << 24) |
+										(wr_data[sample*4 + 0] << 16) |
+										(wr_data[sample*4 + 3] << 8) |
+										(wr_data[sample*4 + 2] << 0);
+							zero_lut_iq[sample] = iq;
+						}
+						/* Reload transfer data memory and transfer the data */
+						if(tx_is_transfering == 1u)
+						{
+							/* Stop tranfering the data. */
+							axi_dmac_transfer_stop(tx_dmac);
+
+							/* Reload the waveform */
+							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, zero_lut_iq,
+										 NO_OS_ARRAY_SIZE(sine_lut_iq),
+										 (uintptr_t)dac_buffer);
+							Xil_DCacheFlush();
+
+							/* Transfer the data. */
+							transfer.size = bytes_number;
+							axi_dmac_transfer_start(tx_dmac, &transfer);
+
+							/* Flush cache data. */
+							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+						}
+					}
 					no_os_mdelay(10);
 				}
 				else if(wr_data[0] == 0x5D)
 				{
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					memcpy(wr_data, adc_buffer, bytes_number);
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					no_os_mdelay(10);
 				}
