@@ -200,6 +200,20 @@ struct axi_dma_transfer transfer = {
 	// Address of data destination
 	.dest_addr = 0
 };
+
+struct axi_dma_transfer read_transfer = {
+	// Number of bytes to write/read
+	.size = sizeof(adc_buffer),
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = NO,
+	// Address of data source
+	.src_addr = 0,
+	// Address of data destination
+	.dest_addr = (uintptr_t)adc_buffer
+};
+
 uint8_t tx_is_transfering = 0u;
 
 AD9361_InitParam default_init_param = {
@@ -800,18 +814,6 @@ int main(void)
 	if(status < 0)
 		return status;
 #else
-	struct axi_dma_transfer read_transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(adc_buffer),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = NO,
-		// Address of data source
-		.src_addr = 0,
-		// Address of data destination
-		.dest_addr = (uintptr_t)adc_buffer
-	};
 
 	/* Read the data from the ADC DMA. */
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
@@ -940,7 +942,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				{
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
-					if(bytes_number/4 == 1024)
+					if(bytes_number/4 <= 1024)
 					{
 						for(int sample = 0; sample < 1024; sample++)
 						{
@@ -974,8 +976,21 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5D)
 				{
+					/* Read the data from the ADC DMA. */
+					axi_dmac_transfer_start(rx_dmac, &read_transfer);
+
+					/* Wait until transfer finishes */
+					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
+
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
-					memcpy(wr_data, adc_buffer, bytes_number);
+					if(status < 0)
+					{
+						memset(wr_data, 0, bytes_number);
+					}
+					else
+					{
+						memcpy(wr_data, adc_buffer, bytes_number);
+					}
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					no_os_mdelay(10);
 				}

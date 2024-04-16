@@ -152,7 +152,10 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
         
     # Convert message to bytes and send over UART
     ser.write(bytearray(message))  
-    
+
+    # wait 1s
+    time.sleep(1)
+
     # Read specified number of bytes
     data = ser.read(num_bytes)
     data_i = []
@@ -186,6 +189,6 @@ ser.isOpen()
 download_waveformfile()
 
 ## example: save capture data
-#read_capture()
+read_capture()
 
 ser.close()
