@@ -946,10 +946,10 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					{
 						for(int sample = 0; sample < 1024; sample++)
 						{
-							uint32_t iq = (wr_data[sample*4 + 1] << 24) |
-										(wr_data[sample*4 + 0] << 16) |
-										(wr_data[sample*4 + 3] << 8) |
-										(wr_data[sample*4 + 2] << 0);
+							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
+										(wr_data[sample*4 + 0] << 8) |
+										(wr_data[sample*4 + 3] << 16) |
+										(wr_data[sample*4 + 2] << 24);
 							zero_lut_iq[sample] = iq;
 						}
 						/* Reload transfer data memory and transfer the data */
