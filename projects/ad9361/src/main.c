@@ -976,6 +976,9 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5D)
 				{
+					memset(adc_buffer, 0, sizeof(adc_buffer) * sizeof(uint16_t));
+					read_transfer.cyclic = CYCLIC;
+
 					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_dmac, &read_transfer);
 
