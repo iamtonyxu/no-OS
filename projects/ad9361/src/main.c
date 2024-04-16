@@ -616,12 +616,18 @@ int main(void)
 	default_init_param.lvds_rx_onchip_termination_enable = 1;
 	default_init_param.full_port_enable = 0;
 	default_init_param.digital_interface_tune_fir_disable = 0;
+	//2r2t
+	tx_dac_init.num_channels = 4;
+	tx_dac_init.rate = 3;
 #else
 	default_init_param.swap_ports_enable = 1;
 	default_init_param.lvds_mode_enable = 0;
 	default_init_param.lvds_rx_onchip_termination_enable = 0;
 	default_init_param.full_port_enable = 1;
 	default_init_param.digital_interface_tune_fir_disable = 1;
+	//2t2r
+	tx_dac_init.num_channels = 4;
+	tx_dac_init.rate = 1;
 #endif
 
 	ad9361_init(&ad9361_phy, &default_init_param);
@@ -681,7 +687,7 @@ int main(void)
 				 NO_OS_ARRAY_SIZE(sine_lut_iq),
 				 (uintptr_t)dac_buffer);
 #else
-	axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, zero_lut_iq,
+	axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, sine_lut_iq,
 				 NO_OS_ARRAY_SIZE(sine_lut_iq),
 				 (uintptr_t)dac_buffer);
 #endif
@@ -976,9 +982,6 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5D)
 				{
-					memset(adc_buffer, 0, sizeof(adc_buffer) * sizeof(uint16_t));
-					read_transfer.cyclic = CYCLIC;
-
 					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_dmac, &read_transfer);
 
