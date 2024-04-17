@@ -911,7 +911,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 	};
 
 	struct no_os_uart_desc *uart_desc;
-#define MAX_SIZE 10240
+#define MAX_SIZE (8192*4)
 	uint32_t bytes_number = 10;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
