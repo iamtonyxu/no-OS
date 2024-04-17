@@ -669,6 +669,7 @@ int main(void)
 		printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
 		return status;
 	}
+
 #ifndef AXI_ADC_NOT_PRESENT
 #if defined XILINX_PLATFORM || defined LINUX_PLATFORM || defined ALTERA_PLATFORM
 #ifdef DMA_EXAMPLE
@@ -679,6 +680,7 @@ int main(void)
 	rx_adc_init.num_slave_channels = 4;
 	tx_dac_init.base = AD9361_TX_0_BASEADDR;
 #endif
+	/* dac init */
 	axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
 	extern const uint32_t sine_lut_iq[1024];
 	axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
@@ -694,6 +696,28 @@ int main(void)
 #ifdef XILINX_PLATFORM
 	Xil_DCacheFlush();
 #endif
+
+	/* check data sel is adc */
+	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
+	{
+		uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
+		printf("data_sel before adc_init for ch-%d = %d\n", ch, data_sel);
+	}
+
+	/* adc init */
+	axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
+
+	/* check data sel is adc */
+	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
+	{
+		uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
+		printf("data_sel after adc_init for ch-%d = %d\n", ch, data_sel);
+		if(data_sel != 0)
+		{
+			axi_adc_set_datasel(ad9361_phy->rx_adc, ch, 0u);
+		}
+	}
+
 #else
 #ifdef FMCOMMS5
 	axi_dac_init(&ad9361_phy_b->tx_dac, &tx_dac_init);
@@ -965,7 +989,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 							axi_dmac_transfer_stop(tx_dmac);
 
 							/* Reload the waveform */
-							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, zero_lut_iq,
+							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, zero_lut_iq, zero_lut_iq,
 										 NO_OS_ARRAY_SIZE(sine_lut_iq),
 										 (uintptr_t)dac_buffer);
 							Xil_DCacheFlush();

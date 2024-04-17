@@ -193,6 +193,13 @@ int32_t axi_adc_read(struct axi_adc *adc,
 int32_t axi_adc_write(struct axi_adc *adc,
 		      uint32_t reg_addr,
 		      uint32_t reg_data);
+/** Set AXI ADC Data selection */
+int32_t axi_adc_set_datasel(struct axi_adc *adc,
+			  uint32_t chan,
+			  uint8_t sel);
+/** Get AXI ADC Data selection */
+int32_t axi_adc_get_datasel(struct axi_adc *adc,
+			  uint32_t chan);
 /** Set AXI ADC PN sequence */
 int32_t axi_adc_set_pnsel(struct axi_adc *adc,
 			  uint32_t chan,

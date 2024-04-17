@@ -112,6 +112,45 @@ int32_t axi_slave_adc_write(struct axi_adc *adc,
 }
 
 /**
+ * @brief Set AXI ADC data sel.
+ * @param adc - The device structure.
+ * @param chan - The AXI ADC channel.
+ * @param sel - 1 to select adc data, otherwise dac data.
+ * @return Returns 0 in case of success or negative error code otherwise.
+ */
+int32_t axi_adc_set_datasel(struct axi_adc *adc,
+			  uint32_t chan,
+			  uint8_t sel)
+{
+	uint32_t reg_data;
+
+	axi_adc_read(adc, AXI_ADC_REG_CHAN_CNTRL_3(chan), &reg_data);
+	reg_data &= ~AXI_ADC_ADC_DATA_SEL(~0);
+	reg_data |= AXI_ADC_ADC_DATA_SEL(sel);
+	axi_adc_write(adc, AXI_ADC_REG_CHAN_CNTRL_3(chan), reg_data);
+
+	return 0;
+}
+
+/**
+ * @brief Set AXI ADC data sel.
+ * @param adc - The device structure.
+ * @param chan - The AXI ADC channel.
+ * @return Returns 0 for adc data, otherwise for dac data.
+ */
+int32_t axi_adc_get_datasel(struct axi_adc *adc,
+			  uint32_t chan)
+{
+	uint32_t reg_data;
+	uint8_t  data_sel;
+
+	axi_adc_read(adc, AXI_ADC_REG_CHAN_CNTRL_3(chan), &reg_data);
+	data_sel = AXI_ADC_ADC_DATA_SEL(reg_data);
+
+	return data_sel;
+}
+
+/**
  * @brief Set AXI ADC PN sequence.
  * @param adc - The device structure.
  * @param chan - The AXI ADC channel.
