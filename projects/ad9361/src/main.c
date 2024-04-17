@@ -701,16 +701,6 @@ int main(void)
 	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
 	{
 		uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
-		printf("data_sel before adc_init for ch-%d = %d\n", ch, data_sel);
-	}
-
-	/* adc init */
-	axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
-
-	/* check data sel is adc */
-	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
-	{
-		uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
 		printf("data_sel after adc_init for ch-%d = %d\n", ch, data_sel);
 		if(data_sel != 0)
 		{
