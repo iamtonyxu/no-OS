@@ -1002,6 +1002,9 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					/* Wait until transfer finishes */
 					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
 
+					/* Flush cache data. */
+					Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
+
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					if(status < 0)
 					{
