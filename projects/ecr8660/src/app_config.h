@@ -47,6 +47,9 @@
 #define AD9363A_DEVICE			0 /* set it 1 if AD9363A device is used, 0 otherwise */
 #define ECR8660_DEVICE          1 /* set it 1 if AD9361 device is used, 0 otherwise */
 
+#define ECR8660_DAC_TEST		1
+#define ECR8660_ADC_TEST		0
+
 #define XILINX_PLATFORM
 //#define ALTERA_PLATFORM
 //#define LINUX_PLATFORM

@@ -107,10 +107,10 @@ typedef enum
 {
 	ECR8660_NONE	= 0,
 	ECR8660_SPI_TEST = 1,
-	ECR8660_DAC_TEST = 2,
+	ECR8660_FUNC_TEST = 2,
 }ECR8660_TestMask;
 
-ECR8660_TestMask ECR8660_TestItem = ECR8660_SPI_TEST | ECR8660_DAC_TEST;
+ECR8660_TestMask ECR8660_TestItem = ECR8660_SPI_TEST | ECR8660_FUNC_TEST;
 
 /******************************************************************************/
 /************************ Variables Definitions *******************************/
@@ -811,15 +811,15 @@ int main(void)
 				printf("\nECR8660_CodeDownload() done.\n");
 		}
 /*
-		write 0 0x20004000 0x00020505       //闁板秶鐤� 1T1R_FDD 閻拷 CH0 濡�崇础閿涳拷 API 闁板秶鐤嗛崘鍛村劥鐢箑顔旈崪灞煎▏閻€劑顣堕悳鍥佸锟�
-		write 0 0x20004004 0x00050005      //閸︺劑顣堕悳鍥佸蹇ョ礄 IForFREQUE=1閿涘绗呴崗顒傜秹BW:20MHz
-		write 0 0x20004008 1950000           //鐞涖劎銇歳x妫版垹鍋�1950M閿涘苯顩ч弸婊�绗夐弨顖涘瘮10鏉╂稑鍩楃憰浣规暭閹达拷16鏉╂稑鍩�
-		write 0 0x20004018 2350000           //鐞涖劎銇歵x妫版垹鍋�2350M閿涘苯顩ч弸婊�绗夐弨顖涘瘮10鏉╂稑鍩楃憰浣规暭閹达拷16鏉╂稑鍩�
-		write 0 0x20004028 0x00008038     //鐞涖劎銇歳x婢х偟娉�8001~8038
-		write 0 0x20004030 0x00008023     //鐞涖劎銇歵x婢х偟娉�8001~8023
-		write 0 0x00201180 0x11110001     //鐞涖劎銇�1濡�崇础娑擃厽鏌囬敍宀冾啎缂冾噣锟芥岸浜�0 A缁旑垰褰涙潏鎾冲毉
+		write 0 0x20004000 0x00020505       //闂佹澘绉堕悿锟� 1T1R_FDD 闁活煉鎷� CH0 婵☆垪锟藉磭纭�闁挎冻鎷� API 闂佹澘绉堕悿鍡涘礃閸涙潙鍔ラ悽顖ょ畱椤旀棃宕仦鐓庘枏闁烩偓鍔戦。鍫曟偝閸ヮ煂浣割嚕閿燂拷
+		write 0 0x20004004 0x00050005      //闁革负鍔戦。鍫曟偝閸ヮ煂浣割嚕韫囥儳绀� IForFREQUE=1闁挎稑顦粭鍛村礂椤掑倻绉笲W:20MHz
+		write 0 0x20004008 1950000           //閻炴稏鍔庨妵姝硏濡増鍨归崑锟�1950M闁挎稑鑻々褔寮稿锟界粭澶愬绩椤栨稑鐦�10閺夆晜绋戦崺妤冩啺娴ｈ鏆柟杈炬嫹16閺夆晜绋戦崺锟�
+		write 0 0x20004018 2350000           //閻炴稏鍔庨妵姝祒濡増鍨归崑锟�2350M闁挎稑鑻々褔寮稿锟界粭澶愬绩椤栨稑鐦�10閺夆晜绋戦崺妤冩啺娴ｈ鏆柟杈炬嫹16閺夆晜绋戦崺锟�
+		write 0 0x20004028 0x00008038     //閻炴稏鍔庨妵姝硏濠⒀呭仧濞夛拷8001~8038
+		write 0 0x20004030 0x00008023     //閻炴稏鍔庨妵姝祒濠⒀呭仧濞夛拷8001~8023
+		write 0 0x00201180 0x11110001     //閻炴稏鍔庨妵锟�1婵☆垪锟藉磭纭�濞戞搩鍘介弻鍥晬瀹�鍐惧晭缂傚喚鍣ｉ敓鑺ュ哺娴滐拷0 A缂佹棏鍨拌ぐ娑欐綇閹惧啿姣�
 		delay 100ms
-		write 0 0x00201080 0x30000000    //RF閻滎垰娲栭敍宀冾啎缂冪敚it[29]娑擄拷1
+		write 0 0x00201080 0x30000000    //RF闁绘粠鍨板ú鏍晬瀹�鍐惧晭缂傚啰鏁歩t[29]濞戞搫鎷�1
 */
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020505);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004004, 0x00050005);
@@ -832,7 +832,7 @@ int main(void)
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
 	}
 
-	if((ECR8660_TestItem & ECR8660_DAC_TEST) == ECR8660_DAC_TEST)
+	if((ECR8660_TestItem & ECR8660_FUNC_TEST) == ECR8660_FUNC_TEST)
 	{
 		status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
 		if (status < 0) {
@@ -846,6 +846,8 @@ int main(void)
 		}
 
 #ifdef DMA_EXAMPLE
+
+#if ECR8660_DAC_TEST
 	  /* dac init */
 		axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
 		extern const uint32_t sine_lut_iq[1024];
@@ -859,9 +861,8 @@ int main(void)
   				 NO_OS_ARRAY_SIZE(sine_lut_iq),
   				 (uintptr_t)dac_buffer);
 #endif
-#ifdef XILINX_PLATFORM
 		Xil_DCacheFlush();
-#endif
+
 		uint32_t samples = 16384;
 
 		/* Transfer the data. */
@@ -869,10 +870,12 @@ int main(void)
 
 		/* Flush cache data. */
 		Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+		tx_is_transfering = 1u;
 
 		no_os_mdelay(1000);
+#endif // end of #if ECR8660_DAC_TEST
 
-#if 1
+#if ECR8660_ADC_TEST
 	  	/* adc init */
 		axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
    
@@ -899,8 +902,9 @@ int main(void)
 		printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
 			   (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
 			   8 * sizeof(adc_buffer[0]));
-#endif
-#endif
+#endif // end of #if ECR8660_ADC_TEST
+
+#endif //end of #ifdef DMA_EXAMPLE
 	}
 
 	printf("\nerror_code = %d\n", error_code);
@@ -970,15 +974,15 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
 				if(wr_data[0] == 0x5A)
 				{
-#if AD9361_DEVICE
-					ad9361_spi_write(spi, spi_addr, spi_data);
+#if ECR8660_DEVICE
+					ECR8660_write(spi_mode, spi_addr, spi_data);
 #endif
 				}
 				else if(wr_data[0] == 0x5B)
 				{
-#if AD9361_DEVICE
+#if ECR8660_DEVICE
 					// spi read
-					spi_data = ad9361_spi_read(spi, spi_addr);
+					spi_data = ECR8660_Read(spi_mode, spi_addr, 1);
 #else
 					spi_data = 0xa1b2c3e4;
 #endif
@@ -1027,15 +1031,17 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5D)
 				{
+					int32_t status = -1;
+#if ECR8660_ADC_TEST
 					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_dmac, &read_transfer);
 
 					/* Wait until transfer finishes */
-					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
+					status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
 
 					/* Flush cache data. */
 					Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
-
+#endif
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					if(status < 0)
 					{
