@@ -101,7 +101,7 @@ static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
 #include <string.h>
 #endif
 
-#define ECR8660_IN_USE 1
+#define ECR8660_DEVICE 1
 
 typedef enum
 {
@@ -203,7 +203,7 @@ struct axi_dac_init tx_dac_init = {
 	TX_CORE_BASEADDR,
 	4,
 	NULL,
-	3
+	1
 };
 struct axi_dmac_init rx_dmac_init = {
 	"rx_dmac",
@@ -225,6 +225,33 @@ struct axi_dmac_init tx_dmac_init = {
 #endif
 };
 struct axi_dmac *tx_dmac;
+struct axi_dma_transfer transfer = {
+	// Number of bytes to write/read
+	.size = sizeof(sine_lut_iq),
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = CYCLIC,
+	// Address of data source
+	.src_addr = (uintptr_t)dac_buffer,
+	// Address of data destination
+	.dest_addr = 0
+};
+
+struct axi_dma_transfer read_transfer = {
+	// Number of bytes to write/read
+	.size = sizeof(adc_buffer),
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = NO,
+	// Address of data source
+	.src_addr = 0,
+	// Address of data destination
+	.dest_addr = (uintptr_t)adc_buffer
+};
+
+uint8_t tx_is_transfering = 0u;
 
 AD9361_InitParam default_init_param = {
 	/* Device selection */
@@ -556,7 +583,7 @@ AD9361_TXFIRConfig tx_fir_config = {	// BPF PASSBAND 3/20 fs to 1/4 fs
 };
 struct ad9361_rf_phy *ad9361_phy;
 
-void parse_spi_command();
+void parse_spi_command(struct no_os_spi_desc *spi);
 
 /***************************************************************************//**
  * @brief main
@@ -596,7 +623,7 @@ int main(void)
 	if (AD9363A_DEVICE)
 		default_init_param.dev_sel = ID_AD9363A;
 
-#if ECR8660_IN_USE
+#if ECR8660_DEVICE
 	if((ECR8660_TestItem & ECR8660_SPI_TEST) == ECR8660_SPI_TEST)
 	{
 		/* init ad9361 phy */
@@ -803,12 +830,6 @@ int main(void)
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201180, 0x11110001);
 		no_os_mdelay(100);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
-#if 0
-		while(1)
-		{
-			parse_spi_command();
-		}
-#endif
 	}
 
 	if((ECR8660_TestItem & ECR8660_DAC_TEST) == ECR8660_DAC_TEST)
@@ -823,30 +844,25 @@ int main(void)
 			printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
 			return status;
 		}
+
 #ifdef DMA_EXAMPLE
+	  /* dac init */
 		axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
 		extern const uint32_t sine_lut_iq[1024];
 		axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
-		axi_dac_load_custom_data(ad9361_phy->tx_dac, sine_lut_iq,
-					 NO_OS_ARRAY_SIZE(sine_lut_iq),
-					 (uintptr_t)dac_buffer);
+#if 0
+  	axi_dac_load_custom_data(ad9361_phy->tx_dac, sine_lut_iq,
+  				 NO_OS_ARRAY_SIZE(sine_lut_iq),
+  				 (uintptr_t)dac_buffer);
+#else
+  	axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, sine_lut_iq, sine_lut_iq,
+  				 NO_OS_ARRAY_SIZE(sine_lut_iq),
+  				 (uintptr_t)dac_buffer);
+#endif
 #ifdef XILINX_PLATFORM
 		Xil_DCacheFlush();
 #endif
 		uint32_t samples = 16384;
-
-		struct axi_dma_transfer transfer = {
-			// Number of bytes to write/read
-			.size = sizeof(sine_lut_iq),
-			// Transfer done flag
-			.transfer_done = 0,
-			// Signal transfer mode
-			.cyclic = CYCLIC,
-			// Address of data source
-			.src_addr = (uintptr_t)dac_buffer,
-			// Address of data destination
-			.dest_addr = 0
-		};
 
 		/* Transfer the data. */
 		axi_dmac_transfer_start(tx_dmac, &transfer);
@@ -856,19 +872,20 @@ int main(void)
 
 		no_os_mdelay(1000);
 
-#if 0
-		struct axi_dma_transfer read_transfer = {
-			// Number of bytes to write/read
-			.size = sizeof(adc_buffer),
-			// Transfer done flag
-			.transfer_done = 0,
-			// Signal transfer mode
-			.cyclic = NO,
-			// Address of data source
-			.src_addr = 0,
-			// Address of data destination
-			.dest_addr = (uintptr_t)adc_buffer
-		};
+#if 1
+	  	/* adc init */
+		axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
+   
+		/* check data sel is adc */
+		for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
+		{
+			uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
+			printf("data_sel after adc_init for ch-%d = %d\n", ch, data_sel);
+			if(data_sel != 0)
+			{
+				axi_adc_set_datasel(ad9361_phy->rx_adc, ch, 0u);
+			}
+		}
 
 		/* Read the data from the ADC DMA. */
 		axi_dmac_transfer_start(rx_dmac, &read_transfer);
@@ -877,12 +894,12 @@ int main(void)
 		status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
 		if(status < 0)
 			return status;
-#endif
 
 		Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
 		printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
 			   (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
 			   8 * sizeof(adc_buffer[0]));
+#endif
 #endif
 	}
 
@@ -890,128 +907,10 @@ int main(void)
 
 	while(1)
 	{
-		parse_spi_command();
+		parse_spi_command(ad9361_phy->spi);
 	}
 
-
-#else
-
-	dummy_ad9361_init(&ad9361_phy, &default_init_param);
-	//ad9361_init(&ad9361_phy, &default_init_param);
-#if 0
-	ad9361_set_tx_fir_config(ad9361_phy, tx_fir_config);
-	ad9361_set_rx_fir_config(ad9361_phy, rx_fir_config);
 #endif
-#if 0
-	while(1)
-	{
-		uint32_t writeVal = 0x5A;
-		ad9361_spi_write(ad9361_phy->spi, REG_DAC_TEST_0, writeVal);
-		//printf("write bytes = 0x%X to DAC_TEST_0\n", (int)writeVal);
-		int32_t readVal = ad9361_spi_read(ad9361_phy->spi, REG_DAC_TEST_0);
-		//printf("read bytes = 0x%X from DAC_TEST_0\n", readVal);
-	}
-#endif
-	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
-	if (status < 0) {
-		printf("axi_dmac_init tx init error: %"PRIi32"\n", status);
-		return status;
-	}
-	status = axi_dmac_init(&rx_dmac, &rx_dmac_init);
-	if (status < 0) {
-		printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
-		return status;
-	}
-#ifndef AXI_ADC_NOT_PRESENT
-#if defined XILINX_PLATFORM || defined LINUX_PLATFORM || defined ALTERA_PLATFORM
-#ifdef DMA_EXAMPLE
-	axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
-	extern const uint32_t sine_lut_iq[1024];
-	axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
-	axi_dac_load_custom_data(ad9361_phy->tx_dac, sine_lut_iq,
-				 NO_OS_ARRAY_SIZE(sine_lut_iq),
-				 (uintptr_t)dac_buffer);
-#ifdef XILINX_PLATFORM
-	Xil_DCacheFlush();
-#endif
-#else
-	axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
-	axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DDS);
-#endif
-#endif
-#endif
-
-#ifndef AXI_ADC_NOT_PRESENT
-#if (defined XILINX_PLATFORM || defined ALTERA_PLATFORM)
-	uint32_t samples = 16384;
-
-	// NOTE: To prevent unwanted data loss, it's recommended to invalidate
-	// cache after each axi_dmac_transfer_start() call, keeping in mind that the
-	// size of the capture and the start address must be aligned to the size
-	// of the cache line.
-
-#ifdef DMA_EXAMPLE
-
-	struct axi_dma_transfer transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(sine_lut_iq),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = CYCLIC,
-		// Address of data source
-		.src_addr = (uintptr_t)dac_buffer,
-		// Address of data destination
-		.dest_addr = 0
-	};
-
-	/* Transfer the data. */
-	axi_dmac_transfer_start(tx_dmac, &transfer);
-
-	/* Flush cache data. */
-	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
-
-	no_os_mdelay(1000);
-
-#endif
-
-#if 0
-	struct axi_dma_transfer read_transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(adc_buffer),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = NO,
-		// Address of data source
-		.src_addr = 0,
-		// Address of data destination
-		.dest_addr = (uintptr_t)adc_buffer
-	};
-
-	/* Read the data from the ADC DMA. */
-	axi_dmac_transfer_start(rx_dmac, &read_transfer);
-
-	/* Wait until transfer finishes */
-	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0)
-		return status;
-#endif
-
-#ifdef XILINX_PLATFORM
-
-	Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
-	printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
-	       (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
-	       8 * sizeof(adc_buffer[0]));
-
-#endif
-#endif
-#endif
-
-	printf("Done.\n");
-#endif
-
 
 	ad9361_remove(ad9361_phy);
 
@@ -1023,7 +922,8 @@ int main(void)
 	return 0;
 }
 
-void parse_spi_command()
+
+void parse_spi_command(struct no_os_spi_desc *spi)
 {
 	struct xil_uart_init_param platform_uart_init_par = {
 		.type = UART_PS,
@@ -1042,7 +942,7 @@ void parse_spi_command()
 	};
 
 	struct no_os_uart_desc *uart_desc;
-#define MAX_SIZE 10240
+#define MAX_SIZE (8192*4)
 	uint32_t bytes_number = 10;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
@@ -1070,15 +970,15 @@ void parse_spi_command()
 				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
 				if(wr_data[0] == 0x5A)
 				{
-#if ECR8660_IN_USE
-					ECR8660_write(spi_mode, spi_addr, spi_data);
+#if AD9361_DEVICE
+					ad9361_spi_write(spi, spi_addr, spi_data);
 #endif
 				}
 				else if(wr_data[0] == 0x5B)
 				{
-#if ECR8660_IN_USE
+#if AD9361_DEVICE
 					// spi read
-					spi_data = ECR8660_Read(spi_mode, spi_addr, 1);
+					spi_data = ad9361_spi_read(spi, spi_addr);
 #else
 					spi_data = 0xa1b2c3e4;
 #endif
@@ -1093,11 +993,58 @@ void parse_spi_command()
 				{
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					if(bytes_number/4 <= 1024)
+					{
+						for(int sample = 0; sample < 1024; sample++)
+						{
+							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
+										(wr_data[sample*4 + 0] << 8) |
+										(wr_data[sample*4 + 3] << 16) |
+										(wr_data[sample*4 + 2] << 24);
+							zero_lut_iq[sample] = iq;
+						}
+						/* Reload transfer data memory and transfer the data */
+						if(tx_is_transfering == 1u)
+						{
+							/* Stop tranfering the data. */
+							axi_dmac_transfer_stop(tx_dmac);
+
+							/* Reload the waveform */
+							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, zero_lut_iq, zero_lut_iq,
+										 NO_OS_ARRAY_SIZE(sine_lut_iq),
+										 (uintptr_t)dac_buffer);
+							Xil_DCacheFlush();
+
+							/* Transfer the data. */
+							transfer.size = bytes_number;
+							axi_dmac_transfer_start(tx_dmac, &transfer);
+
+							/* Flush cache data. */
+							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+						}
+					}
 					no_os_mdelay(10);
 				}
 				else if(wr_data[0] == 0x5D)
 				{
+					/* Read the data from the ADC DMA. */
+					axi_dmac_transfer_start(rx_dmac, &read_transfer);
+
+					/* Wait until transfer finishes */
+					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
+
+					/* Flush cache data. */
+					Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
+
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					if(status < 0)
+					{
+						memset(wr_data, 0, bytes_number);
+					}
+					else
+					{
+						memcpy(wr_data, adc_buffer, bytes_number);
+					}
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					no_os_mdelay(10);
 				}

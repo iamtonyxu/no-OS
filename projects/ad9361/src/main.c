@@ -477,7 +477,8 @@ AD9361_InitParam default_init_param = {
 		.mode = NO_OS_SPI_MODE_1,
 		.chip_select = SPI_CS,
 		.platform_ops = SPI_OPS,
-		.extra = SPI_PARAM
+		.extra = SPI_PARAM,
+		//.max_speed_hz = 640000,
 	},
 
 	/* External LO clocks */
