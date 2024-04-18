@@ -821,7 +821,7 @@ int main(void)
 		delay 100ms
 		write 0 0x00201080 0x30000000    //RF闁绘粠鍨板ú鏍晬瀹�鍐惧晭缂傚啰鏁歩t[29]濞戞搫鎷�1
 */
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020505);
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020d0d); //2T2R FDD Mode
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004004, 0x00050005);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004008, 1950000);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004018, 2350000);
@@ -848,8 +848,12 @@ int main(void)
 #ifdef DMA_EXAMPLE
 
 #if ECR8660_DAC_TEST
-	  /* dac init */
+	  	/* dac init */
 		axi_dac_init(&ad9361_phy->tx_dac, &tx_dac_init);
+
+		/* adc init */
+		axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
+
 		extern const uint32_t sine_lut_iq[1024];
 		axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 #if 0
@@ -876,9 +880,6 @@ int main(void)
 #endif // end of #if ECR8660_DAC_TEST
 
 #if ECR8660_ADC_TEST
-	  	/* adc init */
-		axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
-   
 		/* check data sel is adc */
 		for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
 		{
