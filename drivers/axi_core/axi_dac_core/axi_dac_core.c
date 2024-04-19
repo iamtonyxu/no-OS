@@ -127,7 +127,7 @@ const uint16_t sine_lut[128] = {
 	0xCF0, 0xD4E, 0xDAD, 0xE0E, 0xE70, 0xED3, 0xF37, 0xF9B
 };
 
-uint32_t zero_lut_iq[1024] = {0u};
+uint32_t zero_lut_iq[16384] = {0u};
 
 const uint32_t sine_lut_iq[1024] = {
 	0x00002666, 0x01E2265A, 0x03C32636, 0x05A225FB, 0x077D25A9,

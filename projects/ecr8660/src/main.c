@@ -609,8 +609,6 @@ int main(void)
 	default_init_param.gpio_cal_sw1.number = -1;
 	default_init_param.gpio_cal_sw2.number = -1;
 
-	//DEBUG: add 3s delay
-	no_os_mdelay(3000);
 	printf("\nHello from ZYNQ...\n");
 
 	if (AD9364_DEVICE) {
@@ -829,7 +827,7 @@ int main(void)
 		ECR8660_write(SPI_RW_EXTERNAL, 0x20004030, 0x00008023);
 		ECR8660_write(SPI_RW_EXTERNAL, 0x00201180, 0x11110001);
 		no_os_mdelay(100);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
+		//ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
 	}
 
 	if((ECR8660_TestItem & ECR8660_FUNC_TEST) == ECR8660_FUNC_TEST)
@@ -854,7 +852,6 @@ int main(void)
 		/* adc init */
 		axi_adc_init(&ad9361_phy->rx_adc, &rx_adc_init);
 
-		extern const uint32_t sine_lut_iq[1024];
 		axi_dac_set_datasel(ad9361_phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 #if 0
   	axi_dac_load_custom_data(ad9361_phy->tx_dac, sine_lut_iq,
@@ -947,7 +944,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 	};
 
 	struct no_os_uart_desc *uart_desc;
-#define MAX_SIZE (8192*4)
+#define MAX_SIZE (16384*4*2)
 	uint32_t bytes_number = 10;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
@@ -998,9 +995,9 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				{
 					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
-					if(bytes_number/4 <= 1024)
+					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
 					{
-						for(int sample = 0; sample < 1024; sample++)
+						for(int sample = 0; sample < bytes_number/4; sample++)
 						{
 							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
 										(wr_data[sample*4 + 0] << 8) |
@@ -1016,7 +1013,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 
 							/* Reload the waveform */
 							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, zero_lut_iq, zero_lut_iq,
-										 NO_OS_ARRAY_SIZE(sine_lut_iq),
+										 NO_OS_ARRAY_SIZE(zero_lut_iq),
 										 (uintptr_t)dac_buffer);
 							Xil_DCacheFlush();
 
@@ -1025,7 +1022,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 							axi_dmac_transfer_start(tx_dmac, &transfer);
 
 							/* Flush cache data. */
-							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(zero_lut_iq));
 						}
 					}
 					no_os_mdelay(10);

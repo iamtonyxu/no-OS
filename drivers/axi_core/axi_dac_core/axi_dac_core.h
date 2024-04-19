@@ -104,7 +104,7 @@ struct axi_dac_channel {
 
 extern const uint16_t sine_lut[128];
 extern const uint32_t sine_lut_iq[1024];
-extern uint32_t zero_lut_iq[1024];
+extern uint32_t zero_lut_iq[16384];
 
 /******************************************************************************/
 /************************ Functions Declarations ******************************/
