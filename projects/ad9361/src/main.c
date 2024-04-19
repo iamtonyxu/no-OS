@@ -912,7 +912,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 	};
 
 	struct no_os_uart_desc *uart_desc;
-#define MAX_SIZE (8192*4)
+#define MAX_SIZE (16384*4*2)
 	uint32_t bytes_number = 10;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
@@ -961,11 +961,11 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5C)
 				{
-					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
-					if(bytes_number/4 <= 1024)
+					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
 					{
-						for(int sample = 0; sample < 1024; sample++)
+						for(int sample = 0; sample < bytes_number/4; sample++)
 						{
 							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
 										(wr_data[sample*4 + 0] << 8) |
@@ -981,7 +981,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 
 							/* Reload the waveform */
 							axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, zero_lut_iq, zero_lut_iq,
-										 NO_OS_ARRAY_SIZE(sine_lut_iq),
+										 NO_OS_ARRAY_SIZE(zero_lut_iq),
 										 (uintptr_t)dac_buffer);
 							Xil_DCacheFlush();
 
@@ -990,7 +990,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 							axi_dmac_transfer_start(tx_dmac, &transfer);
 
 							/* Flush cache data. */
-							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
+							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(zero_lut_iq));
 						}
 					}
 					no_os_mdelay(10);
@@ -1006,7 +1006,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					/* Flush cache data. */
 					Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
 
-					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					if(status < 0)
 					{
 						memset(wr_data, 0, bytes_number);
@@ -1015,7 +1015,20 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					{
 						memcpy(wr_data, adc_buffer, bytes_number);
 					}
-					no_os_uart_write(uart_desc, wr_data, bytes_number);
+
+					uint32_t bytes_send = 0u;
+					const uint32_t bytes_chunk = 4096u;
+
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+
 					no_os_mdelay(10);
 				}
 			}

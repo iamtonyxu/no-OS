@@ -47,7 +47,7 @@
 #define AD9363A_DEVICE			0 /* set it 1 if AD9363A device is used, 0 otherwise */
 
 #define AD9361_LVDS_INTERFACE   0 /* set it 1 if LVDS interface is in use */
-//#define XILINX_PLATFORM
+#define XILINX_PLATFORM
 //#define ALTERA_PLATFORM
 //#define LINUX_PLATFORM
 //#define FMCOMMS5
