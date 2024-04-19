@@ -993,7 +993,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				}
 				else if(wr_data[0] == 0x5C)
 				{
-					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
 					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
 					{
@@ -1040,7 +1040,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					/* Flush cache data. */
 					Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
 #endif
-					bytes_number = (wr_data[1] << 1*8) | (wr_data[2] << 0*8);
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					if(status < 0)
 					{
 						memset(wr_data, 0, bytes_number);
