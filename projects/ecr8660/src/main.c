@@ -1049,7 +1049,20 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					{
 						memcpy(wr_data, adc_buffer, bytes_number);
 					}
-					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					uint32_t bytes_send = 0u;
+					const uint32_t bytes_chunk = 4096u;
+
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+
+
 					no_os_mdelay(10);
 				}
 			}
