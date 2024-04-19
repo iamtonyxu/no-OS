@@ -157,7 +157,7 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
     time.sleep(1)
 
     # Read specified number of bytes
-    data = ser.read(num_bytes)
+    data = ser.read_all()
 
     data_i = []
     data_q = []
