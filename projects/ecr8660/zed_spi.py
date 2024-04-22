@@ -162,8 +162,8 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
     data_i = []
     data_q = []
     for i in range(cap_size):
-        data_i += [((data[4*i] << 8) | data[4*i+1])]
-        data_q += [((data[4*i+2] << 8)| data[4*i+3])]
+        data_i += [((data[4*i+1] << 8) | data[4*i])]
+        data_q += [((data[4*i+3] << 8)| data[4*i+2])]
 
     with open(file_path, 'w') as file:
         for i, q in zip(data_i, data_q):
