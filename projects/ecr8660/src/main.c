@@ -101,6 +101,8 @@ static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
 #include <string.h>
 #endif
 
+#define ECR8660_DEVICE          1
+
 typedef enum
 {
 	ECR8660_NONE	= 0,
@@ -812,7 +814,17 @@ int main(void)
 			printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
 			return status;
 		}
+	}
 
+	printf("\nerror_code = %d\n", error_code);
+
+#ifdef IIO_SUPPORT
+	status = start_iiod(rx_dmac, tx_dmac, ad9361_phy->rx_adc, ad9361_phy->tx_dac);
+	if (status)
+	{
+		printf("iiod error: %d\n", status);
+	}
+#else
 #ifdef DMA_EXAMPLE
 
 #if ECR8660_DAC_TEST
@@ -873,17 +885,7 @@ int main(void)
 #endif // ECR8660_ADC_TEST
 
 #endif // DMA_EXAMPLE
-	}
 
-	printf("\nerror_code = %d\n", error_code);
-
-#ifdef IIO_SUPPORT
-	status = start_iiod(rx_dmac, tx_dmac, ad9361_phy->rx_adc, ad9361_phy->tx_dac);
-	if (status)
-	{
-		printf("iiod error: %d\n", status);
-	}
-#else
 	while(1)
 	{
 		parse_spi_command(ad9361_phy->spi);
