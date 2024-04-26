@@ -89,19 +89,17 @@
 #if defined LINUX_PLATFORM || defined GENERIC_PLATFORM
 static uint8_t in_buff[MAX_SIZE_BASE_ADDR];
 static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
-#endif
+#endif // defined LINUX_PLATFORM || defined GENERIC_PLATFORM
 
-#endif // IIO_SUPPORT
-
+#else
 #include "no_os_uart.h"
 #include "xilinx_uart.h"
 #include "xil_cache.h"
+#endif // IIO_SUPPORT
 
 #if defined(DMA_EXAMPLE) || defined(SYSID_BASEADDR)
 #include <string.h>
 #endif
-
-#define ECR8660_DEVICE 1
 
 typedef enum
 {
@@ -142,30 +140,7 @@ struct xil_gpio_init_param xil_gpio_param = {
 #endif
 	.device_id = GPIO_DEVICE_ID
 };
-#if 0
-/**
- * uart configurations.
- */
-struct xil_uart_init_param platform_uart_init_par = {
-#ifdef XPAR_XUARTLITE_NUM_INSTANCES
-	.type = UART_PL,
-#else
-	.type = UART_PS,
-	.irq_id = UART_IRQ_ID
-#endif
-};
 
-struct no_os_uart_init_param iio_uart_ip = {
-	.device_id = UART_DEVICE_ID,
-	.irq_id = UART_IRQ_ID,
-	.baud_rate = UART_BAUDRATE,
-	.size = NO_OS_UART_CS_8,
-	.parity = NO_OS_UART_PAR_NO,
-	.stop = NO_OS_UART_STOP_1_BIT,
-	.extra = &platform_uart_init_par,
-	.platform_ops = &xil_uart_ops
-};
-#endif
 #define GPIO_OPS	&xil_gpio_ops
 #define SPI_OPS		&xil_spi_ops
 #define GPIO_PARAM	&xil_gpio_param
@@ -668,7 +643,7 @@ int main(void)
 			return -ENOMEM;
 		}
 		ad9361_phy->adc_state->phy = ad9361_phy;
-#endif
+#endif // AXI_ADC_NOT_PRESENT
 
 		if(error_code == NO_ERROR)
 		{
@@ -808,26 +783,16 @@ int main(void)
 			else
 				printf("\nECR8660_CodeDownload() done.\n");
 		}
-/*
-		write 0 0x20004000 0x00020505       //闂佹澘绉堕悿锟� 1T1R_FDD 闁活煉鎷� CH0 婵☆垪锟藉磭纭�闁挎冻鎷� API 闂佹澘绉堕悿鍡涘礃閸涙潙鍔ラ悽顖ょ畱椤旀棃宕仦鐓庘枏闁烩偓鍔戦。鍫曟偝閸ヮ煂浣割嚕閿燂拷
-		write 0 0x20004004 0x00050005      //闁革负鍔戦。鍫曟偝閸ヮ煂浣割嚕韫囥儳绀� IForFREQUE=1闁挎稑顦粭鍛村礂椤掑倻绉笲W:20MHz
-		write 0 0x20004008 1950000           //閻炴稏鍔庨妵姝硏濡増鍨归崑锟�1950M闁挎稑鑻々褔寮稿锟界粭澶愬绩椤栨稑鐦�10閺夆晜绋戦崺妤冩啺娴ｈ鏆柟杈炬嫹16閺夆晜绋戦崺锟�
-		write 0 0x20004018 2350000           //閻炴稏鍔庨妵姝祒濡増鍨归崑锟�2350M闁挎稑鑻々褔寮稿锟界粭澶愬绩椤栨稑鐦�10閺夆晜绋戦崺妤冩啺娴ｈ鏆柟杈炬嫹16閺夆晜绋戦崺锟�
-		write 0 0x20004028 0x00008038     //閻炴稏鍔庨妵姝硏濠⒀呭仧濞夛拷8001~8038
-		write 0 0x20004030 0x00008023     //閻炴稏鍔庨妵姝祒濠⒀呭仧濞夛拷8001~8023
-		write 0 0x00201180 0x11110001     //閻炴稏鍔庨妵锟�1婵☆垪锟藉磭纭�濞戞搩鍘介弻鍥晬瀹�鍐惧晭缂傚喚鍣ｉ敓鑺ュ哺娴滐拷0 A缂佹棏鍨拌ぐ娑欐綇閹惧啿姣�
-		delay 100ms
-		write 0 0x00201080 0x30000000    //RF闁绘粠鍨板ú鏍晬瀹�鍐惧晭缂傚啰鏁歩t[29]濞戞搫鎷�1
-*/
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020d0d); //2T2R FDD Mode
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004004, 0x00050005);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004008, 1950000);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004018, 2350000);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004028, 0x00008038);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x20004030, 0x00008023);
-		ECR8660_write(SPI_RW_EXTERNAL, 0x00201180, 0x11110001);
+
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004000, 0x00020d0d);//2T2R FDD Mode
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004004, 0x00050005);//20M BW
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004008, 1950000);//RX LO = 1950M
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004018, 2350000);//TX LO = 2350M
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004028, 0x00008038);//RX Gain at 8038 level
+		ECR8660_write(SPI_RW_EXTERNAL, 0x20004030, 0x00008023);//Tx Gain at 8023 level
+		ECR8660_write(SPI_RW_EXTERNAL, 0x00201180, 0x11110001);//Normal Mode
 		no_os_mdelay(100);
-		//ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000);
+		//ECR8660_write(SPI_RW_EXTERNAL, 0x00201080, 0x30000000); //Loop Test, Rx2Tx
 	}
 
 	if((ECR8660_TestItem & ECR8660_FUNC_TEST) == ECR8660_FUNC_TEST)
@@ -874,7 +839,7 @@ int main(void)
 		tx_is_transfering = 1u;
 
 		no_os_mdelay(1000);
-#endif // end of #if ECR8660_DAC_TEST
+#endif // ECR8660_DAC_TEST
 
 #if ECR8660_ADC_TEST
 		/* check data sel is adc */
@@ -900,19 +865,170 @@ int main(void)
 		printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
 			   (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
 			   8 * sizeof(adc_buffer[0]));
-#endif // end of #if ECR8660_ADC_TEST
+#endif // ECR8660_ADC_TEST
 
-#endif //end of #ifdef DMA_EXAMPLE
+#endif // DMA_EXAMPLE
 	}
 
 	printf("\nerror_code = %d\n", error_code);
 
+#ifdef IIO_SUPPORT
+
+#ifdef SYSID_BASEADDR
+	struct axi_sysid *sysid_core;
+	char *name = NULL;
+	struct axi_sysid_init_param sysid_init = {
+		.base = SYSID_BASEADDR,
+	};
+#endif // SYSID_BASEADDR
+
+	/**
+	 * iio application configurations.
+	 */
+	struct xil_uart_init_param platform_uart_init_par = {
+#ifdef XPAR_XUARTLITE_NUM_INSTANCES
+		.type = UART_PL,
+#else
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+#endif // XPAR_XUARTLITE_NUM_INSTANCES
+	};
+
+	struct no_os_uart_init_param iio_uart_ip = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+#ifdef SYSID_BASEADDR
+	status = axi_sysid_init(&sysid_core, &sysid_init);
+	if (status)
+		return status;;
+
+	name = axi_sysid_get_fpga_board(sysid_core);
+	if (!strcmp("zed", name))
+		iio_uart_ip.baud_rate = 115200;
+
+	status = axi_sysid_remove(sysid_core);
+	if (status)
+		return status;
+#endif // SYSID_BASEADDR
+
+	struct iio_app_desc *app;
+	struct iio_app_init_param app_init_param = { 0 };
+
+	/**
+	 * iio axi adc configurations.
+	 */
+	struct iio_axi_adc_init_param iio_axi_adc_init_par;
+
+	/**
+	 * iio axi dac configurations.
+	 */
+	struct iio_axi_dac_init_param iio_axi_dac_init_par;
+
+	/**
+	 * iio ad9361 configurations.
+	 */
+	struct iio_ad9361_init_param iio_ad9361_init_param;
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_adc_desc *iio_axi_adc_desc;
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_dac_desc *iio_axi_dac_desc;
+
+	/**
+	 * iio ad9361 instance descriptor.
+	 */
+	struct iio_ad9361_desc *iio_ad9361_desc;
+
+	/**
+	 * iio devices corresponding to every device.
+	 */
+	struct iio_device *adc_dev_desc, *dac_dev_desc, *ad9361_dev_desc;
+
+	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
+	if(status < 0)
+		return status;
+
+	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
+		.rx_adc = ad9361_phy->rx_adc,
+		.rx_dmac = rx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_invalidate_range = (void (*)(uint32_t,
+						     uint32_t))Xil_DCacheInvalidateRange
+#endif // PLATFORM_MB
+	};
+
+	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
+	if(status < 0)
+		return status;
+	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
+
+	struct iio_data_buffer read_buff = {
+		.buff = (void *)ADC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+	iio_axi_dac_init_par = (struct iio_axi_dac_init_param) {
+		.tx_dac = ad9361_phy->tx_dac,
+		.tx_dmac = tx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_flush_range = (void (*)(uint32_t, uint32_t))Xil_DCacheFlushRange,
+#endif // PLATFORM_MB
+	};
+
+	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_dac_get_dev_descriptor(iio_axi_dac_desc, &dac_dev_desc);
+
+	struct iio_data_buffer write_buff = {
+		.buff = (void *)DAC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+	iio_ad9361_init_param = (struct iio_ad9361_init_param) {
+		.ad9361_phy = ad9361_phy,
+	};
+
+	status = iio_ad9361_init(&iio_ad9361_desc, &iio_ad9361_init_param);
+	if (status < 0)
+		return status;
+	iio_ad9361_get_dev_descriptor(iio_ad9361_desc, &ad9361_dev_desc);
+
+	struct iio_app_device devices[] = {
+		IIO_APP_DEVICE("cf-ecr8860-lpc", iio_axi_adc_desc, adc_dev_desc, &read_buff, NULL, NULL),
+		IIO_APP_DEVICE("cf-ecr8860-dds-core-lpc", iio_axi_dac_desc, dac_dev_desc, NULL, &write_buff, NULL),
+		//IIO_APP_DEVICE("ecr8860-phy", ad9361_phy, ad9361_dev_desc, NULL, NULL, NULL),
+	};
+
+	app_init_param.devices = devices;
+	app_init_param.nb_devices = NO_OS_ARRAY_SIZE(devices);
+	app_init_param.uart_init_params = iio_uart_ip;
+
+	status = iio_app_init(&app, app_init_param);
+	if (status)
+		return status;
+	iio_app_run(app);
+#else
 	while(1)
 	{
 		parse_spi_command(ad9361_phy->spi);
 	}
 
-#endif
+#endif // IIO_SUPPORT
+#endif // ECR8660_DEVICE
 
 	ad9361_remove(ad9361_phy);
 
