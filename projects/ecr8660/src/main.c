@@ -101,6 +101,8 @@ static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
 #include <string.h>
 #endif
 
+#define ECR8660_DEVICE          1 /* set it 1 if ECR8660 device is used, 0 otherwise */
+
 typedef enum
 {
 	ECR8660_NONE	= 0,
