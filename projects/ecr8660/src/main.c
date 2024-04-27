@@ -560,11 +560,6 @@ struct ad9361_rf_phy *ad9361_phy;
 
 void parse_spi_command(struct no_os_spi_desc *spi);
 
-#ifdef IIO_SUPPORT
-int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
-		   struct axi_adc *rx_adc, struct axi_dac *tx_dac);
-#endif
-
 /***************************************************************************//**
  * @brief main
 *******************************************************************************/
@@ -878,11 +873,154 @@ int main(void)
 	printf("\nerror_code = %d\n", error_code);
 
 #ifdef IIO_SUPPORT
-	status = start_iiod(rx_dmac, tx_dmac, ad9361_phy->rx_adc, ad9361_phy->tx_dac);
+
+#ifdef SYSID_BASEADDR
+	struct axi_sysid *sysid_core;
+	char *name = NULL;
+	struct axi_sysid_init_param sysid_init = {
+		.base = SYSID_BASEADDR,
+	};
+#endif // SYSID_BASEADDR
+
+	/**
+	 * iio application configurations.
+	 */
+	struct xil_uart_init_param platform_uart_init_par = {
+#ifdef XPAR_XUARTLITE_NUM_INSTANCES
+		.type = UART_PL,
+#else
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+#endif // XPAR_XUARTLITE_NUM_INSTANCES
+	};
+
+	struct no_os_uart_init_param iio_uart_ip = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+#ifdef SYSID_BASEADDR
+	status = axi_sysid_init(&sysid_core, &sysid_init);
 	if (status)
-	{
-		printf("iiod error: %d\n", status);
-	}
+		return status;;
+
+	name = axi_sysid_get_fpga_board(sysid_core);
+	if (!strcmp("zed", name))
+		iio_uart_ip.baud_rate = 115200;
+
+	status = axi_sysid_remove(sysid_core);
+	if (status)
+		return status;
+#endif // SYSID_BASEADDR
+
+	struct iio_app_desc *app;
+	struct iio_app_init_param app_init_param = { 0 };
+
+	/**
+	 * iio axi adc configurations.
+	 */
+	struct iio_axi_adc_init_param iio_axi_adc_init_par;
+
+	/**
+	 * iio axi dac configurations.
+	 */
+	struct iio_axi_dac_init_param iio_axi_dac_init_par;
+
+	/**
+	 * iio ad9361 configurations.
+	 */
+	struct iio_ad9361_init_param iio_ad9361_init_param;
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_adc_desc *iio_axi_adc_desc;
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_dac_desc *iio_axi_dac_desc;
+
+	/**
+	 * iio ad9361 instance descriptor.
+	 */
+	struct iio_ad9361_desc *iio_ad9361_desc;
+
+	/**
+	 * iio devices corresponding to every device.
+	 */
+	struct iio_device *adc_dev_desc, *dac_dev_desc, *ad9361_dev_desc;
+
+	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
+	if(status < 0)
+		return status;
+
+	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
+		.rx_adc = ad9361_phy->rx_adc,
+		.rx_dmac = rx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_invalidate_range = (void (*)(uint32_t,
+						     uint32_t))Xil_DCacheInvalidateRange
+#endif // PLATFORM_MB
+	};
+
+	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
+	if(status < 0)
+		return status;
+	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
+
+	struct iio_data_buffer read_buff = {
+		.buff = (void *)ADC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+	iio_axi_dac_init_par = (struct iio_axi_dac_init_param) {
+		.tx_dac = ad9361_phy->tx_dac,
+		.tx_dmac = tx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_flush_range = (void (*)(uint32_t, uint32_t))Xil_DCacheFlushRange,
+#endif // PLATFORM_MB
+	};
+
+	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_dac_get_dev_descriptor(iio_axi_dac_desc, &dac_dev_desc);
+
+	struct iio_data_buffer write_buff = {
+		.buff = (void *)DAC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+	iio_ad9361_init_param = (struct iio_ad9361_init_param) {
+		.ad9361_phy = ad9361_phy,
+	};
+
+	status = iio_ad9361_init(&iio_ad9361_desc, &iio_ad9361_init_param);
+	if (status < 0)
+		return status;
+	iio_ad9361_get_dev_descriptor(iio_ad9361_desc, &ad9361_dev_desc);
+
+	struct iio_app_device devices[] = {
+		IIO_APP_DEVICE("cf-ecr8860-lpc", iio_axi_adc_desc, adc_dev_desc, &read_buff, NULL, NULL),
+		IIO_APP_DEVICE("cf-ecr8860-dds-core-lpc", iio_axi_dac_desc, dac_dev_desc, NULL, &write_buff, NULL),
+		//IIO_APP_DEVICE("ecr8860-phy", ad9361_phy, ad9361_dev_desc, NULL, NULL, NULL),
+	};
+
+	app_init_param.devices = devices;
+	app_init_param.nb_devices = NO_OS_ARRAY_SIZE(devices);
+	app_init_param.uart_init_params = iio_uart_ip;
+
+	status = iio_app_init(&app, app_init_param);
+	if (status)
+		return status;
+	iio_app_run(app);
 #else
 	while(1)
 	{
@@ -1048,95 +1186,3 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 	}
 	no_os_uart_remove(&uart_desc);
 }
-
-#ifdef IIO_SUPPORT
-int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
-		   struct axi_adc *rx_adc, struct axi_dac *tx_dac)
-{
-	struct iio_axi_adc_init_param	iio_axi_adc_init_par;
-	struct iio_axi_dac_init_param	iio_axi_dac_init_par;
-	struct iio_app_init_param app_init_param = { 0 };
-	struct iio_axi_adc_desc		*iio_axi_adc_desc;
-	struct iio_axi_dac_desc		*iio_axi_dac_desc;
-	struct iio_device		*adc_dev_desc;
-	struct iio_device		*dac_dev_desc;
-	struct iio_app_desc *app;
-	int32_t				status;
-	struct xil_uart_init_param platform_uart_init_par = {
-#ifdef XPAR_XUARTLITE_NUM_INSTANCES
-		.type = UART_PL,
-#else
-		.type = UART_PS,
-		.irq_id = UART_IRQ_ID
-#endif
-	};
-
-	struct no_os_uart_init_param iio_uart_ip = {
-		.device_id = UART_DEVICE_ID,
-		.irq_id = UART_IRQ_ID,
-		.baud_rate = UART_BAUDRATE,
-		.size = NO_OS_UART_CS_8,
-		.parity = NO_OS_UART_PAR_NO,
-		.stop = NO_OS_UART_STOP_1_BIT,
-		.extra = &platform_uart_init_par,
-		.platform_ops = &xil_uart_ops
-	};
-
-	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
-		.rx_adc = rx_adc,
-		.rx_dmac = rx_dmac,
-#ifndef PLATFORM_MB
-		.dcache_invalidate_range = (void (*)(uint32_t,
-						     uint32_t))Xil_DCacheInvalidateRange
-#endif
-	};
-
-	iio_axi_dac_init_par = (struct iio_axi_dac_init_param) {
-		.tx_dac = tx_dac,
-		.tx_dmac = tx_dmac,
-#ifndef PLATFORM_MB
-		.dcache_flush_range = (void (*)(uint32_t, uint32_t))Xil_DCacheFlushRange,
-#endif
-	};
-
-	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
-	if (status < 0)
-		return status;
-
-	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
-	if(status < 0)
-		return status;
-
-	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
-
-	iio_axi_dac_get_dev_descriptor(iio_axi_dac_desc, &dac_dev_desc);
-
-	struct iio_data_buffer read_buff = {
-		.buff = (void *)ADC_DDR_BASEADDR,
-		.size = 0xFFFFFFFF,
-	};
-
-	struct iio_data_buffer write_buff = {
-		.buff = (void *)DAC_DDR_BASEADDR,
-		.size = 0xFFFFFFFF,
-	};
-
-	struct iio_app_device devices[] = {
-		IIO_APP_DEVICE("axi_adc", iio_axi_adc_desc, adc_dev_desc,
-			       &read_buff, NULL, NULL),
-		IIO_APP_DEVICE("axi_dac", iio_axi_dac_desc, dac_dev_desc,
-			       NULL, &write_buff, NULL)
-	};
-
-	app_init_param.devices = devices;
-	app_init_param.nb_devices = NO_OS_ARRAY_SIZE(devices);
-	app_init_param.uart_init_params = iio_uart_ip;
-
-	status = iio_app_init(&app, app_init_param);
-	if (status)
-		return status;
-
-	return iio_app_run(app);
-}
-
-#endif // IIO_SUPPORT
