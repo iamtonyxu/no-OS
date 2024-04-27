@@ -1001,16 +1001,15 @@ int main(void)
 	iio_ad9361_init_param = (struct iio_ad9361_init_param) {
 		.ad9361_phy = ad9361_phy,
 	};
-
+#if 0
 	status = iio_ad9361_init(&iio_ad9361_desc, &iio_ad9361_init_param);
 	if (status < 0)
 		return status;
 	iio_ad9361_get_dev_descriptor(iio_ad9361_desc, &ad9361_dev_desc);
-
+#endif
 	struct iio_app_device devices[] = {
 		IIO_APP_DEVICE("cf-ecr8860-lpc", iio_axi_adc_desc, adc_dev_desc, &read_buff, NULL, NULL),
 		IIO_APP_DEVICE("cf-ecr8860-dds-core-lpc", iio_axi_dac_desc, dac_dev_desc, NULL, &write_buff, NULL),
-		//IIO_APP_DEVICE("ecr8860-phy", ad9361_phy, ad9361_dev_desc, NULL, NULL, NULL),
 	};
 
 	app_init_param.devices = devices;
