@@ -1,5 +1,5 @@
 # Uncomment to use the desired platform
-# PLATFORM = xilinx
+PLATFORM = xilinx
 # PLATFORM = altera
 # PLATFORM = aducm3029
 # PLATFORM = stm32

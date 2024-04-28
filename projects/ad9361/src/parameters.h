@@ -49,7 +49,7 @@
 /********************** Macros and Constants Definitions **********************/
 /******************************************************************************/
 #ifdef _XPARAMETERS_PS_H_
-#define UART_BAUDRATE 115200
+#define UART_BAUDRATE (115200*8)
 #define SYSID_BASEADDR			XPAR_AXI_SYSID_0_BASEADDR
 #else
 #define UART_BAUDRATE 115200
