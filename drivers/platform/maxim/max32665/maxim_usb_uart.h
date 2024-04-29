@@ -1,9 +1,9 @@
 /***************************************************************************//**
- *   @file   adis1650x.h
- *   @brief  Implementation of adis1650x.h
- *   @author RBolboac (ramona.bolboaca@analog.com)
- *******************************************************************************
- * Copyright 2023(c) Analog Devices, Inc.
+ *   @file   maxim_usb_uart.h
+ *   @brief  Header file of USB CDC ACM driver for maxim platform.
+ *   @author Darius Berghe (darius.berghe@analog.com)
+********************************************************************************
+ * Copyright 2024(c) Analog Devices, Inc.
  *
  * All rights reserved.
  *
@@ -35,27 +35,33 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- ******************************************************************************/
+*******************************************************************************/
 
-#ifndef __ADIS1650X_H__
-#define __ADIS1650X_H__
+#ifndef MAXIM_USB_UART_H_
+#define MAXIM_USB_UART_H_
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
+#include "no_os_irq.h"
+#include "no_os_uart.h"
 
-#include "adis.h"
+/**
+ * @brief Aditional UART config parameters
+ */
+struct max_usb_uart_init_param {
+	uint16_t vid;
+	uint16_t pid;
+};
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
+/**
+ * @brief Platform specific UART state
+ */
+struct max_usb_uart_desc {
+	/** Controller that handles UART interrupts */
+	struct no_os_irq_ctrl_desc *nvic;
+};
 
-#define ADIS1650X_ID_NO_OFFSET(x) ((x) - ADIS16500)
-
-/******************************************************************************/
-/************************ Variables Declarations ******************************/
-/******************************************************************************/
-
-extern const struct adis_chip_info adis1650x_chip_info;
+/**
+ * @brief Maxim specific UART platform ops structure
+ */
+extern const struct no_os_uart_platform_ops max_usb_uart_ops;
 
 #endif
