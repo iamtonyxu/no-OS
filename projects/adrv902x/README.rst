@@ -40,10 +40,10 @@ A successful build should end with the following terminal output:
 
 .. code-block:: bash
 
-      text	   data	    bss	    dec	    hex	filename
-   1213464	 368588	1239624	2821676	 2b0e2c	/home/george/max_workspace/no-OS/projects/adrv902x/build/adrv902x.elf
-   [12:05:21] CreatinMake sure to connect your adrv9002 evaluation board to the correct FMC connector or the carrier you use: g BOOT.BIN and archive with files
-   [12:03:56] Done (build/adrv902x.elf)
+	[23:38:48] Creating BOOT.BIN and archive with files
+	text	   data	    bss	    dec	    hex	filename
+	1213864	 368588	1239608	2822060	 2b0fac	/home/george/max_workspace/no-OS/projects/adrv902x/build/adrv902x.elf
+	[23:36:50] Done (build/adrv902x.elf)
 
 Make sure to connect your adrv902x evaluation board to the correct FMC connector or the carrier you use before programming it.
 
@@ -52,7 +52,7 @@ Fore more details about the available make rules, check out `this page <https://
 Project Layout and HDL Generation
 =================================
 
-This is how the `adrv902x no-OS project <https://github.com/analogdevicesinc/no-OS/tree/madura_proj/projects/adrv902x>`_ looks like as a file tree:
+This is how the `adrv902x no-OS project <https://github.com/analogdevicesinc/no-OS/tree/main/projects/adrv902x>`_ looks like as a file tree:
 
 | no-OS/projects/adrv902x/
 | ├── Makefile
@@ -118,6 +118,39 @@ And this is how the corresponding `drivers section <https://github.com/analogdev
 | └── platforms
 |     ├── adi_platform.h
 |     └── adi_platform_types.h
+
+Switching Between Use Cases
+===========================
+
+When the implementation of a different use case than the one in the project folder is desired, the following steps have to be followed:
+
+1. From the Madura TES GUI, generate the resources folder that contains the files listed below:
+
+* Firmware files (ADRV9025_FW.bin and ADRV9025_DPDCORE_FW.bin),
+
+* Stream binary (e.g., stream_image_6E3E00EFB74FE7D465FA88A171B81B8F.bin),
+
+* ActiveUseCase.profile and ActiveUtilInit.profile.
+
+2. Since no-OS does not have mechanisms for manipulating files, create a hex dump for each .bin file. As can be seen in the project structure, these are added as header files to the project.
+
+* Use the following command for storing the hex dump in a file::
+
+	xxd -i ADRV9025_FW.bin > ADRV9025_FW.h
+
+* Copy the generated unsigned char array to the correspoding header file in the `project structure <https://github.com/analogdevicesinc/no-OS/tree/main/projects/adrv902x/src/common/firmware>`_ (ADRV9025_FW.bin, ADRV9025_DPDCORE_FW.bin or stream_image_x.bin).
+
+3. Profile files also have to be transformed for being included in the project:
+
+* Generate string literals from the json files using the `json2cstring.sh <https://github.com/analogdevicesinc/no-OS/blob/main/projects/adrv902x/json2cstring.sh>`_ script in the `no-OS project <https://github.com/analogdevicesinc/no-OS/blob/main/projects/adrv902x>`_::
+
+	./json2cstring path/ActiveUseCase.profile
+
+* Copy the contents of the generated files to the correspoding header files in the `project structure <https://github.com/analogdevicesinc/no-OS/tree/main/projects/adrv902x/src/common/firmware>`_ (ActiveUseCase_profile.h and ActiveUtilInit_profile.h).
+
+4. Modify the code in the project so that the new settings are correctly used (e.g., `app_config.h <https://github.com/analogdevicesinc/no-OS/blob/main/projects/adrv902x/src/common/app_config.h>`_).
+
+5. Build the project.
 
 Demo Applications
 =================
@@ -211,7 +244,7 @@ At this point you may use a Tcl script to retrieve data from memory and store it
 
 You can find more information about  the data `here <https://wiki.analog.com/resources/no-os/dac_dma_example>`_.
 
-The data in the .csv files generated can be visualised using the `plot.py <https://github.com/analogdevicesinc/no-OS/blob/main/tools/scripts/platform/xilinx/plot.py>`_ script in the `no-OS repository <https://github.com/analogdevicesinc/no-OS/tree/master>`_. The following command will display the data on all 8 channels:
+The data in the .csv files generated can be visualised using the `plot.py <https://github.com/analogdevicesinc/no-OS/blob/main/tools/scripts/platform/xilinx/plot.py>`_ script in the `no-OS repo <https://github.com/analogdevicesinc/no-OS>`_. The following command will display the data on all 8 channels:
 
 .. code-block:: bash
 
