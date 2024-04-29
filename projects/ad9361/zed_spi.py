@@ -82,7 +82,7 @@ def download_waveform(data_i, data_q):
     
     # Convert lengths to 2 bytes and append
     length = len(data_i) * 2 * 2 # Assuming data_i and data_q are the same length
-    message += [(length >> 16) & 0xFF, & (length >> 8) & 0xFF, length & 0xFF]
+    message += [(length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]
     
     # zeros padding
     for i in range(6):

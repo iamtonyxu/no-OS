@@ -82,7 +82,7 @@ def download_waveform(data_i, data_q):
     
     # Convert lengths to 2 bytes and append
     length = len(data_i) * 2 * 2 # Assuming data_i and data_q are the same length
-    message += [(length >> 16) & 0xFF, & (length >> 8) & 0xFF, length & 0xFF]
+    message += [(length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]
     
     # zeros padding
     for i in range(6):
@@ -171,6 +171,50 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
             
     print(f"Received {num_bytes} bytes and saved to {file_path}")
 
+def read_binfile(file_path):
+    # Open the file
+    with open(file_path, 'r') as file:
+        # Read lines from the file
+        lines = file.readlines()
+
+    # Initialize an empty list to store the converted uint32_t values
+    uint32_values = []
+
+    # Process each line
+    for line in lines:
+        # Remove whitespace and split the line by comma
+        hex_values = line.strip().split(',')
+
+        # Process every four hex values
+        for i in range(0, len(hex_values), 4):
+            # Slice out four hex values
+            hex_chunk = hex_values[i:i+4]
+
+            # Ensure we have exactly four hex values to process
+            if len(hex_chunk) == 4:
+                # Convert hex values to a single uint32_t
+                # Each hex is converted to an integer and shifted according to its position
+                uint32_value = (int(hex_chunk[0], 16) << 24) + \
+                               (int(hex_chunk[1], 16) << 16) + \
+                               (int(hex_chunk[2], 16) << 8) + \
+                               int(hex_chunk[3], 16)
+                # Append the result to the list
+                uint32_values.append(uint32_value)
+
+    return uint32_values
+
+# NOTE: this function download_binfile is not verified!
+def download_binfile(bin_file = r'c:/tmp/ECR866X_MCU_V0.2.71.hex' ):
+    bin_data = read_binfile(bin_file)
+    #print("bin_data:", bin_data)
+    ECR8660_CODE_ADDR_HEAD = 0
+    address = ECR8660_CODE_ADDR_HEAD
+    mode = 0
+    for data in bin_data:
+        print(f"{data:#x}")
+        #spi_write(mode, address, data)
+        address = address + 4
+
 ######################################################
 if __name__ == "__main__":
     ports = list_serial_ports()
@@ -179,17 +223,19 @@ if __name__ == "__main__":
         print(port)
 
 # Initialize your serial connection here
-ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
-ser.isOpen()
+#ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
+#ser.isOpen()
 
 ## example: spi_write, spi_read
 #spi_write(0, 0x20212223, 0x30313233)
 #spi_read(1, 0x20212223)
 
 ## example: download_waveformfile
-download_waveformfile()
+#download_waveformfile()
 
 ## example: save capture data
-read_capture()
+#read_capture()
 
-ser.close()
+#ser.close()
+
+download_binfile()
