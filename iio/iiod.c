@@ -388,6 +388,7 @@ static void conn_clean_state(struct iiod_conn_priv *conn)
 	memset(&conn->cmd_data, 0, sizeof(conn->cmd_data));
 	memset(&conn->res, 0, sizeof(conn->res));
 	memset(&conn->nb_buf, 0, sizeof(conn->nb_buf));
+	memset(&conn->parser_buf, 0, sizeof(conn->parser_buf));
 
 	conn->res.buf.buf = NULL;
 	conn->res.buf.idx = 0;
