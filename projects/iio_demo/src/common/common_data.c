@@ -52,7 +52,7 @@ static uint16_t loopback_buffs[DEMO_CHANNELS][SAMPLES_PER_CHANNEL];
 struct no_os_uart_init_param iio_demo_uart_ip = {
 	.device_id = UART_DEVICE_ID,
 	.irq_id = UART_IRQ_ID,
-	.asynchronous_rx = true,
+	.asynchronous_rx = false,
 	.baud_rate = UART_BAUDRATE,
 	.size = NO_OS_UART_CS_8,
 	.parity = NO_OS_UART_PAR_NO,
