@@ -15,6 +15,7 @@
 #include "no_os_spi.h"
 #include "no_os_error.h"
 #include "no_os_delay.h"
+#include "no_os_uart.h"
 #include "parameters.h"
 #include "no_os_util.h"
 #include "axi_dac_core.h"
@@ -24,6 +25,7 @@
 #include "xil_cache.h"
 #include "xilinx_gpio.h"
 #include "xilinx_spi.h"
+#include "xilinx_uart.h"
 #else
 #include "altera_spi.h"
 #include "altera_gpio.h"
@@ -36,6 +38,20 @@
 #include "app_transceiver.h"
 #include "app_talise.h"
 #include "ad9528.h"
+
+#define ADRV9009_DEVICE 1
+#define DAC_BUFFER_SAMPLES 16384
+#define ADC_BUFFER_SAMPLES 16384
+
+#ifdef DMA_EXAMPLE
+
+struct no_os_gpio_desc *gpio_plddrbypass;
+struct no_os_gpio_init_param gpio_init_plddrbypass;
+extern const uint32_t sine_lut_iq[1024];
+extern uint32_t zero_lut_iq[16384];
+uint8_t tx_is_transfering = 0u;
+
+#endif
 
 #ifdef IIO_SUPPORT
 
@@ -157,6 +173,115 @@ int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
 
 #endif // IIO_SUPPORT
 
+void parse_spi_command(void *devHalInfo);
+
+	struct axi_adc_init rx_adc_init = {
+		"rx_adc",
+		RX_CORE_BASEADDR,
+		TALISE_NUM_CHANNELS
+	};
+	struct axi_adc *rx_adc;
+
+	struct axi_adc_init rx_os_adc_init = {
+		"rx_os_adc",
+		RX_OS_CORE_BASEADDR,
+		TALISE_NUM_CHANNELS / 2
+	};
+	struct axi_adc *rx_os_adc;
+
+	struct axi_dac_init tx_dac_init = {
+		"tx_dac",
+		TX_CORE_BASEADDR,
+		TALISE_NUM_CHANNELS,
+		NULL,
+		3
+	};
+	struct axi_dac *tx_dac;
+
+	struct axi_dmac_init rx_dmac_init = {
+		"rx_dmac",
+		RX_DMA_BASEADDR,
+		IRQ_DISABLED
+	};
+	struct axi_dmac *rx_dmac;
+
+	struct axi_dmac_init rx_os_dmac_init = {
+		"rx_os_dmac",
+		RX_OS_DMA_BASEADDR,
+		IRQ_DISABLED
+	};
+	struct axi_dmac *rx_os_dmac;
+
+	struct axi_dmac_init tx_dmac_init = {
+		"tx_dmac",
+		TX_DMA_BASEADDR,
+		IRQ_DISABLED
+	};
+	struct axi_dmac *tx_dmac;
+
+#ifndef ALTERA_PLATFORM
+	struct xil_spi_init_param hal_spi_param = {
+#ifdef PLATFORM_MB
+		.type = SPI_PL,
+#else
+		.type = SPI_PS,
+#endif
+		.flags = SPI_CS_DECODE
+	};
+	struct xil_gpio_init_param hal_gpio_param = {
+#ifdef PLATFORM_MB
+		.type = GPIO_PL,
+#else
+		.type = GPIO_PS,
+#endif
+		.device_id = GPIO_DEVICE_ID
+	};
+#else
+	struct altera_spi_init_param hal_spi_param = {
+		.type = NIOS_II_SPI,
+		.base_address = SPI_BASEADDR
+	};
+	struct altera_gpio_init_param hal_gpio_param = {
+		.type = NIOS_II_GPIO,
+		.device_id = 0,
+		.base_address = GPIO_BASEADDR
+	};
+
+	hal.extra_gpio = &hal_gpio_param;
+#endif
+
+	/* Transfer 16384 samples from MEM to ADC */
+	struct axi_dma_transfer transfer_tx = {
+		// Number of bytes to write/read
+		.size = sizeof(sine_lut_iq),
+		// Transfer done flag
+		.transfer_done = 0,
+		// Signal transfer mode
+#ifdef IIO_SUPPORT
+		.cyclic = CYCLIC,
+#else
+		.cyclic = NO,
+#endif
+		// Address of data source
+		.src_addr = (uintptr_t)DAC_DDR_BASEADDR,
+		// Address of data destination
+		.dest_addr = 0
+	};
+
+	/* Transfer 16384 samples from ADC to MEM */
+	struct axi_dma_transfer transfer_rx = {
+		// Number of bytes to write/read, need to be updated later
+		.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS,
+		// Transfer done flag
+		.transfer_done = 0,
+		// Signal transfer mode
+		.cyclic = NO,
+		// Address of data source
+		.src_addr = 0,
+		// Address of data destination
+		.dest_addr = (uintptr_t)(ADC_DDR_BASEADDR)
+	};
+
 /**********************************************************/
 /**********************************************************/
 /********** Talise Data Structure Initializations ********/
@@ -243,11 +368,6 @@ int main(void)
 	};
 	struct axi_dmac *tx_dmac;
 
-#ifdef DMA_EXAMPLE
-	struct no_os_gpio_desc *gpio_plddrbypass;
-	struct no_os_gpio_init_param gpio_init_plddrbypass;
-	extern const uint32_t sine_lut_iq[1024];
-#endif
 #ifndef ALTERA_PLATFORM
 	struct xil_spi_init_param hal_spi_param = {
 #ifdef PLATFORM_MB
@@ -421,42 +541,15 @@ int main(void)
 	Xil_DCacheFlush();
 #endif
 
-	struct axi_dma_transfer transfer_tx = {
-		// Number of bytes to write/read
-		.size = sizeof(sine_lut_iq),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-#ifdef IIO_SUPPORT
-		.cyclic = CYCLIC,
-#else
-		.cyclic = NO,
-#endif
-		// Address of data source
-		.src_addr = (uintptr_t)DAC_DDR_BASEADDR,
-		// Address of data destination
-		.dest_addr = 0
-	};
 	axi_dmac_transfer_start(tx_dmac, &transfer_tx);
 	Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(sine_lut_iq));
-
+	tx_is_transfering = 1u;
 	no_os_mdelay(1000);
 #endif
 
-	/* Transfer 16384 samples from ADC to MEM */
-	struct axi_dma_transfer transfer_rx = {
-		// Number of bytes to write/read
-		.size = 16384 * TALISE_NUM_CHANNELS *
-		NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = NO,
-		// Address of data source
-		.src_addr = 0,
-		// Address of data destination
-		.dest_addr = (uintptr_t)(DDR_MEM_BASEADDR + 0x800000)
-	};
+	transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
+						NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+
 #ifndef ADRV9008_2
 	status = axi_dmac_transfer_start(rx_dmac, &transfer_rx);
 	if(status)
@@ -475,8 +568,8 @@ int main(void)
 	if(status)
 		return status;
 #ifndef ALTERA_PLATFORM
-	Xil_DCacheInvalidateRange(DDR_MEM_BASEADDR + 0x800000,
-				  16384 * TALISE_NUM_CHANNELS *
+	Xil_DCacheInvalidateRange(ADC_DDR_BASEADDR,
+				  ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
 				  NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
 	printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%u\n",
@@ -512,4 +605,155 @@ error_0:
 #endif
 
 	return 0;
+}
+
+void parse_spi_command(void *devHalInfo)
+{
+	struct xil_uart_init_param platform_uart_init_par = {
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+	};
+
+	struct no_os_uart_init_param uart_param = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+	struct no_os_uart_desc *uart_desc;
+#define MAX_SIZE (DAC_BUFFER_SAMPLES*4*2)
+	uint32_t bytes_number = 10;
+	uint8_t wr_data[MAX_SIZE] = {0};
+	uint32_t bytes_recv = 0;
+	int32_t error = 0;
+
+	uint8_t spi_mode = 0u;
+	uint32_t spi_addr = 0;
+	uint32_t spi_data = 0;
+
+	error = no_os_uart_init(&uart_desc, &uart_param);
+
+	if(error == 0)
+	{
+		while(1)
+		{
+			bytes_number = 10; // length of spi_write and spi_read
+			// receive data
+			bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+
+			if(bytes_recv == bytes_number)
+			{
+				// spi write
+				spi_mode = wr_data[1];
+				spi_addr = (wr_data[2] << 3*8) | (wr_data[3] << 2*8) | (wr_data[4] << 1*8) | wr_data[5];
+				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
+				if(wr_data[0] == 0x5A)
+				{
+#if ADRV9009_DEVICE
+					talSpiWriteByte(devHalInfo, (uint16_t)spi_addr, (uint8_t)spi_data);
+#endif
+				}
+				else if(wr_data[0] == 0x5B)
+				{
+#if ADRV9009_DEVICE
+					// spi read
+					spi_data = talSpiReadByte(devHalInfo, (uint16_t)spi_addr);
+#else
+					spi_data = 0xa1b2c3e4;
+#endif
+					// send data
+					wr_data[6] = (spi_data >> 3*8) & 0xff;
+					wr_data[7] = (spi_data >> 2*8) & 0xff;
+					wr_data[8] = (spi_data >> 1*8) & 0xff;
+					wr_data[9] = (spi_data >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x5C)
+				{
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
+					{
+						for(int sample = 0; sample < bytes_number/4; sample++)
+						{
+							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
+										(wr_data[sample*4 + 0] << 8) |
+										(wr_data[sample*4 + 3] << 16) |
+										(wr_data[sample*4 + 2] << 24);
+							zero_lut_iq[sample] = iq;
+						}
+						/* Reload transfer data memory and transfer the data */
+						if(tx_is_transfering == 1u)
+						{
+							/* Stop tranfering the data. */
+							axi_dmac_transfer_stop(tx_dmac);
+
+							/* Reload the waveform */
+							axi_dac_load_custom_data(tx_dac,
+													zero_lut_iq,
+													NO_OS_ARRAY_SIZE(zero_lut_iq),
+													(uintptr_t)DAC_DDR_BASEADDR);
+							Xil_DCacheFlush();
+
+							/* Transfer the data. */
+							transfer_tx.size = bytes_number;
+							axi_dmac_transfer_start(tx_dmac, &transfer_tx);
+
+							/* Flush cache data. */
+							Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(zero_lut_iq));
+						}
+					}
+					no_os_mdelay(10);
+				}
+				else if(wr_data[0] == 0x5D)
+				{
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					uint16_t samples_number = bytes_number / 4;
+					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS *
+										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+
+					/* Read the data from the ADC DMA. */
+					axi_dmac_transfer_start(rx_dmac, &transfer_rx);
+
+					/* Wait until transfer finishes */
+					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
+
+					/* Flush cache data. */
+					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
+								samples_number * TALISE_NUM_CHANNELS *
+								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+
+					if(status < 0)
+					{
+						memset(wr_data, 0, bytes_number);
+					}
+					else
+					{
+						memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, bytes_number);
+					}
+
+					uint32_t bytes_send = 0u;
+					const uint32_t bytes_chunk = 4096u;
+
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+
+					no_os_mdelay(10);
+				}
+			}
+		}
+	}
+	no_os_uart_remove(&uart_desc);
 }

@@ -51,6 +51,8 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
 	$(DRIVERS)/axi_core/jesd204/jesd204_clk.c \
 	$(DRIVERS)/api/no_os_spi.c \
 	$(DRIVERS)/api/no_os_gpio.c \
+    $(DRIVERS)/api/no_os_uart.c \
+	$(DRIVERS)/api/no_os_irq.c \
 	$(NO-OS)/jesd204/jesd204-core.c \
 	$(NO-OS)/jesd204/jesd204-fsm.c
 ifeq (y,$(strip $(IIOD)))
@@ -67,6 +69,7 @@ SRCS += $(NO-OS)/util/no_os_fifo.c \
 	$(PLATFORM_DRIVERS)/$(PLATFORM)_irq.c
 endif
 SRCS +=	$(NO-OS)/util/no_os_util.c \
+    $(NO-OS)/util/no_os_fifo.c \
 	$(NO-OS)/util/no_os_alloc.c \
 	$(NO-OS)/util/no_os_mutex.c \
 	$(NO-OS)/util/no_os_clk.c
@@ -77,7 +80,9 @@ SRCS += $(DRIVERS)/axi_core/jesd204/xilinx_transceiver.c \
 	$(PLATFORM_DRIVERS)/xilinx_axi_io.c \
 	$(PLATFORM_DRIVERS)/xilinx_delay.c \
 	$(PLATFORM_DRIVERS)/xilinx_spi.c \
-	$(PLATFORM_DRIVERS)/xilinx_gpio.c
+	$(PLATFORM_DRIVERS)/xilinx_gpio.c \
+	$(PLATFORM_DRIVERS)/xilinx_uart.c \
+	$(PLATFORM_DRIVERS)/xilinx_irq.c
 else
 SRCS += $(DRIVERS)/axi_core/clk_altera_a10_fpll/clk_altera_a10_fpll.c \
 	$(DRIVERS)/axi_core/jesd204/altera_a10_atx_pll.c \
@@ -143,7 +148,9 @@ INCS += $(DRIVERS)/axi_core/clk_altera_a10_fpll/clk_altera_a10_fpll.h \
 	$(DRIVERS)/axi_core/jesd204/altera_adxcvr.h
 endif
 INCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_spi.h \
-	$(PLATFORM_DRIVERS)/$(PLATFORM)_gpio.h
+	$(PLATFORM_DRIVERS)/$(PLATFORM)_gpio.h\
+	$(PLATFORM_DRIVERS)/$(PLATFORM)_irq.h \
+	$(PLATFORM_DRIVERS)/$(PLATFORM)_uart.h
 INCS +=	$(INCLUDE)/no_os_axi_io.h \
 	$(INCLUDE)/no_os_spi.h \
 	$(INCLUDE)/no_os_gpio.h \
@@ -153,6 +160,10 @@ INCS +=	$(INCLUDE)/no_os_axi_io.h \
 	$(INCLUDE)/no_os_alloc.h \
 	$(INCLUDE)/no_os_mutex.h \
 	$(INCLUDE)/no_os_units.h \
+    $(INCLUDE)/no_os_uart.h \
+    $(INCLUDE)/no_os_fifo.h \
+    $(INCLUDE)/no_os_lf256fifo.h \
+	$(INCLUDE)/no_os_irq.h \
 	$(INCLUDE)/no_os_print_log.h \
 	$(INCLUDE)/no_os_clk.h \
 	$(INCLUDE)/jesd204.h \
