@@ -82,7 +82,7 @@ def download_waveform(data_i, data_q):
     
     # Convert lengths to 2 bytes and append
     length = len(data_i) * 2 * 2 # Assuming data_i and data_q are the same length
-    message += [(length >> 16) & 0xFF, & (length >> 8) & 0xFF, length & 0xFF]
+    message += [(length >> 16) & 0xFF, (length >> 8) & 0xFF, length & 0xFF]
     
     # zeros padding
     for i in range(6):
@@ -171,6 +171,25 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
             
     print(f"Received {num_bytes} bytes and saved to {file_path}")
 
+def select_sdcard_waveform(file_id, file_size):
+    """
+    Send a message via UART.
+    file_id: 0,1,2,..., consists of file name: TEST0.BIN, TEST1.BIN ...
+    file_size: total bytes number of this waveform file
+    """
+    # Construct the message, length = 10, starting with 0x5A
+    message = bytes([0x5E]) + file_id.to_bytes(1, 'big') + file_size.to_bytes(4, 'big')
+    
+    # zeros padding
+    for i in range(4):
+        message += bytes([0x00])
+        
+    # Send the message 
+    ser.write(message)
+    ser.flush()
+
+    print('select_sdcard_waveform' + ' ' + 'TEST' + str(file_id) + '.BIN' + ' with '+ str(file_size) + ' bytes')
+
 ######################################################
 if __name__ == "__main__":
     ports = list_serial_ports()
@@ -187,9 +206,11 @@ ser.isOpen()
 #spi_read(1, 0x20212223)
 
 ## example: download_waveformfile
-download_waveformfile()
+#download_waveformfile()
 
 ## example: save capture data
-read_capture()
+#read_capture()
+
+select_sdcard_waveform(1, 1024)
 
 ser.close()
