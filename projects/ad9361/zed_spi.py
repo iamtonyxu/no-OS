@@ -179,8 +179,12 @@ def select_sdcard_waveform(file_id, file_size):
     """
     # Construct the message, length = 10, starting with 0x5A
     message = bytes([0x5E]) + file_id.to_bytes(1, 'big') + file_size.to_bytes(4, 'big')
-    # Send the message
     
+    # zeros padding
+    for i in range(4):
+        message += bytes([0x00])
+        
+    # Send the message 
     ser.write(message)
     ser.flush()
 
