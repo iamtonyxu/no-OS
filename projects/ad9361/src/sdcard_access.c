@@ -11,7 +11,7 @@ int read_wavefrom_from_sdcard(char *file_name,
 {
 	int status = 0;
 	uint32_t num_of_bytes_read = 0;
-	status = read_sdcard(file_name, MAX_FILE_SIZE, sdcard_read_buf, &num_of_bytes_read);
+	status = read_sdcard(file_name, file_size, sdcard_read_buf, &num_of_bytes_read);
 
 	if (status != XST_SUCCESS) {
 		xil_printf("SD Card read failed. \r\n");

@@ -4,8 +4,8 @@ clc;
 
 fileName = "singleTone.txt";
 Fs = 30.72e6/2;
-Fc = 3.84e6;
-L = 1024;
+Fc = 0.384e6;
+L = 1024000;
 t = 1/Fs*(0:L-1);
 
 %%
@@ -30,8 +30,8 @@ signal = exp(1i*2*pi*Fc*t);
 
 
 figure;
-plot(real(signal)); hold on
-plot(imag(signal))
+plot(real(signal), '--.'); hold on
+plot(imag(signal));
 
 figure;
 plot(abs(fftshift(fft(signal))), '-x');
@@ -54,6 +54,27 @@ for i = 1:length(hexStrings)
     fprintf(fileID, '%s,\n', hexStrings(i, :));
 end
 fclose(fileID);
+
 end
 
+if 0
+fileName = "Test1.bin";
+fid = fopen(fileName, 'wb');
+% Check if the file opened successfully
+if fid == -1
+    error('Failed to open file for writing');
+end
+
+% Write the int16 data to the file
+IQ_fixed = zeros(1, length(I_fixed));
+for index = 1:length(I_fixed)
+    IQ_fixed(1, 2*index-1) = I_fixed(1, index);
+    IQ_fixed(1, 2*index) = Q_fixed(1, index);    
+end
+
+fwrite(fid, IQ_fixed, 'int16');
+
+% Close the file
+fclose(fid);
+end
 
