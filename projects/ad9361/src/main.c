@@ -1058,8 +1058,8 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 						axi_dmac_transfer_stop(tx_dmac);
 
 						/* Reload the waveform */
-						axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, zero_lut_iq, load_lut_iq,
-									 NO_OS_ARRAY_SIZE(load_lut_iq),
+						axi_dac_load_custom_data_v2(ad9361_phy->tx_dac, load_lut_iq, load_lut_iq,
+									 file_size/4,
 									 (uintptr_t)dac_buffer);
 						Xil_DCacheFlush();
 
@@ -1068,7 +1068,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 						axi_dmac_transfer_start(tx_dmac, &transfer);
 
 						/* Flush cache data. */
-						Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(load_lut_iq));
+						Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, file_size);
 					}
 				}
 			}

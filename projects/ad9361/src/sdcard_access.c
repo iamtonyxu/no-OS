@@ -38,7 +38,7 @@ int read_sdcard(char *file_name,
 
 	u32 BuffCnt;
 	BYTE work[FF_MAX_SS];
-	u32 FileSize = MAX_FILE_SIZE;
+	u32 FileSize = file_size;
 
 	/*
 	 * To test logical drive 0, Path should be "0:/"
