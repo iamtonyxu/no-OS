@@ -8,7 +8,8 @@
 #	- NO-OS								       #
 #									       #
 ################################################################################
-
+CFLAGS += -DFILE_SYSTEM_INTERFACE_SD \
+        -DFILE_SYSTEM_USE_MKFS
 # zc706 + adrv9009-w/pcbz compatible profiles:
 #	tx_bw100_ir122p88_rx_bw100_or122p88_orx_bw100_or122p88_dc122p88
 #
@@ -54,7 +55,12 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
     $(DRIVERS)/api/no_os_uart.c \
 	$(DRIVERS)/api/no_os_irq.c \
 	$(NO-OS)/jesd204/jesd204-core.c \
-	$(NO-OS)/jesd204/jesd204-fsm.c
+	$(NO-OS)/jesd204/jesd204-fsm.c\
+  $(NO-OS)/libraries/fatfs/source/diskio.c\
+  $(NO-OS)/libraries/fatfs/source/ff.c\
+  $(NO-OS)/libraries/fatfs/source/ffsystem.c\
+  $(NO-OS)/libraries/fatfs/source/ffunicode.c\
+  $(NO-OS)/libraries/fatfs/source/sdcard_access.c
 ifeq (y,$(strip $(IIOD)))
 SRC_DIRS += $(NO-OS)/iio/iio_app
 LIBRARIES += iio
@@ -130,7 +136,12 @@ INCS +=	$(PROJECT)/src/app/app_config.h \
 	$(DRIVERS)/rf-transceiver/talise/api/talise_version.h \
 	$(DRIVERS)/rf-transceiver/talise/firmware/talise_arm_binary.h \
 	$(DRIVERS)/rf-transceiver/talise/firmware/talise_stream_binary.h \
-	$(PROJECT)/profiles/$(PROFILE)/talise_config.h
+	$(PROJECT)/profiles/$(PROFILE)/talise_config.h\
+  $(NO-OS)/libraries/fatfs/source/integer.h \
+  $(NO-OS)/libraries/fatfs/source/diskio.h\
+  $(NO-OS)/libraries/fatfs/source/ff.h\
+  $(NO-OS)/libraries/fatfs/source/ffconf.h\
+  $(NO-OS)/libraries/fatfs/source/sdcard_access.h
 INCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.h \
 	$(DRIVERS)/axi_core/axi_dac_core/axi_dac_core.h \
 	$(DRIVERS)/axi_core/axi_dmac/axi_dmac.h \

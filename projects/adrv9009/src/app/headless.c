@@ -39,9 +39,13 @@
 #include "app_talise.h"
 #include "ad9528.h"
 
+#include "sdcard_access.h"
+char file_name[32] = "TEST0.BIN";
+
+
 #define ADRV9009_DEVICE 1
-#define DAC_BUFFER_SAMPLES 16384
-#define ADC_BUFFER_SAMPLES 16384
+#define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
+#define ADC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 
 #ifdef DMA_EXAMPLE
 
@@ -751,6 +755,44 @@ void parse_spi_command(void *devHalInfo)
 					}
 
 					no_os_mdelay(10);
+				}
+				else if(wr_data[0] = 0x5E)
+				{
+					/* Read waveform from SD card and transmit */
+					char fileID = wr_data[1] + '0';
+					int sd_status = 0;
+					file_name[4] = fileID;
+					uint32_t file_size = (wr_data[2] << 3*8) |
+										(wr_data[3] << 2*8) |
+										(wr_data[4] << 1*8) |
+										(wr_data[5] << 0*8);
+
+					if(file_size > MAX_FILE_SIZE)
+						return;
+					sd_status = read_wavefrom_from_sdcard(file_name,
+													file_size,
+													load_lut_iq);
+
+					// transmit data if sd card read successfully
+					if(sd_status == XST_SUCCESS)
+					{
+						/* Stop tranfering the data. */
+						axi_dmac_transfer_stop(tx_dmac);
+
+						/* Reload the waveform */
+						axi_dac_load_custom_data(tx_dac,
+												load_lut_iq,
+												file_size/4,
+												(uintptr_t)DAC_DDR_BASEADDR);
+						Xil_DCacheFlush();
+
+						/* Transfer the data. */
+						transfer_tx.size = file_size;
+						axi_dmac_transfer_start(tx_dmac, &transfer_tx);
+
+						/* Flush cache data. */
+						Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, file_size);
+					}
 				}
 			}
 		}
