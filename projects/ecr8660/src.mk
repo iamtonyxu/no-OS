@@ -11,8 +11,7 @@
 CFLAGS += -DFILE_SYSTEM_INTERFACE_SD \
         -DFILE_SYSTEM_USE_MKFS
 
-SRCS += $(PROJECT)/src/main.c \
-    $(PROJECT)/src/sdcard_access.c
+SRCS += $(PROJECT)/src/main.c
 SRCS += $(DRIVERS)/rf-transceiver/ad9361/ad9361_api.c \
 	$(DRIVERS)/rf-transceiver/ad9361/ad9361.c \
 	$(DRIVERS)/rf-transceiver/ad9361/ad9361_conv.c \
@@ -35,7 +34,8 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
     $(NO-OS)/libraries/fatfs/source/diskio.c\
     $(NO-OS)/libraries/fatfs/source/ff.c\
     $(NO-OS)/libraries/fatfs/source/ffsystem.c\
-    $(NO-OS)/libraries/fatfs/source/ffunicode.c
+    $(NO-OS)/libraries/fatfs/source/ffunicode.c\
+    $(NO-OS)/libraries/fatfs/source/sdcard_access.c
 SRCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_axi_io.c
 SRCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_spi.c \
 	$(PLATFORM_DRIVERS)/$(PLATFORM)_gpio.c \
@@ -73,10 +73,10 @@ INCS += $(DRIVERS)/rf-transceiver/ad9361/common.h \
     $(NO-OS)/libraries/fatfs/source/integer.h \
     $(NO-OS)/libraries/fatfs/source/diskio.h\
     $(NO-OS)/libraries/fatfs/source/ff.h\
-    $(NO-OS)/libraries/fatfs/source/ffconf.h  
+    $(NO-OS)/libraries/fatfs/source/ffconf.h\
+    $(NO-OS)/libraries/fatfs/source/sdcard_access.h
 INCS += $(DRIVERS)/rf-transceiver/ad9361/ad9361.h \
 	$(PROJECT)/src/parameters.h \
-	$(PROJECT)/src/sdcard_access.h \
 	$(DRIVERS)/rf-transceiver/ad9361/ad9361_util.h \
 	$(DRIVERS)/rf-transceiver/ad9361/ad9361_api.h \
 	$(DRIVERS)/rf-transceiver/ecr8660/bin2.h \
