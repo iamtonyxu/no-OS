@@ -51,8 +51,6 @@ char file_name[32] = "TEST0.BIN";
 
 struct no_os_gpio_desc *gpio_plddrbypass;
 struct no_os_gpio_init_param gpio_init_plddrbypass;
-extern const uint32_t sine_lut_iq[1024];
-extern uint32_t zero_lut_iq[16384];
 uint8_t tx_is_transfering = 0u;
 
 #endif
@@ -325,80 +323,6 @@ int main(void)
 	uint32_t lmfc_rate = no_os_min(rx_lmfc_rate, rx_os_lmfc_rate);
 	lmfc_rate = no_os_min(tx_lmfc_rate, lmfc_rate);
 
-	struct axi_adc_init rx_adc_init = {
-		"rx_adc",
-		RX_CORE_BASEADDR,
-		TALISE_NUM_CHANNELS
-	};
-	struct axi_adc *rx_adc;
-
-	struct axi_adc_init rx_os_adc_init = {
-		"rx_os_adc",
-		RX_OS_CORE_BASEADDR,
-		TALISE_NUM_CHANNELS / 2
-	};
-	struct axi_adc *rx_os_adc;
-
-	struct axi_dac_init tx_dac_init = {
-		"tx_dac",
-		TX_CORE_BASEADDR,
-		TALISE_NUM_CHANNELS,
-		NULL,
-		3
-	};
-	struct axi_dac *tx_dac;
-
-	struct axi_dmac_init rx_dmac_init = {
-		"rx_dmac",
-		RX_DMA_BASEADDR,
-		IRQ_DISABLED
-	};
-	struct axi_dmac *rx_dmac;
-
-	struct axi_dmac_init rx_os_dmac_init = {
-		"rx_os_dmac",
-		RX_OS_DMA_BASEADDR,
-		IRQ_DISABLED
-	};
-	struct axi_dmac *rx_os_dmac;
-
-	struct axi_dmac_init tx_dmac_init = {
-		"tx_dmac",
-		TX_DMA_BASEADDR,
-		IRQ_DISABLED
-	};
-	struct axi_dmac *tx_dmac;
-
-#ifndef ALTERA_PLATFORM
-	struct xil_spi_init_param hal_spi_param = {
-#ifdef PLATFORM_MB
-		.type = SPI_PL,
-#else
-		.type = SPI_PS,
-#endif
-		.flags = SPI_CS_DECODE
-	};
-	struct xil_gpio_init_param hal_gpio_param = {
-#ifdef PLATFORM_MB
-		.type = GPIO_PL,
-#else
-		.type = GPIO_PS,
-#endif
-		.device_id = GPIO_DEVICE_ID
-	};
-#else
-	struct altera_spi_init_param hal_spi_param = {
-		.type = NIOS_II_SPI,
-		.base_address = SPI_BASEADDR
-	};
-	struct altera_gpio_init_param hal_gpio_param = {
-		.type = NIOS_II_GPIO,
-		.device_id = 0,
-		.base_address = GPIO_BASEADDR
-	};
-
-	hal.extra_gpio = &hal_gpio_param;
-#endif
 	int t;
 	struct adi_hal hal[TALISE_DEVICE_ID_MAX];
 	taliseDevice_t tal[TALISE_DEVICE_ID_MAX];
@@ -539,7 +463,7 @@ int main(void)
 
 	axi_dac_load_custom_data(tx_dac, sine_lut_iq,
 				 NO_OS_ARRAY_SIZE(sine_lut_iq),
-				 DAC_DDR_BASEADDR);
+				 (uintptr_t)DAC_DDR_BASEADDR);
 #ifndef ALTERA_PLATFORM
 	Xil_DCacheFlush();
 #endif
@@ -550,6 +474,7 @@ int main(void)
 	no_os_mdelay(1000);
 #endif
 
+#if 0
 	transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
 						NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 
@@ -580,6 +505,7 @@ int main(void)
 		       talInit.jesd204Settings.framerA.Np, 8),
 	       num_chans,
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+#endif
 #endif
 
 	while(1)

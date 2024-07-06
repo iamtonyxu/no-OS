@@ -4,8 +4,8 @@ clc;
 
 fileName = "singleTone.txt";
 Fs = 122.88e6;
-Fc = 0.384e6;
-L = 10240;
+Fc = 15e6;
+L = 16384; % max is 16384
 t = 1/Fs*(0:L-1);
 
 %%

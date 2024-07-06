@@ -1,7 +1,7 @@
 import serial
 import time
 
-COM_PORT = 'COM4'
+COM_PORT = 'COM3'
 BAUD_RATE = 115200
 MESSAGE_LEN = 10
 
@@ -206,10 +206,11 @@ ser.isOpen()
 spi_read(0, 0x000a)
 
 ## example: download_waveformfile
-#download_waveformfile()
+download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/singleTone.txt')
+#download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/demo_waveform.txt')
 
 ## example: save capture data
-read_capture(4096, 'C:/repo/project-d/matlab/iio_adc_data/spi_cap_data_1k.txt')
+#read_capture(4096, 'C:/repo/project-d/matlab/iio_adc_data/spi_cap_data_1k.txt')
 
 #select_sdcard_waveform(1, 1024)
 
