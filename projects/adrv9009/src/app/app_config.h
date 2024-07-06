@@ -52,7 +52,7 @@
 
 /* To build ADRV9008-1/ADRV9008-2, uncomment one (only one) of the lines below: */
 //#define ADRV9008_1
-//#define ADRV9008_2
+#define ADRV9008_2
 
 /* To build a specific example, uncomment one (only one) of the lines below: */
 #define DMA_EXAMPLE
