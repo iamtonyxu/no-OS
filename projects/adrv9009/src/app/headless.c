@@ -474,7 +474,7 @@ int main(void)
 	no_os_mdelay(1000);
 #endif
 
-#if 0
+#if 1
 	transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
 						NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 
@@ -654,10 +654,10 @@ void parse_spi_command(void *devHalInfo)
 										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 
 					/* Read the data from the ADC DMA. */
-					axi_dmac_transfer_start(rx_dmac, &transfer_rx);
+					axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
 
 					/* Wait until transfer finishes */
-					int32_t status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
+					int32_t status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
 
 					/* Flush cache data. */
 					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
