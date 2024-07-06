@@ -8,7 +8,8 @@
 #include "xil_cache.h"
 #include "xplatform_info.h"
 
-#define MAX_FILE_SIZE (4*307200)
+//#define MAX_FILE_SIZE (4*307200) //TO large for PS Memory
+#define MAX_FILE_SIZE (4*16384)
 
 extern uint32_t load_lut_iq[MAX_FILE_SIZE/4];
 
