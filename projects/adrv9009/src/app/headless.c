@@ -261,11 +261,8 @@ void parse_spi_command(void *devHalInfo);
 		// Transfer done flag
 		.transfer_done = 0,
 		// Signal transfer mode
-#ifdef IIO_SUPPORT
 		.cyclic = CYCLIC,
-#else
-		.cyclic = NO,
-#endif
+
 		// Address of data source
 		.src_addr = (uintptr_t)DAC_DDR_BASEADDR,
 		// Address of data destination
