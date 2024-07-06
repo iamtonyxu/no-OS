@@ -154,7 +154,7 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
     ser.write(bytearray(message))  
 
     # wait 1s, may need 6s for 16384 samples
-    time.sleep(1)
+    time.sleep(5)
 
     # Read specified number of bytes
     data = ser.read_all()
@@ -203,14 +203,14 @@ ser.isOpen()
 
 ## example: spi_write, spi_read
 #spi_write(0, 0x000a, 0x12)
-spi_read(0, 0x000a)
+#spi_read(0, 0x000a)
 
 ## example: download_waveformfile
-download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/singleTone.txt')
+#download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/singleTone.txt')
 #download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/demo_waveform.txt')
 
 ## example: save capture data
-#read_capture(4096, 'C:/repo/project-d/matlab/iio_adc_data/spi_cap_data_1k.txt')
+read_capture(4096, 'C:/repo2/no-OS/projects/adrv9009/adrv9009_orx_4k.txt')
 
 #select_sdcard_waveform(1, 1024)
 
