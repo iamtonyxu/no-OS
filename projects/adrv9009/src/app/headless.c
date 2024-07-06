@@ -585,6 +585,12 @@ int main(void)
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
 
+	while(1)
+	{
+		/* parse cmd received via uart */
+		parse_spi_command(tal[TALISE_A].devHalInfo);
+	}
+
 #ifdef IIO_SUPPORT
 	status = start_iiod(rx_dmac, tx_dmac, rx_adc, tx_dac);
 	if (status)
@@ -698,6 +704,7 @@ void parse_spi_command(void *devHalInfo)
 						{
 							/* Stop tranfering the data. */
 							axi_dmac_transfer_stop(tx_dmac);
+							axi_dac_set_datasel(tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 
 							/* Reload the waveform */
 							axi_dac_load_custom_data(tx_dac,

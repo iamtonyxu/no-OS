@@ -5,7 +5,7 @@ clc;
 fileName = "singleTone.txt";
 Fs = 30.72e6/2;
 Fc = 0.384e6;
-L = 1024000;
+L = 10240;
 t = 1/Fs*(0:L-1);
 
 %%
