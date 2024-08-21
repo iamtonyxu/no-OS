@@ -43,7 +43,7 @@
 char file_name[32] = "TEST0.BIN";
 
 
-#define ADRV9009_DEVICE 1
+#define ADRV9009_DEVICE 0
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 #define ADC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 
@@ -176,6 +176,7 @@ int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
 #endif // IIO_SUPPORT
 
 void parse_spi_command(void *devHalInfo);
+uint8_t dpd_luts_access_test(void);
 
 	struct axi_adc_init rx_adc_init = {
 		"rx_adc",
@@ -412,14 +413,26 @@ int main(void)
 		printf("axi_adc_init() failed with status %d\n", status);
 		goto error_3;
 	}
+#else
 
-#endif
 
 	status = axi_adc_init(&rx_os_adc, &rx_os_adc_init);
 	if (status) {
 		printf("OBS axi_adc_init() failed with status %d\n", status);
 		goto error_3;
 	}
+#endif
+
+#if 0
+////////////////////////////////
+	/* check data sel is adc */
+	for(int ch = 0; ch < rx_os_adc_init.num_channels; ch++)
+	{
+		uint8_t data_sel = axi_adc_get_datasel(rx_os_adc, ch);
+		printf("data_sel before adc_init for ch-%d = %d\n", ch, data_sel);
+	}
+////////////////////////////////
+#endif
 
 #ifndef ADRV9008_1
 	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
@@ -435,13 +448,14 @@ int main(void)
 		printf("axi_dmac_init() rx init error: %d\n", status);
 		goto error_3;
 	}
-#endif
+#else
 
 	status = axi_dmac_init(&rx_os_dmac, &rx_os_dmac_init);
 	if (status) {
 		printf("OBS axi_dmac_init() rx init error: %d\n", status);
 		goto error_3;
 	}
+#endif
 
 #ifdef DMA_EXAMPLE
 	gpio_init_plddrbypass.extra = &hal_gpio_param;
@@ -507,6 +521,9 @@ int main(void)
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
 #endif
+
+	dpd_luts_access_test();
+	dpd_luts_access_test();
 
 	while(1)
 	{
@@ -730,4 +747,44 @@ void parse_spi_command(void *devHalInfo)
 		}
 	}
 	no_os_uart_remove(&uart_desc);
+}
+
+uint8_t dpd_luts_access_test(void)
+{
+#define DPD_CTRL_BASEADDR		XPAR_AXI_DPD_ACTUATOR_0_BASEADDR
+#define DPD_MEM_BASEADDR		XPAR_AXI_DPD_ACTUATOR_0_BASEADDR + 0x8000
+
+#define ADDR_IP_VERSION     0x0000
+#define ADDR_ID_MASK_LOW    0x0004
+#define ADDR_ID_MASK_HIGH   0x0008
+#define ADDR_SCRATCH        0x000C
+#define ADDR_BYPASS         0x0010
+
+	uint8_t errCode = 0;
+	uint32_t entry_addr[5] = {ADDR_IP_VERSION, ADDR_ID_MASK_LOW, ADDR_ID_MASK_HIGH, ADDR_SCRATCH, ADDR_BYPASS};
+	uint32_t wr_data[5] = {0x1234, 0x5678, 0x9abc, 0x1234, 0x0001};
+	uint32_t rd_data[5] = {0};
+
+	// DPD Control Register Access Test
+	for(int i = 0; i < 5; i++)
+	{
+		no_os_axi_io_write(DPD_CTRL_BASEADDR, entry_addr[i], wr_data[i]);
+
+		no_os_axi_io_read(DPD_CTRL_BASEADDR, entry_addr[i], &rd_data[i]);
+	}
+
+	if(wr_data[3] != rd_data[3])
+	{
+		errCode = 1;
+	}
+
+	// DPD Luts Access Test
+	for(int i = 0; i < 5; i++)
+	{
+		no_os_axi_io_write(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, 0x11111111*(i+1));
+		no_os_axi_io_read(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, &rd_data[i]);
+
+	}
+
+	return errCode;
 }
