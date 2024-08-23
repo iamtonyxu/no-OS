@@ -209,6 +209,8 @@ ser.isOpen()
 #download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/singleTone.txt')
 #download_waveformfile(r'C:/repo2/no-OS/projects/adrv9009/demo_waveform.txt')
 
+time.sleep(5);
+
 ## example: save capture data
 read_capture(4096, 'C:/repo2/no-OS/projects/adrv9009/adrv9009_orx_4k.txt')
 
