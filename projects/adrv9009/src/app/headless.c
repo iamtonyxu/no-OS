@@ -38,7 +38,7 @@
 #include "app_transceiver.h"
 #include "app_talise.h"
 #include "ad9528.h"
-
+#include "app_dpd.h"
 #include "sdcard_access.h"
 char file_name[32] = "TEST0.BIN";
 
@@ -176,7 +176,6 @@ int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
 #endif // IIO_SUPPORT
 
 void parse_spi_command(void *devHalInfo);
-uint8_t dpd_luts_access_test(void);
 
 	struct axi_adc_init rx_adc_init = {
 		"rx_adc",
@@ -271,7 +270,11 @@ uint8_t dpd_luts_access_test(void);
 	/* Transfer 16384 samples from ADC to MEM */
 	struct axi_dma_transfer transfer_rx = {
 		// Number of bytes to write/read, need to be updated later
+#ifndef ADRV9008_2
 		.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS,
+#else
+		.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2,
+#endif
 		// Transfer done flag
 		.transfer_done = 0,
 		// Signal transfer mode
@@ -488,11 +491,10 @@ int main(void)
 	no_os_mdelay(1000);
 #endif
 
-#if 1
+#ifndef ADRV9008_2
 	transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
 						NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 
-#ifndef ADRV9008_2
 	status = axi_dmac_transfer_start(rx_dmac, &transfer_rx);
 	if(status)
 		return status;
@@ -500,6 +502,9 @@ int main(void)
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
 	uint8_t num_chans = rx_adc_init.num_channels;
 #else
+	transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
+						NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+
 	status = axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
 	if(status)
 		return status;
@@ -507,23 +512,53 @@ int main(void)
 	status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
 	uint8_t num_chans = rx_os_adc_init.num_channels;
 #endif
+
 	if(status)
 		return status;
-#ifndef ALTERA_PLATFORM
+
+#ifndef ADRV9008_2
 	Xil_DCacheInvalidateRange(ADC_DDR_BASEADDR,
 				  ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS *
 				  NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+#else
+	Xil_DCacheInvalidateRange(ADC_DDR_BASEADDR,
+				  ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
+				  NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
+
 	printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%u\n",
 	       transfer_rx.dest_addr, transfer_rx.size / NO_OS_DIV_ROUND_UP(
 		       talInit.jesd204Settings.framerA.Np, 8),
 	       num_chans,
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
-#endif
 
-	dpd_luts_access_test();
-	dpd_luts_access_test();
+#if 0
+	// dpd test
+	status = dpd_luts_access_test();
+	uint32_t dpd_ipVersion = dpd_read_ipVersion();
+	uint32_t dpd_idMaskLow = dpd_read_idMask_low();
+	uint32_t dpd_idMaskHigh = dpd_read_idMask_high();
+	uint32_t dpd_scrach_val = dpd_write_scratch_reg(0x12345678);
+	uint8_t dpd_bypass_val = dpd_write_bypass_reg(1);
+	dpd_bypass_val = dpd_write_bypass_reg(0);
+
+	uint32_t wrLut[DPD_LUT_DEPTH] = {0};
+	uint32_t rdLut[DPD_LUT_DEPTH] = {0};
+
+	for(uint8_t lutId = 0; lutId < 64; lutId++)
+	{
+		for(int i = 0; i < DPD_LUT_DEPTH; i++)
+		{
+			wrLut[i] = 0x11110000*(lutId+1) + i;
+		}
+		//NOTE: Crash if lutId > 16!!!
+		if(dpd_write_luts(lutId, wrLut)==0u)
+		{
+			dpd_read_luts(lutId, rdLut);
+		}
+	}
+#endif
 
 	while(1)
 	{
@@ -667,9 +702,13 @@ void parse_spi_command(void *devHalInfo)
 				{
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					uint16_t samples_number = bytes_number / 4;
+#ifndef ADRV9008_2
 					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS *
 										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
-
+#else
+					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS / 2 *
+										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+#endif
 					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
 
@@ -677,10 +716,15 @@ void parse_spi_command(void *devHalInfo)
 					int32_t status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
 
 					/* Flush cache data. */
+#ifndef ADRV9008_2
 					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
 								samples_number * TALISE_NUM_CHANNELS *
 								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
-
+#else
+					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
+								samples_number * TALISE_NUM_CHANNELS / 2 *
+								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+#endif
 					if(status < 0)
 					{
 						memset(wr_data, 0, bytes_number);
@@ -747,44 +791,4 @@ void parse_spi_command(void *devHalInfo)
 		}
 	}
 	no_os_uart_remove(&uart_desc);
-}
-
-uint8_t dpd_luts_access_test(void)
-{
-#define DPD_CTRL_BASEADDR		XPAR_AXI_DPD_ACTUATOR_0_BASEADDR
-#define DPD_MEM_BASEADDR		XPAR_AXI_DPD_ACTUATOR_0_BASEADDR + 0x8000
-
-#define ADDR_IP_VERSION     0x0000
-#define ADDR_ID_MASK_LOW    0x0004
-#define ADDR_ID_MASK_HIGH   0x0008
-#define ADDR_SCRATCH        0x000C
-#define ADDR_BYPASS         0x0010
-
-	uint8_t errCode = 0;
-	uint32_t entry_addr[5] = {ADDR_IP_VERSION, ADDR_ID_MASK_LOW, ADDR_ID_MASK_HIGH, ADDR_SCRATCH, ADDR_BYPASS};
-	uint32_t wr_data[5] = {0x1234, 0x5678, 0x9abc, 0x1234, 0x0001};
-	uint32_t rd_data[5] = {0};
-
-	// DPD Control Register Access Test
-	for(int i = 0; i < 5; i++)
-	{
-		no_os_axi_io_write(DPD_CTRL_BASEADDR, entry_addr[i], wr_data[i]);
-
-		no_os_axi_io_read(DPD_CTRL_BASEADDR, entry_addr[i], &rd_data[i]);
-	}
-
-	if(wr_data[3] != rd_data[3])
-	{
-		errCode = 1;
-	}
-
-	// DPD Luts Access Test
-	for(int i = 0; i < 5; i++)
-	{
-		no_os_axi_io_write(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, 0x11111111*(i+1));
-		no_os_axi_io_read(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, &rd_data[i]);
-
-	}
-
-	return errCode;
 }
