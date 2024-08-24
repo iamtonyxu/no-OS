@@ -689,7 +689,7 @@ void parse_spi_command(void *devHalInfo)
 							Xil_DCacheFlush();
 
 							/* Transfer the data. */
-							transfer_tx.size = bytes_number;
+							transfer_tx.size = bytes_number*2; //NOTE: play half waveform if size = bytes_number
 							axi_dmac_transfer_start(tx_dmac, &transfer_tx);
 
 							/* Flush cache data. */
