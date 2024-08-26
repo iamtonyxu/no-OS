@@ -484,9 +484,10 @@ int main(void)
 #ifndef ALTERA_PLATFORM
 	Xil_DCacheFlush();
 #endif
-
+#if 0
 	axi_dmac_transfer_start(tx_dmac, &transfer_tx);
 	Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(sine_lut_iq));
+#endif
 	tx_is_transfering = 1u;
 	no_os_mdelay(1000);
 #endif
