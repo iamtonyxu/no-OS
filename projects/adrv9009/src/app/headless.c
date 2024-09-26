@@ -42,6 +42,7 @@
 #include "sdcard_access.h"
 char file_name[32] = "TEST0.BIN";
 
+extern uint32_t lutEntries[DPD_LUT_DEPTH*DPD_LUT_MAX];
 
 #define ADRV9009_DEVICE 0
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
@@ -534,15 +535,15 @@ int main(void)
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
 
-#if 0
+#if 1
 	// dpd test
 	status = dpd_luts_access_test();
 	uint32_t dpd_ipVersion = dpd_read_ipVersion();
-	uint32_t dpd_idMaskLow = dpd_read_idMask_low();
-	uint32_t dpd_idMaskHigh = dpd_read_idMask_high();
+	uint64_t dpd_idMask = dpd_read_idMask();
+
 	uint32_t dpd_scrach_val = dpd_write_scratch_reg(0x12345678);
-	uint8_t dpd_bypass_val = dpd_write_bypass_reg(1);
-	dpd_bypass_val = dpd_write_bypass_reg(0);
+
+	uint8_t dpd_out_sel = dpd_write_act_out_sel(DPD_BYPASS);
 
 	uint32_t wrLut[DPD_LUT_DEPTH] = {0};
 	uint32_t rdLut[DPD_LUT_DEPTH] = {0};
@@ -559,6 +560,16 @@ int main(void)
 			dpd_read_luts(lutId, rdLut);
 		}
 	}
+
+#if 0
+	for(uint8_t lutId = 0; lutId < 64; lutId++)
+	{
+		int lutsOffset = lutId * DPD_LUT_DEPTH;
+
+		dpd_write_luts(lutId, &lutEntries[lutsOffset]);
+	}
+#endif
+
 #endif
 
 	while(1)

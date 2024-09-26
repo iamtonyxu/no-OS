@@ -3,12 +3,12 @@
 uint8_t dpd_luts_access_test(void)
 {
 	uint8_t errCode = 0;
-	uint32_t entry_addr[5] = {ADDR_IP_VERSION, ADDR_ID_MASK_LOW, ADDR_ID_MASK_HIGH, ADDR_SCRATCH, ADDR_BYPASS};
-	uint32_t wr_data[5] = {0x0000, 0x0000, 0x0000, 0x1234, 0x0001};
-	uint32_t rd_data[5] = {0};
+	uint32_t entry_addr[4] = {ADDR_IP_VERSION, ADDR_ID_MASK_LOW, ADDR_ID_MASK_HIGH, ADDR_SCRATCH};
+	uint32_t wr_data[4] = {0x0000, 0x0000, 0x0000, 0x1234};
+	uint32_t rd_data[4] = {0};
 
 	// DPD Control Register Access Test
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i < sizeof(entry_addr)/sizeof(uint32_t); i++)
 	{
 		no_os_axi_io_write(DPD_CTRL_BASEADDR, entry_addr[i], wr_data[i]);
 
@@ -40,10 +40,11 @@ uint8_t dpd_luts_access_test(void)
 
     if(errCode == 0)
     {
+    	int end = DPD_LUT_DEPTH * 4;
         for(int i = 0; i < 5; i++)
         {
-            no_os_axi_io_write(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, 0x11111111*(i+1));
-            no_os_axi_io_read(DPD_MEM_BASEADDR, 0x8000-(i+1)*4, &rd_data[i]);
+            no_os_axi_io_write(DPD_MEM_BASEADDR, end-(i+1)*4, 0x11111111*(i+1));
+            no_os_axi_io_read(DPD_MEM_BASEADDR, end-(i+1)*4, &rd_data[i]);
 
             if(rd_data[i] != 0x11111111*(i+1))
             {
@@ -59,9 +60,11 @@ uint8_t dpd_luts_access_test(void)
 uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut)
 {
     uint8_t errCode = 0u;
-    uint32_t offset = lutId * (DPD_LUT_DEPTH * 4);
+    uint64_t idMask = (1lu << lutId);
 
-    if((lutId >= DPD_LUT_LIMIT) || (pLut == NULL))
+    // write lutid
+    dpd_write_lutid(idMask);
+    if((lutId >= DPD_LUT_MAX) || (pLut == NULL))
     {
         errCode = 1;
     }
@@ -70,9 +73,10 @@ uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut)
     {
         for(int i = 0; i < DPD_LUT_DEPTH; i++)
         {
-            no_os_axi_io_write(DPD_MEM_BASEADDR, offset+i*4, pLut[i]);
+            no_os_axi_io_write(DPD_MEM_BASEADDR, i*4, pLut[i]);
         }
     }
+    dpd_write_lutid(0u);
 
     return errCode;
 }
@@ -80,9 +84,12 @@ uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut)
 uint8_t dpd_read_luts(uint8_t lutId, uint32_t *pLut)
 {
     uint8_t errCode = 0u;
-    uint32_t offset = lutId * (DPD_LUT_DEPTH * 4);
+    uint64_t idMask = (1lu << lutId);
 
-    if((lutId >= DPD_LUT_LIMIT) || (pLut == NULL))
+    // write lutid
+    dpd_write_lutid(idMask);
+
+    if((lutId >= DPD_LUT_MAX) || (pLut == NULL))
     {
         errCode = 1;
     }
@@ -91,9 +98,10 @@ uint8_t dpd_read_luts(uint8_t lutId, uint32_t *pLut)
     {
         for(int i = 0; i < DPD_LUT_DEPTH; i++)
         {
-            no_os_axi_io_read(DPD_MEM_BASEADDR, offset+i*4, &(pLut[i]));
+            no_os_axi_io_read(DPD_MEM_BASEADDR, i*4, &(pLut[i]));
         }
     }
+    dpd_write_lutid(0u);
 
     return errCode;
 }
@@ -105,18 +113,12 @@ uint32_t dpd_read_ipVersion(void)
     return ipVersion;
 }
 
-uint32_t dpd_read_idMask_low(void)
+uint64_t dpd_read_idMask(void)
 {
-    uint32_t idMask_low = 0;
+    uint32_t idMask_high, idMask_low;
     no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_ID_MASK_LOW, &idMask_low);
-    return idMask_low;
-}
-
-uint32_t dpd_read_idMask_high(void)
-{
-    uint32_t idMask_high = 0;
-    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_ID_MASK_LOW, &idMask_high);
-    return idMask_high;
+    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_ID_MASK_HIGH, &idMask_high);
+    return (idMask_high << 32u) | idMask_low;
 }
 
 uint32_t dpd_write_scratch_reg(uint32_t scratch)
@@ -132,15 +134,35 @@ uint32_t dpd_read_scratch_reg(void)
     return scratch;
 }
 
-uint8_t dpd_write_bypass_reg(uint8_t enable)
+uint8_t dpd_write_act_out_sel(Dpd_ActOut_Sel sel)
 {
-    no_os_axi_io_write(DPD_CTRL_BASEADDR, ADDR_BYPASS, enable);
-    return dpd_read_bypass_reg();
+	no_os_axi_io_write(DPD_CTRL_BASEADDR, ADDR_ACT_OUT_SEL, (uint32_t)sel);
+	return dpd_read_act_out_sel();
 }
 
-uint8_t dpd_read_bypass_reg(void)
+uint8_t dpd_read_act_out_sel(void)
 {
-    uint32_t bypassStatus;
-    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_BYPASS, &bypassStatus);
-    return (uint8_t)bypassStatus;
+    uint32_t outSel;
+    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_ACT_OUT_SEL, &outSel);
+    return (uint8_t)outSel;
 }
+
+uint64_t dpd_write_lutid(uint64_t lutid)
+{
+	uint32_t lutid_low, lutid_high;
+	lutid_high = (lutid >> 32u) & 0xFFFFFFFF;
+	lutid_low = lutid & 0xFFFFFFFF;
+	no_os_axi_io_write(DPD_CTRL_BASEADDR, ADDR_LUTID_H, lutid_high);
+	no_os_axi_io_write(DPD_CTRL_BASEADDR, ADDR_LUTID_L, lutid_low);
+	return dpd_read_lutid();
+}
+
+uint64_t dpd_read_lutid(void)
+{
+	uint32_t lutid_low, lutid_high;
+    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_LUTID_L, &lutid_low);
+    no_os_axi_io_read(DPD_CTRL_BASEADDR, ADDR_LUTID_H, &lutid_high);
+    return ((lutid_high << 32u) | (lutid_low));
+}
+
+

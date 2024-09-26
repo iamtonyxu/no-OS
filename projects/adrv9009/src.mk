@@ -29,6 +29,7 @@ SRCS += $(PROJECT)/src/app/headless.c \
 	$(PROJECT)/src/app/app_transceiver.c \
 	$(PROJECT)/src/app/app_talise.c \
 	$(PROJECT)/src/app/app_dpd.c \
+	$(PROJECT)/src/app/app_dpd_luts.c \
 	$(DRIVERS)/frequency/ad9528/ad9528.c \
 	$(PROJECT)/src/devices/adi_hal/no_os_hal.c \
 	$(DRIVERS)/frequency/hmc7044/hmc7044.c \
