@@ -57,7 +57,7 @@ uint8_t dpd_luts_access_test(void)
 	return errCode;
 }
 
-uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut)
+uint8_t dpd_luts_write(uint8_t lutId, uint32_t *pLut)
 {
     uint8_t errCode = 0u;
     uint64_t idMask = (1lu << lutId);
@@ -81,7 +81,7 @@ uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut)
     return errCode;
 }
 
-uint8_t dpd_read_luts(uint8_t lutId, uint32_t *pLut)
+uint8_t dpd_luts_read(uint8_t lutId, uint32_t *pLut)
 {
     uint8_t errCode = 0u;
     uint64_t idMask = (1lu << lutId);
@@ -165,4 +165,18 @@ uint64_t dpd_read_lutid(void)
     return ((lutid_high << 32u) | (lutid_low));
 }
 
+uint32_t dpd_register_write(uint8_t offset, uint32_t value)
+{
+    offset = offset / 4 * 4;
+    no_os_axi_io_write(DPD_CTRL_BASEADDR, offset, value);
+    return dpd_register_read(offset);
+}
+
+uint32_t dpd_register_read(uint8_t offset)
+{
+    uint32_t regVal = 0;
+    offset = offset / 4 * 4;
+    no_os_axi_io_read(DPD_CTRL_BASEADDR, offset, &regVal);
+    return regVal;
+}
 

@@ -555,9 +555,9 @@ int main(void)
 			wrLut[i] = 0x11110000*(lutId+1) + i;
 		}
 		//NOTE: Crash if lutId > 16!!!
-		if(dpd_write_luts(lutId, wrLut)==0u)
+		if(dpd_luts_write(lutId, wrLut)==0u)
 		{
-			dpd_read_luts(lutId, rdLut);
+			dpd_luts_read(lutId, rdLut);
 		}
 	}
 
@@ -566,7 +566,7 @@ int main(void)
 	{
 		int lutsOffset = lutId * DPD_LUT_DEPTH;
 
-		dpd_write_luts(lutId, &lutEntries[lutsOffset]);
+		dpd_luts_write(lutId, &lutEntries[lutsOffset]);
 	}
 #endif
 
@@ -626,14 +626,16 @@ void parse_spi_command(void *devHalInfo)
 
 	struct no_os_uart_desc *uart_desc;
 #define MAX_SIZE (DAC_BUFFER_SAMPLES*4*2)
+	int32_t error = 0;
 	uint32_t bytes_number = 10;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
-	int32_t error = 0;
-
+    uint32_t bytes_send = 0u;
+    const uint32_t bytes_chunk = 4096u;
 	uint8_t spi_mode = 0u;
 	uint32_t spi_addr = 0;
 	uint32_t spi_data = 0;
+    uint8_t dpd_lutId = 0;
 
 	error = no_os_uart_init(&uart_desc, &uart_param);
 
@@ -651,14 +653,14 @@ void parse_spi_command(void *devHalInfo)
 				spi_mode = wr_data[1];
 				spi_addr = (wr_data[2] << 3*8) | (wr_data[3] << 2*8) | (wr_data[4] << 1*8) | wr_data[5];
 				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
-				if(wr_data[0] == 0x5A)
+				switch(wr_data[0])
 				{
+				case 0x5A:
 #if ADRV9009_DEVICE
 					talSpiWriteByte(devHalInfo, (uint16_t)spi_addr, (uint8_t)spi_data);
 #endif
-				}
-				else if(wr_data[0] == 0x5B)
-				{
+					break;
+				case 0x5B:
 #if ADRV9009_DEVICE
 					// spi read
 					spi_data = talSpiReadByte(devHalInfo, (uint16_t)spi_addr);
@@ -671,9 +673,8 @@ void parse_spi_command(void *devHalInfo)
 					wr_data[8] = (spi_data >> 1*8) & 0xff;
 					wr_data[9] = (spi_data >> 0*8) & 0xff;
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
-				}
-				else if(wr_data[0] == 0x5C)
-				{
+					break;
+				case 0x5C:
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
 					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
@@ -709,9 +710,8 @@ void parse_spi_command(void *devHalInfo)
 						}
 					}
 					no_os_mdelay(10);
-				}
-				else if(wr_data[0] == 0x5D)
-				{
+					break;
+				case 0x5D:
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					uint16_t samples_number = bytes_number / 4;
 #ifndef ADRV9008_2
@@ -746,9 +746,7 @@ void parse_spi_command(void *devHalInfo)
 						memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, bytes_number);
 					}
 
-					uint32_t bytes_send = 0u;
-					const uint32_t bytes_chunk = 4096u;
-
+					bytes_send = 0u;
 					while(bytes_send + bytes_chunk < bytes_number)
 					{
 						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
@@ -760,9 +758,8 @@ void parse_spi_command(void *devHalInfo)
 					}
 
 					no_os_mdelay(10);
-				}
-				else if(wr_data[0] = 0x5E)
-				{
+					break;
+				case 0x5E:
 					/* Read waveform from SD card and transmit */
 					char fileID = wr_data[1] + '0';
 					int sd_status = 0;
@@ -798,7 +795,79 @@ void parse_spi_command(void *devHalInfo)
 						/* Flush cache data. */
 						Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, file_size);
 					}
+					break;
+                case 0x6A:
+                    /* dpd register write */
+					dpd_register_write((uint8_t)spi_addr, spi_data);
+                    break;
+                case 0x6B:
+                    /* dpd register read */
+					spi_data = dpd_register_read((uint8_t)spi_addr);
+
+					// send data
+					wr_data[6] = (spi_data >> 3*8) & 0xff;
+					wr_data[7] = (spi_data >> 2*8) & 0xff;
+					wr_data[8] = (spi_data >> 1*8) & 0xff;
+					wr_data[9] = (spi_data >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);  
+                    break;
+                case 0x6C:
+                    /* dpd luts write */
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					dpd_lutId = wr_data[4];
+
+                    bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+
+                    if((dpd_lutId < DPD_LUT_MAX) && (bytes_number/4 == DPD_LUT_DEPTH))
+                    {
+                        for(int sample = 0; sample < bytes_number/4; sample++)
+                        {
+							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
+										(wr_data[sample*4 + 0] << 8) |
+										(wr_data[sample*4 + 3] << 16) |
+										(wr_data[sample*4 + 2] << 24);
+							lutEntries[dpd_lutId*DPD_LUT_DEPTH + sample] = iq;
+                        }
+                        dpd_luts_write(dpd_lutId, &lutEntries[dpd_lutId*DPD_LUT_DEPTH]);
+                        no_os_mdelay(10);
+                    }
+                    else
+                    {
+                        /* report error */
+                    }
+                    break;
+                case 0x6D:
+                    /* dpd luts read */
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+                    dpd_lutId = wr_data[4];
+                    if((dpd_lutId < DPD_LUT_MAX) && (bytes_number/4 == DPD_LUT_DEPTH))
+                    {
+                        uint32_t* pLut = (uint32_t*) wr_data;
+                        dpd_luts_read(dpd_lutId, pLut);
+
+					bytes_send = 0u;
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+
+					no_os_mdelay(10);
+                    }
+                    else
+                    {
+                        /* report error */                        
+                    }
+                    break;
+				default:
+					/* do nothing */
+					break;
 				}
+
 			}
 		}
 	}

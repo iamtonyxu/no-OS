@@ -30,8 +30,10 @@ typedef enum{
 } Dpd_ActOut_Sel;
 
 uint8_t dpd_luts_access_test(void);
-uint8_t dpd_write_luts(uint8_t lutId, uint32_t *pLut);
-uint8_t dpd_read_luts(uint8_t lutId, uint32_t *pLut);
+uint32_t dpd_register_write(uint8_t offset, uint32_t value);
+uint32_t dpd_register_read(uint8_t offset);
+uint8_t dpd_luts_write(uint8_t lutId, uint32_t *pLut);
+uint8_t dpd_luts_read(uint8_t lutId, uint32_t *pLut);
 
 uint32_t dpd_read_ipVersion(void);
 uint64_t dpd_read_idMask(void);
