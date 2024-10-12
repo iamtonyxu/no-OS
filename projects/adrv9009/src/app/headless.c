@@ -43,6 +43,7 @@
 char file_name[32] = "TEST0.BIN";
 
 extern uint32_t lutEntries[DPD_LUT_DEPTH*DPD_LUT_MAX];
+uint32_t rdLut[DPD_LUT_DEPTH*DPD_LUT_MAX] = {0};
 
 #define ADRV9009_DEVICE 0
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
@@ -540,36 +541,25 @@ int main(void)
 	status = dpd_luts_access_test();
 	uint32_t dpd_ipVersion = dpd_read_ipVersion();
 	uint64_t dpd_idMask = dpd_read_idMask();
-
 	uint32_t dpd_scrach_val = dpd_write_scratch_reg(0x12345678);
-
 	uint8_t dpd_out_sel = dpd_write_act_out_sel(DPD_BYPASS);
-
-	uint32_t wrLut[DPD_LUT_DEPTH] = {0};
-	uint32_t rdLut[DPD_LUT_DEPTH] = {0};
-
-	for(uint8_t lutId = 0; lutId < 64; lutId++)
-	{
-		for(int i = 0; i < DPD_LUT_DEPTH; i++)
-		{
-			wrLut[i] = 0x11110000*(lutId+1) + i;
-		}
-		//NOTE: Crash if lutId > 16!!!
-		if(dpd_luts_write(lutId, wrLut)==0u)
-		{
-			dpd_luts_read(lutId, rdLut);
-		}
-	}
-
-#if 0
-	for(uint8_t lutId = 0; lutId < 64; lutId++)
-	{
-		int lutsOffset = lutId * DPD_LUT_DEPTH;
-
-		dpd_luts_write(lutId, &lutEntries[lutsOffset]);
-	}
 #endif
 
+#if 1
+	for(uint8_t lutId = 0; lutId < 64; lutId++)
+	{
+		if((dpd_idMask & (1u << lutId)) != 0u)
+		{
+			int lutsOffset = lutId * DPD_LUT_DEPTH;
+			dpd_luts_write(lutId, &lutEntries[lutsOffset]);
+			dpd_luts_read(lutId, &rdLut[lutsOffset]);
+		}
+	}
+	if(memcmp(rdLut, lutEntries, sizeof(rdLut)) != 0)
+	{
+		printf("Warning: rdLut is NOT equal with wrLut!");
+	}
+	dpd_out_sel = dpd_write_act_out_sel(DPD_ENABLE); //DPD_ENABLE
 #endif
 
 	while(1)
@@ -865,6 +855,7 @@ void parse_spi_command(void *devHalInfo)
                     break;
 				default:
 					/* do nothing */
+					printf("Invalid command.\n");
 					break;
 				}
 
