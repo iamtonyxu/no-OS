@@ -180,3 +180,27 @@ uint32_t dpd_register_read(uint8_t offset)
     return regVal;
 }
 
+uint8_t dpd_read_capture(uint8_t position, uint32_t *pBuf, uint32_t size)
+{
+	uint8_t err = 0u;
+	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR : DPD_CAP1_BASEADDR;
+	uint32_t offset = 0u;
+
+	if((pBuf == NULL) || (size > DPD_CAP_SIZE))
+	{
+		err = 1u;
+	}
+
+	if(err == 0u)
+	{
+		// read data capture in FPGA RAM
+		for(uint32_t i = 0u; i < size; i++)
+		{
+			offset = i * 4;
+			no_os_axi_io_read(base, offset, (pBuf+i));
+		}
+	}
+
+	return err;
+}
+

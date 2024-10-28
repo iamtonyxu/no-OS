@@ -6,11 +6,13 @@
 #include "parameters.h"
 
 // DPD Base Address
-//#define XPAR_AXI_DPD_ACTUATOR_0_BASEADDR 0xffff0000
 #define DPD_CTRL_BASEADDR       XPAR_AXI_DPD_ACTUATOR_0_BASEADDR
 #define DPD_MEM_BASEADDR        XPAR_AXI_DPD_ACTUATOR_0_BASEADDR + 0x8000
+#define DPD_CAP0_BASEADDR       XPAR_AXI_DPD_CAPTURE_0_BASEADDR
+#define DPD_CAP1_BASEADDR       XPAR_AXI_DPD_CAPTURE_1_BASEADDR
 #define DPD_LUT_DEPTH           1024
 #define DPD_LUT_MAX             64
+#define DPD_CAP_SIZE            4096
 
 // DPD Ctrl Registers
 #define ADDR_IP_VERSION         0x0000
@@ -44,5 +46,7 @@ uint8_t dpd_write_act_out_sel(Dpd_ActOut_Sel sel);
 uint8_t dpd_read_act_out_sel(void);
 uint64_t dpd_write_lutid(uint64_t lutid);
 uint64_t dpd_read_lutid(void);
+
+uint8_t dpd_read_capture(uint8_t position, uint32_t *pBuf, uint32_t size);
 
 #endif
