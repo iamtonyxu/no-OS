@@ -47,6 +47,9 @@ uint8_t dpd_read_act_out_sel(void);
 uint64_t dpd_write_lutid(uint64_t lutid);
 uint64_t dpd_read_lutid(void);
 
-uint8_t dpd_read_capture(uint8_t position, uint32_t *pBuf, uint32_t size);
+uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size);
+
+uint8_t dpd_write_cap_control_reg(int8_t position, uint32_t ctrl);
+uint32_t dpd_read_cap_control_reg(int8_t position);
 
 #endif

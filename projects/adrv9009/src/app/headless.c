@@ -42,12 +42,16 @@
 #include "sdcard_access.h"
 char file_name[32] = "TEST0.BIN";
 
+//#define CAP_DEBUG
+
 extern uint32_t lutEntries[DPD_LUT_DEPTH*DPD_LUT_MAX];
 uint32_t rdLut[DPD_LUT_DEPTH*DPD_LUT_MAX] = {0};
 
 #define ADRV9009_DEVICE 0
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 #define ADC_BUFFER_SAMPLES MAX_FILE_SIZE/4
+
+uint32_t capBuf[DPD_CAP_SIZE];
 
 #ifdef DMA_EXAMPLE
 
@@ -460,6 +464,14 @@ int main(void)
 		printf("OBS axi_dmac_init() rx init error: %d\n", status);
 		goto error_3;
 	}
+
+#ifdef CAP_DEBUG
+	/* Get interrupt sources and clear interrupts. */
+	uint32_t reg_val;
+	axi_dmac_read(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, &reg_val);
+	axi_dmac_write(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, reg_val);
+#endif
+
 #endif
 
 #ifdef DMA_EXAMPLE
@@ -513,6 +525,7 @@ int main(void)
 		return status;
 	printf("Rx obs ");
 	status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
+
 	uint8_t num_chans = rx_os_adc_init.num_channels;
 #endif
 
@@ -711,6 +724,7 @@ void parse_spi_command(void *devHalInfo)
 					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS / 2 *
 										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 #endif
+
 					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
 
@@ -726,6 +740,12 @@ void parse_spi_command(void *devHalInfo)
 					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
 								samples_number * TALISE_NUM_CHANNELS / 2 *
 								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+#endif
+#ifdef CAP_DEBUG
+					/* Get interrupt sources and clear interrupts. */
+					uint32_t reg_val;
+					axi_dmac_read(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, &reg_val);
+					axi_dmac_write(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, reg_val);
 #endif
 					if(status < 0)
 					{
@@ -748,6 +768,20 @@ void parse_spi_command(void *devHalInfo)
 					}
 
 					no_os_mdelay(10);
+#if 1
+					dpd_read_capture_buffer(0, capBuf, DPD_CAP_SIZE);
+					memcpy(wr_data, (uint8_t*)capBuf, bytes_number);
+					bytes_send = 0u;
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+#endif
 					break;
 				case 0x5E:
 					/* Read waveform from SD card and transmit */
