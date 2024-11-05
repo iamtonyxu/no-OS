@@ -249,7 +249,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 	/*******************************/
 	/**Set RF PLL LO Frequencies ***/
 	/*******************************/
-	talAction = TALISE_setRfPllFrequency(pd, TAL_RF_PLL, 2000000000);
+	talAction = TALISE_setRfPllFrequency(pd, TAL_RF_PLL, 3500000000);
 	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
 		printf("error: TALISE_setRfPllFrequency() failed\n");
