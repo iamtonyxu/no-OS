@@ -30,7 +30,6 @@ SRCS += $(PROJECT)/src/app/headless.c \
 	$(PROJECT)/src/app/app_talise.c \
 	$(PROJECT)/src/app/app_dpd.c \
 	$(PROJECT)/src/app/app_dpd_luts.c \
-
 	$(PROJECT)/src/dpd/CholeskyMatrix_real.c \
 	$(PROJECT)/src/dpd/dpd_act.c \
 	$(PROJECT)/src/dpd/dpd_adp.c \
