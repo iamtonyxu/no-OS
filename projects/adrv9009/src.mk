@@ -30,6 +30,18 @@ SRCS += $(PROJECT)/src/app/headless.c \
 	$(PROJECT)/src/app/app_talise.c \
 	$(PROJECT)/src/app/app_dpd.c \
 	$(PROJECT)/src/app/app_dpd_luts.c \
+
+	$(PROJECT)/src/dpd/CholeskyMatrix_real.c \
+	$(PROJECT)/src/dpd/dpd_act.c \
+	$(PROJECT)/src/dpd/dpd_adp.c \
+	$(PROJECT)/src/dpd/dpd_delay_filter.c \
+	$(PROJECT)/src/dpd/dpd_delayEstimate.c \
+	$(PROJECT)/src/dpd/dpd_featureCompute.c \
+	$(PROJECT)/src/dpd/dpd_filter.c \
+	$(PROJECT)/src/dpd/dpd_matrixSolver.c \
+	$(PROJECT)/src/dpd/dpd_top.c\
+	$(PROJECT)/src/dpd/dpd_utils.c \
+	$(PROJECT)/src/dpd/math_utils.c \
 	$(DRIVERS)/frequency/ad9528/ad9528.c \
 	$(PROJECT)/src/devices/adi_hal/no_os_hal.c \
 	$(DRIVERS)/frequency/hmc7044/hmc7044.c \
@@ -107,6 +119,23 @@ INCS +=	$(PROJECT)/src/app/app_config.h \
 	$(PROJECT)/src/app/app_transceiver.h \
 	$(PROJECT)/src/app/app_talise.h \
 	$(PROJECT)/src/app/app_dpd.h \
+	$(PROJECT)/src/dpd/CholeskyMatrix_real.h \
+	$(PROJECT)/src/dpd/complex_wrapper.h \
+	$(PROJECT)/src/dpd/dpd_act_p.h \
+	$(PROJECT)/src/dpd/dpd_act_t.h \
+	$(PROJECT)/src/dpd/dpd_adp.h \
+	$(PROJECT)/src/dpd/dpd_delay_filter_p.h \
+	$(PROJECT)/src/dpd/dpd_delayEstimate.h \
+	$(PROJECT)/src/dpd/dpd_err_codes_t.h \
+	$(PROJECT)/src/dpd/dpd_featureCompute.h \
+	$(PROJECT)/src/dpd/dpd_filter.h \
+	$(PROJECT)/src/dpd/dpd_matrixSolver.h \
+	$(PROJECT)/src/dpd/dpd_model_t.h \
+	$(PROJECT)/src/dpd/dpd_t_p.h \
+	$(PROJECT)/src/dpd/dpd_top.h \
+	$(PROJECT)/src/dpd/dpd_utils.h \
+	$(PROJECT)/src/dpd/math_utils.h \
+	$(PROJECT)/src/dpd/math_utils_t.h \
 	$(DRIVERS)/frequency/ad9528/ad9528.h \
 	$(PROJECT)/src/devices/adi_hal/adi_hal.h \
 	$(PROJECT)/src/devices/adi_hal/common.h \

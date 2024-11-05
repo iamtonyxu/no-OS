@@ -11,6 +11,9 @@
 /****< Insert User Includes Here >***/
 
 #include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <complex.h>
 #include "adi_hal.h"
 #include "no_os_spi.h"
 #include "no_os_error.h"
@@ -39,6 +42,9 @@
 #include "app_talise.h"
 #include "ad9528.h"
 #include "app_dpd.h"
+#include "dpd_top.h"
+#include "dpd_act_p.h"
+#include "dpd_err_codes_t.h"
 #include "sdcard_access.h"
 char file_name[32] = "TEST0.BIN";
 
@@ -51,13 +57,20 @@ uint32_t rdLut[DPD_LUT_DEPTH*DPD_LUT_MAX] = {0};
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 #define ADC_BUFFER_SAMPLES MAX_FILE_SIZE/4
 
-uint32_t capBuf[DPD_CAP_SIZE];
+uint32_t capTuBuf[DPD_CAP_SIZE];
+uint32_t capTxBuf[DPD_CAP_SIZE];
+uint32_t capORxBuf[DPD_CAP_SIZE];
+double complex pTx[DPD_CAP_SIZE]; // shared by tu and tx
+double complex pORx[DPD_CAP_SIZE];
 
 #ifdef DMA_EXAMPLE
 
 struct no_os_gpio_desc *gpio_plddrbypass;
 struct no_os_gpio_init_param gpio_init_plddrbypass;
 uint8_t tx_is_transfering = 0u;
+
+static dpd_TrackData_t dpdData;
+dpd_ErrCode_e dpdErr = DPD_ERR_CODE_NO_ERROR;
 
 #endif
 
@@ -769,8 +782,10 @@ void parse_spi_command(void *devHalInfo)
 
 					no_os_mdelay(10);
 #if 1
-					dpd_read_capture_buffer(0, capBuf, DPD_CAP_SIZE);
-					memcpy(wr_data, (uint8_t*)capBuf, bytes_number);
+					dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE);
+					dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE);
+
+					memcpy(wr_data, (uint8_t*)capTuBuf, bytes_number);
 					bytes_send = 0u;
 					while(bytes_send + bytes_chunk < bytes_number)
 					{
@@ -887,6 +902,184 @@ void parse_spi_command(void *devHalInfo)
                         /* report error */                        
                     }
                     break;
+                case 0x6E:
+                	/* dpd iteration */
+                    uint8_t max_iters = wr_data[1];
+#if 1
+                    /* 1.bypass actuator */
+                  	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
+#endif
+                    /* 2.dpd init */
+                    dpdErr = dpd_Init(&dpdData);
+
+                    for(uint8_t iters = 0u; iters < max_iters; iters++)
+                    {
+#if 0
+                    	if(dpdData.direct)
+                    	{
+                            /* 1.enable actuator */
+                          	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_ENABLE);
+                    	}
+                    	else
+                    	{
+                            /* 1.bypass actuator */
+                          	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
+                    	}
+#endif
+                        /* 3.capture */
+                        if(DPD_ERR_CODE_NO_ERROR == dpdErr)
+                        {
+    						transfer_rx.size = DPD_CAP_SIZE * TALISE_NUM_CHANNELS / 2 *
+    											NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+
+    						/* Read the data from the ADC DMA. */
+    						axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
+
+    						/* Wait until transfer finishes */
+    						int32_t status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
+
+    						/* Flush cache data. */
+    						Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
+    								DPD_CAP_SIZE * TALISE_NUM_CHANNELS / 2 *
+    									NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+
+    						if(status < 0)
+    						{
+    							dpdErr = DPD_CAPTURE_ORX_ERROR;
+    						}
+    						else
+    						{
+    							memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, DPD_CAP_SIZE*4); // ORx
+    							dpdErr = dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE);
+    							dpdErr = dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE);
+    						}
+                        }
+
+                        /* 4.coeffs estimate */
+                        if(DPD_ERR_CODE_NO_ERROR == dpdErr)
+                        {
+                    		uint16_t data_i, data_q;
+                    		int16_t tmp_i, tmp_q;
+
+                    	    if((dpdData.pTrackCfg->direct == 1) && (dpdData.iterCount > DPD_MAX_INDIRECT_COUNT - 1))
+                    	    {
+                    	    	dpdData.direct = 1;
+                    	    }
+                    	    else
+                    	    {
+                    	    	dpdData.direct = 0;
+                    	    }
+
+                        	/* convert int32_t to double complex for Tx */
+                        	for(uint16_t index = 0; index < DPD_CAP_SIZE; index=index+2)
+                        	{
+                        		if(dpdData.direct)
+                        		{
+                        			data_i = (capTuBuf[index] >> 0) & 0xffff;
+                            		data_q = (capTuBuf[index+1]>> 0) & 0xffff;
+
+                            		tmp_i = (int16_t)(data_i);
+                            		tmp_q = (int16_t)(data_q);
+
+                            		pTx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+
+                        			data_i = (capTuBuf[index] >> 16) & 0xffff;
+                            		data_q = (capTuBuf[index+1]>> 16) & 0xffff;
+                            		tmp_i = (int16_t)(data_i);
+                            		tmp_q = (int16_t)(data_q);
+
+                            		pTx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+                        		}
+                        		else
+                        		{
+                        			data_i = (capTxBuf[index] >> 0) & 0xffff;
+                            		data_q = (capTxBuf[index+1]>> 0) & 0xffff;
+
+                            		tmp_i = (int16_t)(data_i);
+                            		tmp_q = (int16_t)(data_q);
+
+                            		pTx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+
+                        			data_i = (capTxBuf[index] >> 16) & 0xffff;
+                            		data_q = (capTxBuf[index+1]>> 16) & 0xffff;
+                            		tmp_i = (int16_t)(data_i);
+                            		tmp_q = (int16_t)(data_q);
+
+                            		pTx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+                        		}
+                        	}
+
+                        	/* convert int32_t to double complex for ORx */
+                        	for(uint16_t index = 0; index < DPD_CAP_SIZE; index++)
+                        	{
+                        		// ORx
+                        		data_i = (wr_data[index*4 + 0] << 0) | (wr_data[index*4 + 1] << 8);
+                        		data_q = (wr_data[index*4 + 2] << 0) | (wr_data[index*4 + 3] << 8);
+#if 0
+                        		tmp_i = (data_i > 32768-1) ? (data_i-65536) : data_i;
+                        		tmp_q = (data_q > 32768-1) ? (data_q-65536) : data_q;
+#else
+                        		tmp_i = (int16_t)(data_i);
+                        		tmp_q = (int16_t)(data_q);
+#endif
+                        		pORx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+                        	}
+
+                        	/* run dpd coeffs estimation */
+                        	uint8_t capBatch = 1;
+                        	dpdErr = dpd_CoeffEstimate(&dpdData,
+                        								pTx,
+														pORx,
+														DPD_CAP_SIZE,
+														capBatch
+                        								);
+                        }
+
+                        /* 5.coeffs2luts */
+                        uint32_t lutScale = 32738; // 2^15
+						for(uint8_t lutId = 0u; lutId < DPD_LUT_MAX; lutId++)
+						{
+							if(DPD_ERR_CODE_NO_ERROR == dpdErr)
+							{
+								dpdErr = WriteVBankLuts(&dpdData,
+														lutEntries,
+														lutId,
+														lutScale,
+														DPD_LUT_DEPTH);
+							}
+							else
+							{
+								break;
+							}
+						}
+#if 1
+                        /* 6.bypass actuator */
+                      	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
+#endif
+                        /* 7.luts programming */
+                        if(DPD_ERR_CODE_NO_ERROR == dpdErr)
+    					{
+    						for(uint8_t lutId = 0u; lutId < DPD_LUT_MAX; lutId++)
+    						{
+                                dpd_luts_write(lutId, &lutEntries[lutId*DPD_LUT_DEPTH]);
+                                no_os_mdelay(1);
+    						}
+    					}
+
+                        /* 8.enable actuator */
+                        if(DPD_ERR_CODE_NO_ERROR == dpdErr)
+    					{
+                          	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_ENABLE);
+    					}
+
+                        /* 9. goto #3 if iters < max_iters */
+                        if(DPD_ERR_CODE_NO_ERROR != dpdErr)
+    					{
+                          	break;
+    					}
+                        no_os_mdelay(100);
+                    }
+                	break;
 				default:
 					/* do nothing */
 					printf("Invalid command.\n");
