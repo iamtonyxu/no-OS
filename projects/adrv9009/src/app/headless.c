@@ -1054,17 +1054,19 @@ void parse_spi_command(void *devHalInfo)
 						}
 #if 1
                         /* 6.bypass actuator */
-                      	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
+                        dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
 #endif
                         /* 7.luts programming */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
-    					{
-    						for(uint8_t lutId = 0u; lutId < DPD_LUT_MAX; lutId++)
-    						{
-                                dpd_luts_write(lutId, &lutEntries[lutId*DPD_LUT_DEPTH]);
-                                no_os_mdelay(1);
-    						}
-    					}
+                        {
+                            for(uint8_t lutId = 0u; lutId < DPD_LUT_MAX; lutId++)
+                            {
+                                if(dpdData.pLut->lutIdFound & (1ull << lutId))
+                                {
+                                    dpd_luts_write(lutId, &lutEntries[lutId*DPD_LUT_DEPTH]);
+                                }
+                            }
+                        }
 
                         /* 8.enable actuator */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
