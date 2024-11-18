@@ -52,4 +52,7 @@ uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size)
 uint8_t dpd_write_cap_control_reg(int8_t position, uint32_t ctrl);
 uint32_t dpd_read_cap_control_reg(int8_t position);
 
+uint8_t dpd_download_waveform(uint32_t *waveform_i, uint32_t *waveform_q, uint32_t size);
+uint8_t dpd_download_waveform_default(void);
+
 #endif

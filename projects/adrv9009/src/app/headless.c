@@ -72,6 +72,9 @@ uint8_t tx_is_transfering = 0u;
 static dpd_TrackData_t dpdData;
 dpd_ErrCode_e dpdErr = DPD_ERR_CODE_NO_ERROR;
 
+extern uint32_t sine_lut_i[16384];
+extern uint32_t sine_lut_q[16384];
+
 #endif
 
 #ifdef IIO_SUPPORT
@@ -502,6 +505,7 @@ int main(void)
 	}
 	no_os_gpio_direction_output(gpio_plddrbypass, 1);
 
+
 #ifndef ADRV9008_1
 	axi_dac_set_datasel(tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 
@@ -560,7 +564,11 @@ int main(void)
 		       talInit.jesd204Settings.framerA.Np, 8),
 	       num_chans,
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+
 #endif
+
+	// download default waveform stored in FPGA RAM
+	dpd_download_waveform_default();
 
 #if 1
 	// dpd test
@@ -690,6 +698,7 @@ void parse_spi_command(void *devHalInfo)
 					wr_data[9] = (spi_data >> 0*8) & 0xff;
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					break;
+#if 0
 				case 0x5C:
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
@@ -723,6 +732,30 @@ void parse_spi_command(void *devHalInfo)
 
 							/* Flush cache data. */
 							Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(zero_lut_iq));
+						}
+					}
+					no_os_mdelay(10);
+					break;
+#endif
+				case 0x5C:
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					if(bytes_number/8 <= DAC_BUFFER_SAMPLES)
+					{
+						for(int sample = 0; sample < bytes_number/8; sample++)
+						{
+							uint32_t data_i = 	(wr_data[sample*8 + 4] << 24) |
+												(wr_data[sample*8 + 5] << 16) |
+												(wr_data[sample*8 + 0] << 8) |
+												(wr_data[sample*8 + 1] << 0);
+
+							uint32_t data_q = 	(wr_data[sample*8 + 6] << 24) |
+												(wr_data[sample*8 + 7] << 16) |
+												(wr_data[sample*8 + 2] << 8) |
+												(wr_data[sample*8 + 3] << 0);
+
+							no_os_axi_io_write(XPAR_AXI_DPD_WAVEFORM_0_BASEADDR, sample*4, data_i);
+							no_os_axi_io_write(XPAR_AXI_DPD_WAVEFORM_1_BASEADDR, sample*4, data_q);
 						}
 					}
 					no_os_mdelay(10);
