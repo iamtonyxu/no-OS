@@ -33031,3 +33031,16 @@ uint32_t dpd_read_cap_control_reg(int8_t position)
 	no_os_axi_io_read(base, offset, &ret);
 	return ret;
 }
+
+uint8_t dpd_write_lut_sel(uint8_t sel)
+{
+	dpd_register_write(ADDR_LUT_SEL, sel);
+	return 0;
+}
+
+uint8_t dpd_read_lut_sel(void)
+{
+	uint32_t retVal = 0;
+	retVal = dpd_register_read(ADDR_LUT_SEL);
+	return (retVal & 0x03u);
+}

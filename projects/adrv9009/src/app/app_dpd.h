@@ -22,6 +22,7 @@
 #define ADDR_ACT_OUT_SEL        0x0010
 #define ADDR_LUTID_L            0x0014
 #define ADDR_LUTID_H            0x0018
+#define ADDR_LUT_SEL            0x001C
 
 // DPD ACT Out Select
 typedef enum{
@@ -46,6 +47,8 @@ uint8_t dpd_write_act_out_sel(Dpd_ActOut_Sel sel);
 uint8_t dpd_read_act_out_sel(void);
 uint64_t dpd_write_lutid(uint64_t lutid);
 uint64_t dpd_read_lutid(void);
+uint8_t dpd_write_lut_sel(uint8_t sel);
+uint8_t dpd_read_lut_sel(void);
 
 uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size);
 

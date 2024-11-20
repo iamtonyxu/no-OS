@@ -947,18 +947,18 @@ void parse_spi_command(void *devHalInfo)
 
                     for(uint8_t iters = 0u; iters < max_iters; iters++)
                     {
-#if 0
-                    	if(dpdData.direct)
-                    	{
-                            /* 1.enable actuator */
-                          	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_ENABLE);
-                    	}
-                    	else
-                    	{
-                            /* 1.bypass actuator */
-                          	dpd_register_write(ADDR_ACT_OUT_SEL, DPD_BYPASS);
-                    	}
-#endif
+
+
+
+
+
+
+
+
+
+
+
+
                         /* 3.capture */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
                         {
@@ -1092,6 +1092,14 @@ void parse_spi_command(void *devHalInfo)
                         /* 7.luts programming */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
                         {
+							// a.find which bank of luts is available
+							uint8_t oldSel = dpd_read_lut_sel();
+
+							// b.select the available bank to program
+							uint8_t newSel = (oldSel & 0x01) ? (oldSel & 0xFC) : (oldSel | 0x02);
+							dpd_write_lut_sel(newSel);
+
+							// c. program luts
                             for(uint8_t lutId = 0u; lutId < DPD_LUT_MAX; lutId++)
                             {
                                 if(dpdData.pLut->lutIdFound & (1ull << lutId))
@@ -1099,6 +1107,10 @@ void parse_spi_command(void *devHalInfo)
                                     dpd_luts_write(lutId, &lutEntries[lutId*DPD_LUT_DEPTH]);
                                 }
                             }
+							// d. switch the program bank and active bank
+							newSel = (newSel & 0x01) ? 0x02 : 0x01;
+							dpd_write_lut_sel(newSel);
+
                         }
 
                         /* 8.enable actuator */
