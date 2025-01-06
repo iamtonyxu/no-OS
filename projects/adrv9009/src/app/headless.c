@@ -38,12 +38,8 @@
 #include "app_transceiver.h"
 #include "app_talise.h"
 #include "ad9528.h"
-#include "app_dpd.h"
 #include "sdcard_access.h"
 char file_name[32] = "TEST0.BIN";
-
-extern uint32_t lutEntries[DPD_LUT_DEPTH*DPD_LUT_MAX];
-uint32_t rdLut[DPD_LUT_DEPTH*DPD_LUT_MAX] = {0};
 
 #define ADRV9009_DEVICE 0
 #define DAC_BUFFER_SAMPLES MAX_FILE_SIZE/4
@@ -536,32 +532,6 @@ int main(void)
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
 
-#if 1
-	// dpd test
-	status = dpd_luts_access_test();
-	uint32_t dpd_ipVersion = dpd_read_ipVersion();
-	uint64_t dpd_idMask = dpd_read_idMask();
-	uint32_t dpd_scrach_val = dpd_write_scratch_reg(0x12345678);
-	uint8_t dpd_out_sel = dpd_write_act_out_sel(DPD_BYPASS);
-#endif
-
-#if 1
-	for(uint8_t lutId = 0; lutId < 64; lutId++)
-	{
-		if((dpd_idMask & (1u << lutId)) != 0u)
-		{
-			int lutsOffset = lutId * DPD_LUT_DEPTH;
-			dpd_luts_write(lutId, &lutEntries[lutsOffset]);
-			dpd_luts_read(lutId, &rdLut[lutsOffset]);
-		}
-	}
-	if(memcmp(rdLut, lutEntries, sizeof(rdLut)) != 0)
-	{
-		printf("Warning: rdLut is NOT equal with wrLut!");
-	}
-	dpd_out_sel = dpd_write_act_out_sel(DPD_ENABLE); //DPD_ENABLE
-#endif
-
 	while(1)
 	{
 		/* parse cmd received via uart */
@@ -625,7 +595,6 @@ void parse_spi_command(void *devHalInfo)
 	uint8_t spi_mode = 0u;
 	uint32_t spi_addr = 0;
 	uint32_t spi_data = 0;
-    uint8_t dpd_lutId = 0;
 
 	error = no_os_uart_init(&uart_desc, &uart_param);
 
@@ -785,73 +754,6 @@ void parse_spi_command(void *devHalInfo)
 						/* Flush cache data. */
 						Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, file_size);
 					}
-					break;
-                case 0x6A:
-                    /* dpd register write */
-					dpd_register_write((uint8_t)spi_addr, spi_data);
-                    break;
-                case 0x6B:
-                    /* dpd register read */
-					spi_data = dpd_register_read((uint8_t)spi_addr);
-
-					// send data
-					wr_data[6] = (spi_data >> 3*8) & 0xff;
-					wr_data[7] = (spi_data >> 2*8) & 0xff;
-					wr_data[8] = (spi_data >> 1*8) & 0xff;
-					wr_data[9] = (spi_data >> 0*8) & 0xff;
-					no_os_uart_write(uart_desc, wr_data, bytes_number);  
-                    break;
-                case 0x6C:
-                    /* dpd luts write */
-					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
-					dpd_lutId = wr_data[4];
-
-                    bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
-
-                    if((dpd_lutId < DPD_LUT_MAX) && (bytes_number/4 == DPD_LUT_DEPTH))
-                    {
-                        for(int sample = 0; sample < bytes_number/4; sample++)
-                        {
-							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
-										(wr_data[sample*4 + 0] << 8) |
-										(wr_data[sample*4 + 3] << 16) |
-										(wr_data[sample*4 + 2] << 24);
-							lutEntries[dpd_lutId*DPD_LUT_DEPTH + sample] = iq;
-                        }
-                        dpd_luts_write(dpd_lutId, &lutEntries[dpd_lutId*DPD_LUT_DEPTH]);
-                        no_os_mdelay(10);
-                    }
-                    else
-                    {
-                        /* report error */
-                    }
-                    break;
-                case 0x6D:
-                    /* dpd luts read */
-					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
-                    dpd_lutId = wr_data[4];
-                    if((dpd_lutId < DPD_LUT_MAX) && (bytes_number/4 == DPD_LUT_DEPTH))
-                    {
-                        uint32_t* pLut = (uint32_t*) wr_data;
-                        dpd_luts_read(dpd_lutId, pLut);
-
-					bytes_send = 0u;
-					while(bytes_send + bytes_chunk < bytes_number)
-					{
-						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
-						bytes_send += bytes_chunk;
-					}
-					if(bytes_send < bytes_number)
-					{
-						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
-					}
-
-					no_os_mdelay(10);
-                    }
-                    else
-                    {
-                        /* report error */                        
-                    }
                     break;
 				default:
 					/* do nothing */
