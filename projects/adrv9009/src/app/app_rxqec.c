@@ -37,34 +37,34 @@ uint32_t rxqec_read_enable(void)
 	return rxqec_read(OFFSET_ENABLE);
 }
 
-void rxqec_write_hi(uint16_t hi[IFIR_TAPS_HALF])
+void rxqec_write_hi(uint16_t hi[IFIR_TAPS])
 {
-	for(int ii = 0; ii < IFIR_TAPS_HALF; ii++)
+	for(int ii = 0; ii < IFIR_TAPS; ii++)
 	{
 		rxqec_write(OFFSET_HI0 + ii*4, (uint32_t)hi[ii]);
 	}
 }
 
-uint32_t rxqec_read_hi(uint16_t hi[IFIR_TAPS_HALF])
+uint32_t rxqec_read_hi(uint16_t hi[IFIR_TAPS])
 {
-	for(int ii = 0; ii < IFIR_TAPS_HALF; ii++)
+	for(int ii = 0; ii < IFIR_TAPS; ii++)
 	{
 		hi[ii] = rxqec_read(OFFSET_HI0 + ii*4);
 	}
 	return 0u;
 }
 
-void rxqec_write_hq(uint16_t hq[QFIR_TAPS_HALF])
+void rxqec_write_hq(uint16_t hq[QFIR_TAPS])
 {
-	for(int ii = 0; ii < QFIR_TAPS_HALF; ii++)
+	for(int ii = 0; ii < QFIR_TAPS; ii++)
 	{
 		rxqec_write(OFFSET_HQ0 + ii*4, (uint32_t)hq[ii]);
 	}
 }
 
-uint32_t rxqec_read_hq(uint16_t hq[QFIR_TAPS_HALF])
+uint32_t rxqec_read_hq(uint16_t hq[QFIR_TAPS])
 {
-	for(int ii = 0; ii < QFIR_TAPS_HALF; ii++)
+	for(int ii = 0; ii < QFIR_TAPS; ii++)
 	{
 		hq[ii] = rxqec_read(OFFSET_HQ0 + ii*4);
 	}

@@ -11,6 +11,7 @@
 /****< Insert User Includes Here >***/
 
 #include <stdio.h>
+#include <string.h>
 #include "adi_hal.h"
 #include "no_os_spi.h"
 #include "no_os_error.h"
@@ -39,6 +40,7 @@
 #include "app_talise.h"
 #include "ad9528.h"
 #include "sdcard_access.h"
+#include "app_rxqec.h"
 char file_name[32] = "TEST0.BIN";
 
 #define ADRV9009_DEVICE 0
@@ -531,6 +533,26 @@ int main(void)
 	       num_chans,
 	       8 * NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
+
+	// rxqec test
+	uint32_t ipVersion = rxqec_read_ipVersion();
+	rxqec_write_scratch(0x12345678);
+	uint32_t scratch = rxqec_read_scratch();
+	// program hi/hq coeffs
+	uint16_t wrhi[IFIR_TAPS], rdhi[IFIR_TAPS];
+	uint16_t wrhq[QFIR_TAPS], rdhq[QFIR_TAPS];
+	rxqec_write_hi(wrhi);
+	rxqec_write_hq(wrhq);
+
+	rxqec_read_hi(rdhi);
+	rxqec_read_hq(rdhq);
+
+	if((memcmp(wrhi, rdhi, sizeof(wrhi)) == 0) &
+		(memcmp(wrhq, rdhq, sizeof(wrhq)) == 0))
+	{
+		rxqec_write_enable(1);
+	}
+	uint8_t enable = rxqec_read_enable();
 
 	while(1)
 	{
