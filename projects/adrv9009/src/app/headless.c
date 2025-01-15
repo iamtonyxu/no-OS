@@ -484,7 +484,7 @@ int main(void)
 #ifndef ALTERA_PLATFORM
 	Xil_DCacheFlush();
 #endif
-#if 0
+#if 1
 	axi_dmac_transfer_start(tx_dmac, &transfer_tx);
 	Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(sine_lut_iq));
 #endif
@@ -539,8 +539,12 @@ int main(void)
 	rxqec_write_scratch(0x12345678);
 	uint32_t scratch = rxqec_read_scratch();
 	// program hi/hq coeffs
-	uint16_t wrhi[IFIR_TAPS], rdhi[IFIR_TAPS];
-	uint16_t wrhq[QFIR_TAPS], rdhq[QFIR_TAPS];
+#if 0
+	uint16_t wrhi[IFIR_TAPS] = {0, 0x4, 0x7, 0x17, 0xfff8, 0xfffb, 0xffff};
+	uint16_t wrhq[QFIR_TAPS] = {0xfffd, 0xffff, 0xfffe, 0x0, 0x0, 0xfffd, 0xfffe, 0x7e0f,
+								0x0, 0x7, 0x7, 0xfffe, 0xffff, 0x4, 0x0};
+
+	uint16_t rdhi[IFIR_TAPS], rdhq[QFIR_TAPS];
 	rxqec_write_hi(wrhi);
 	rxqec_write_hq(wrhq);
 
@@ -553,6 +557,9 @@ int main(void)
 		rxqec_write_enable(1);
 	}
 	uint8_t enable = rxqec_read_enable();
+	// DEBUG: Disable rxqec filter
+	rxqec_write_enable(0);
+#endif
 
 	while(1)
 	{
@@ -637,14 +644,14 @@ void parse_spi_command(void *devHalInfo)
 				switch(wr_data[0])
 				{
 				case 0x5A:
-#if ADRV9009_DEVICE
-					talSpiWriteByte(devHalInfo, (uint16_t)spi_addr, (uint8_t)spi_data);
-#endif
+					// rxqec register write
+					rxqec_write((uint16_t)spi_addr, (uint32_t)spi_data);
+
 					break;
 				case 0x5B:
-#if ADRV9009_DEVICE
-					// spi read
-					spi_data = talSpiReadByte(devHalInfo, (uint16_t)spi_addr);
+#if 1
+					// rxqec register read
+					spi_data = rxqec_read((uint16_t)spi_addr);
 #else
 					spi_data = 0xa1b2c3e4;
 #endif

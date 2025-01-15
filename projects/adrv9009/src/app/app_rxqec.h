@@ -60,4 +60,7 @@ void rxqec_write_hq(uint16_t hq[QFIR_TAPS]);
 uint32_t rxqec_read_hi(uint16_t hi[IFIR_TAPS]);
 uint32_t rxqec_read_hq(uint16_t hq[QFIR_TAPS]);
 
+void rxqec_write(uint16_t offset, uint32_t wrdata);
+uint32_t rxqec_read(uint16_t offset);
+
 #endif

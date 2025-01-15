@@ -1,11 +1,11 @@
 #include "app_rxqec.h"
 
-static void rxqec_write(uint16_t offset, uint32_t wrdata)
+void rxqec_write(uint16_t offset, uint32_t wrdata)
 {
 	no_os_axi_io_write((uint32_t)RXQEC_BASEADDR, (uint32_t)offset, wrdata);
 }
 
-static uint32_t rxqec_read(uint16_t offset)
+uint32_t rxqec_read(uint16_t offset)
 {
 	uint32_t rddata = 0;
 	no_os_axi_io_read((uint32_t)RXQEC_BASEADDR, (uint32_t)offset, &rddata);

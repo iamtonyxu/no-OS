@@ -58,13 +58,12 @@ capData = (data_i + 1j*data_q)./2^15;
 %%
 Fs = 122.88e6;
 FFT_Length = capSize;
-f = Fs*(0:(FFT_Length/2))/FFT_Length;
+f = Fs*(-FFT_Length/2:(FFT_Length/2-1))/FFT_Length;
 
 Y = fft(capData, FFT_Length);
 P2 = abs(Y/FFT_Length);
-P1 = P2(1:FFT_Length/2+1);
 figure;
-plot(f,P1); title('signal in freq domain');
+plot(f,20*log10(fftshift(P2))); title('signal in freq domain');
 
 disp("read capture data done.");
 end
