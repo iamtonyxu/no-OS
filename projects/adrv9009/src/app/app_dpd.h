@@ -5,11 +5,16 @@
 #include "adi_hal.h"
 #include "parameters.h"
 
+#define ORX_FROM_FPGA_RAM		0
+
 // DPD Base Address
 #define DPD_CTRL_BASEADDR       XPAR_AXI_DPD_ACTUATOR_0_BASEADDR
 #define DPD_MEM_BASEADDR        XPAR_AXI_DPD_ACTUATOR_0_BASEADDR + 0x8000
 #define DPD_CAP0_BASEADDR       XPAR_AXI_DPD_CAPTURE_0_BASEADDR
 #define DPD_CAP1_BASEADDR       XPAR_AXI_DPD_CAPTURE_1_BASEADDR
+#if ORX_FROM_FPGA_RAM
+#define DPD_CAP2_BASEADDR       XPAR_AXI_DPD_CAPTURE_2_BASEADDR
+#endif
 #define DPD_LUT_DEPTH           1024
 #define DPD_LUT_MAX             64
 #define DPD_CAP_SIZE            4096

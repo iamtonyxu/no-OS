@@ -32989,7 +32989,14 @@ uint32_t dpd_register_read(uint8_t offset)
 uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size)
 {
 	uint8_t err = 0u;
+#if(ORX_FROM_FPGA_RAM==1)
+	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR :
+					(position == 1u) ? DPD_CAP1_BASEADDR :
+									   DPD_CAP2_BASEADDR;
+#else
 	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR : DPD_CAP1_BASEADDR;
+#endif
+
 	uint32_t offset = 0u;
 
 	if((pBuf == NULL) || (size > DPD_CAP_SIZE))

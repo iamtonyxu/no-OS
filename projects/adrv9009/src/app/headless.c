@@ -947,18 +947,6 @@ void parse_spi_command(void *devHalInfo)
 
                     for(uint8_t iters = 0u; iters < max_iters; iters++)
                     {
-
-
-
-
-
-
-
-
-
-
-
-
                         /* 3.capture */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
                         {
@@ -982,7 +970,11 @@ void parse_spi_command(void *devHalInfo)
     						}
     						else
     						{
-    							memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, DPD_CAP_SIZE*4); // ORx
+#if(ORX_FROM_FPGA_RAM==1)
+                                dpdErr = dpd_read_capture_buffer(2, capORxBuf, DPD_CAP_SIZE); // ORx
+#else
+                                memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, DPD_CAP_SIZE*4); // ORx
+#endif
     							dpdErr = dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE);
     							dpdErr = dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE);
     						}
@@ -1040,23 +1032,40 @@ void parse_spi_command(void *devHalInfo)
 
                             		pTx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
                         		}
+#if(ORX_FROM_FPGA_RAM==1)
+                                {
+                                    data_i = (capORxBuf[index] >> 0) & 0xffff;
+                                    data_q = (capORxBuf[index+1]>> 0) & 0xffff;
+
+                                    tmp_i = (int16_t)(data_i);
+                                    tmp_q = (int16_t)(data_q);
+
+                                    pORx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+
+                                    data_i = (capORxBuf[index] >> 16) & 0xffff;
+                                    data_q = (capORxBuf[index+1]>> 16) & 0xffff;
+                                    tmp_i = (int16_t)(data_i);
+                                    tmp_q = (int16_t)(data_q);
+
+                                    pORx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
+                                }
+#endif
                         	}
 
+#if(ORX_FROM_FPGA_RAM==0)
                         	/* convert int32_t to double complex for ORx */
                         	for(uint16_t index = 0; index < DPD_CAP_SIZE; index++)
                         	{
                         		// ORx
                         		data_i = (wr_data[index*4 + 0] << 0) | (wr_data[index*4 + 1] << 8);
                         		data_q = (wr_data[index*4 + 2] << 0) | (wr_data[index*4 + 3] << 8);
-#if 0
-                        		tmp_i = (data_i > 32768-1) ? (data_i-65536) : data_i;
-                        		tmp_q = (data_q > 32768-1) ? (data_q-65536) : data_q;
-#else
+
                         		tmp_i = (int16_t)(data_i);
                         		tmp_q = (int16_t)(data_q);
-#endif
+
                         		pORx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
                         	}
+#endif
 
                         	/* run dpd coeffs estimation */
                         	uint8_t capBatch = 1;
