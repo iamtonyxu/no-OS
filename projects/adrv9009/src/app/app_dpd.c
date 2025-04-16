@@ -32989,13 +32989,9 @@ uint32_t dpd_register_read(uint8_t offset)
 uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size)
 {
 	uint8_t err = 0u;
-#if(ORX_FROM_FPGA_RAM==1)
 	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR :
 					(position == 1u) ? DPD_CAP1_BASEADDR :
 									   DPD_CAP2_BASEADDR;
-#else
-	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR : DPD_CAP1_BASEADDR;
-#endif
 
 	uint32_t offset = 0u;
 
@@ -33017,22 +33013,33 @@ uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size)
 	return err;
 }
 
-uint8_t dpd_write_cap_control_reg(int8_t position, uint32_t ctrl)
+uint8_t dpd_write_cap_control_reg(uint32_t ctrl)
 {
 	uint8_t err = 0u;
-	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR : DPD_CAP1_BASEADDR;
-	uint32_t offset = 0x8000u;
+	uint32_t base = XPAR_AXI_DPD_CAPTURE_SYNC_CTRL_0_BASEADDR;
+	uint32_t offset = 0x00u;
 
 	// write capture control register
 	no_os_axi_io_write(base, offset, ctrl);
 	return err;
 }
 
-uint32_t dpd_read_cap_control_reg(int8_t position)
+uint32_t dpd_read_cap_control_reg(void)
 {
 	uint32_t ret = 0u;
-	uint32_t base = (position == 0u) ? DPD_CAP0_BASEADDR : DPD_CAP1_BASEADDR;
-	uint32_t offset = 0x8000u;
+	uint32_t base = XPAR_AXI_DPD_CAPTURE_SYNC_CTRL_0_BASEADDR;
+	uint32_t offset = 0x00u;
+
+	// write capture control register
+	no_os_axi_io_read(base, offset, &ret);
+	return ret;
+}
+
+uint32_t dpd_read_cap_status_reg(void)
+{
+	uint32_t ret = 0u;
+	uint32_t base = XPAR_AXI_DPD_CAPTURE_SYNC_CTRL_0_BASEADDR;
+	uint32_t offset = 0x04u;
 
 	// write capture control register
 	no_os_axi_io_read(base, offset, &ret);

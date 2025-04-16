@@ -762,46 +762,29 @@ void parse_spi_command(void *devHalInfo)
 					break;
 				case 0x5D:
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
-					uint16_t samples_number = bytes_number / 4;
-#ifndef ADRV9008_2
-					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS *
+#if 1
+					transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
 										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
-#else
-					transfer_rx.size = samples_number * TALISE_NUM_CHANNELS / 2 *
-										NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
-#endif
 
-					/* Read the data from the ADC DMA. */
 					axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
-
-					/* Wait until transfer finishes */
-					int32_t status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
-
-					/* Flush cache data. */
-#ifndef ADRV9008_2
-					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
-								samples_number * TALISE_NUM_CHANNELS *
-								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
-#else
-					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
-								samples_number * TALISE_NUM_CHANNELS / 2 *
-								NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
+					axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
+					Xil_DCacheInvalidateRange(ADC_DDR_BASEADDR,
+								  ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
+								  NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
-#ifdef CAP_DEBUG
-					/* Get interrupt sources and clear interrupts. */
-					uint32_t reg_val;
-					axi_dmac_read(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, &reg_val);
-					axi_dmac_write(rx_os_dmac, AXI_DMAC_REG_IRQ_PENDING, reg_val);
-#endif
-					if(status < 0)
+					dpd_write_cap_control_reg(0x03u); // trigger 3-captures
+					uint32_t cap_status = 0u;
+					while(cap_status != 0x07)
 					{
-						memset(wr_data, 0, bytes_number);
+						cap_status = dpd_read_cap_status_reg();
+						no_os_mdelay(1);
 					}
-					else
-					{
-						memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, bytes_number);
-					}
+					dpdErr = dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE); // Tu
+					dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE); // Tx
+					dpd_read_capture_buffer(2, capORxBuf, DPD_CAP_SIZE); // ORx
 
+					// send ORx via uart
+					memcpy(wr_data, (uint8_t*)capORxBuf, bytes_number);
 					bytes_send = 0u;
 					while(bytes_send + bytes_chunk < bytes_number)
 					{
@@ -814,10 +797,7 @@ void parse_spi_command(void *devHalInfo)
 					}
 
 					no_os_mdelay(10);
-#if 1
-					dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE);
-					dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE);
-
+					// send Tu via uart
 					memcpy(wr_data, (uint8_t*)capTuBuf, bytes_number);
 					bytes_send = 0u;
 					while(bytes_send + bytes_chunk < bytes_number)
@@ -829,7 +809,6 @@ void parse_spi_command(void *devHalInfo)
 					{
 						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
 					}
-#endif
 					break;
 				case 0x5E:
 					/* Read waveform from SD card and transmit */
@@ -950,34 +929,26 @@ void parse_spi_command(void *devHalInfo)
                         /* 3.capture */
                         if(DPD_ERR_CODE_NO_ERROR == dpdErr)
                         {
-    						transfer_rx.size = DPD_CAP_SIZE * TALISE_NUM_CHANNELS / 2 *
-    											NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
+#if 1
+							transfer_rx.size = ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
+												NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8);
 
-    						/* Read the data from the ADC DMA. */
-    						axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
-
-    						/* Wait until transfer finishes */
-    						int32_t status = axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
-
-    						/* Flush cache data. */
-    						Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,
-    								DPD_CAP_SIZE * TALISE_NUM_CHANNELS / 2 *
-    									NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
-
-    						if(status < 0)
-    						{
-    							dpdErr = DPD_CAPTURE_ORX_ERROR;
-    						}
-    						else
-    						{
-#if(ORX_FROM_FPGA_RAM==1)
-                                dpdErr = dpd_read_capture_buffer(2, capORxBuf, DPD_CAP_SIZE); // ORx
-#else
-                                memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, DPD_CAP_SIZE*4); // ORx
+							axi_dmac_transfer_start(rx_os_dmac, &transfer_rx);
+							axi_dmac_transfer_wait_completion(rx_os_dmac, 500);
+							Xil_DCacheInvalidateRange(ADC_DDR_BASEADDR,
+										  ADC_BUFFER_SAMPLES * TALISE_NUM_CHANNELS / 2 *
+										  NO_OS_DIV_ROUND_UP(talInit.jesd204Settings.framerA.Np, 8));
 #endif
-    							dpdErr = dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE);
-    							dpdErr = dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE);
-    						}
+							dpd_write_cap_control_reg(0x03u); // trigger 3-captures
+							uint32_t cap_status = 0u;
+							while(cap_status != 0x07)
+							{
+								cap_status = dpd_read_cap_status_reg();
+								no_os_mdelay(1);
+							}
+							dpdErr = dpd_read_capture_buffer(0, capTuBuf, DPD_CAP_SIZE); // Tu
+							dpd_read_capture_buffer(1, capTxBuf, DPD_CAP_SIZE); // Tx
+							dpd_read_capture_buffer(2, capORxBuf, DPD_CAP_SIZE); // ORx
                         }
 
                         /* 4.coeffs estimate */
@@ -998,6 +969,7 @@ void parse_spi_command(void *devHalInfo)
                         	/* convert int32_t to double complex for Tx */
                         	for(uint16_t index = 0; index < DPD_CAP_SIZE; index=index+2)
                         	{
+                        		/* convert Tu/Tx data */
                         		if(dpdData.direct)
                         		{
                         			data_i = (capTuBuf[index] >> 0) & 0xffff;
@@ -1032,7 +1004,7 @@ void parse_spi_command(void *devHalInfo)
 
                             		pTx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
                         		}
-#if(ORX_FROM_FPGA_RAM==1)
+                        		/* convert ORx data */
                                 {
                                     data_i = (capORxBuf[index] >> 0) & 0xffff;
                                     data_q = (capORxBuf[index+1]>> 0) & 0xffff;
@@ -1049,23 +1021,8 @@ void parse_spi_command(void *devHalInfo)
 
                                     pORx[index+1] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
                                 }
-#endif
+
                         	}
-
-#if(ORX_FROM_FPGA_RAM==0)
-                        	/* convert int32_t to double complex for ORx */
-                        	for(uint16_t index = 0; index < DPD_CAP_SIZE; index++)
-                        	{
-                        		// ORx
-                        		data_i = (wr_data[index*4 + 0] << 0) | (wr_data[index*4 + 1] << 8);
-                        		data_q = (wr_data[index*4 + 2] << 0) | (wr_data[index*4 + 3] << 8);
-
-                        		tmp_i = (int16_t)(data_i);
-                        		tmp_q = (int16_t)(data_q);
-
-                        		pORx[index] = tmp_i*1.0/32768 + I*(tmp_q*1.0/32768);
-                        	}
-#endif
 
                         	/* run dpd coeffs estimation */
                         	uint8_t capBatch = 1;

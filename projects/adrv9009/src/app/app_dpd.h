@@ -5,16 +5,13 @@
 #include "adi_hal.h"
 #include "parameters.h"
 
-#define ORX_FROM_FPGA_RAM		0
-
 // DPD Base Address
 #define DPD_CTRL_BASEADDR       XPAR_AXI_DPD_ACTUATOR_0_BASEADDR
 #define DPD_MEM_BASEADDR        XPAR_AXI_DPD_ACTUATOR_0_BASEADDR + 0x8000
 #define DPD_CAP0_BASEADDR       XPAR_AXI_DPD_CAPTURE_0_BASEADDR
 #define DPD_CAP1_BASEADDR       XPAR_AXI_DPD_CAPTURE_1_BASEADDR
-#if ORX_FROM_FPGA_RAM
 #define DPD_CAP2_BASEADDR       XPAR_AXI_DPD_CAPTURE_2_BASEADDR
-#endif
+
 #define DPD_LUT_DEPTH           1024
 #define DPD_LUT_MAX             64
 #define DPD_CAP_SIZE            4096
@@ -57,8 +54,9 @@ uint8_t dpd_read_lut_sel(void);
 
 uint8_t dpd_read_capture_buffer(uint8_t position, uint32_t *pBuf, uint32_t size);
 
-uint8_t dpd_write_cap_control_reg(int8_t position, uint32_t ctrl);
-uint32_t dpd_read_cap_control_reg(int8_t position);
+uint8_t dpd_write_cap_control_reg(uint32_t ctrl);
+uint32_t dpd_read_cap_control_reg(void);
+uint32_t dpd_read_cap_status_reg(void);
 
 uint8_t dpd_download_waveform(uint32_t *waveform_i, uint32_t *waveform_q, uint32_t size);
 uint8_t dpd_download_waveform_default(void);
