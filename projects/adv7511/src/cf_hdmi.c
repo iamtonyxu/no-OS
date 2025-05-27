@@ -3,44 +3,35 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 ********************************************************************************
  *   SVN Revision: $WCREV$
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include "xil_io.h"
 #include "xparameters.h"
@@ -53,9 +44,6 @@
 #include "xdmaps.h"
 #endif
 
-/*****************************************************************************/
-/******************* Macros and Constants Definitions ************************/
-/*****************************************************************************/
 #define MIN(x, y)				(x < y ? x : y)
 #define MAX(x, y) 				(x > y ? x : y)
 #define NO_OS_DIV_ROUND_UP(x,y)		(((x) + (y) - 1) / (y))
@@ -96,25 +84,25 @@ void DDRVideoWr(unsigned short horizontalActiveTime,
 	unsigned long  index      = 0;
 	unsigned char  repetition = 0;
 
-	while(line < verticalActiveTime) {
-		for(index = 0; index < IMG_LENGTH; index++) {
-			for (repetition = 0; repetition < ((IMG_DATA[index]>>24) & 0xff);
+	while (line < verticalActiveTime) {
+		for (index = 0; index < IMG_LENGTH; index++) {
+			for (repetition = 0; repetition < ((IMG_DATA[index] >> 24) & 0xff);
 			     repetition++) {
 				backup = pixel;
-				while((pixel - line*horizontalActiveTime) < horizontalActiveTime) {
-					Xil_Out32((VIDEO_BASEADDR+(pixel*4)), (IMG_DATA[index] & 0xffffff));
+				while ((pixel - line * horizontalActiveTime) < horizontalActiveTime) {
+					Xil_Out32((VIDEO_BASEADDR + (pixel * 4)), (IMG_DATA[index] & 0xffffff));
 					pixel += 640;
 				}
 				pixel = backup;
-				if((pixel - line*horizontalActiveTime) < 639) {
+				if ((pixel - line * horizontalActiveTime) < 639) {
 					pixel++;
 				} else {
 					line++;
-					if(line == verticalActiveTime) {
+					if (line == verticalActiveTime) {
 						Xil_DCacheFlush();
 						return;
 					}
-					pixel = line*horizontalActiveTime;
+					pixel = line * horizontalActiveTime;
 				}
 			}
 		}
@@ -131,32 +119,32 @@ void DDRAudioWr(void)
 	u32 scnt  = 0;
 	u32 sincr = 0;
 
-	sincr = (65536*2)/AUDIO_LENGTH;
+	sincr = (65536 * 2) / AUDIO_LENGTH;
 #if defined(PLATFORM_KC705) || defined(PLATFORM_AC701) || \
 	defined(PLATFORM_VC707)
 	for (n = 0; n < 32; n++) {
-		Xil_Out32((AUDIO_BASEADDR+(n*4)), 0x00); // init descriptors
+		Xil_Out32((AUDIO_BASEADDR + (n * 4)), 0x00); // init descriptors
 	}
-	Xil_Out32((AUDIO_BASEADDR+0x00), (AUDIO_BASEADDR + 0x40)); // next descriptor
-	Xil_Out32((AUDIO_BASEADDR+0x08), (AUDIO_BASEADDR + 0x80)); // start address
-	Xil_Out32((AUDIO_BASEADDR+0x40), (AUDIO_BASEADDR + 0x00)); // next descriptor
-	Xil_Out32((AUDIO_BASEADDR+0x48), (AUDIO_BASEADDR + 0x80)); // start address
-	Xil_Out32((AUDIO_BASEADDR+0x18),
-		  (0x8000000 | (AUDIO_LENGTH*8))); // no. of bytes
-	Xil_Out32((AUDIO_BASEADDR+0x58),
-		  (0x4000000 | (AUDIO_LENGTH*8))); // no. of bytes
-	Xil_Out32((AUDIO_BASEADDR+0x1c), 0x00); // status
-	Xil_Out32((AUDIO_BASEADDR+0x5c), 0x00); // status
+	Xil_Out32((AUDIO_BASEADDR + 0x00), (AUDIO_BASEADDR + 0x40)); // next descriptor
+	Xil_Out32((AUDIO_BASEADDR + 0x08), (AUDIO_BASEADDR + 0x80)); // start address
+	Xil_Out32((AUDIO_BASEADDR + 0x40), (AUDIO_BASEADDR + 0x00)); // next descriptor
+	Xil_Out32((AUDIO_BASEADDR + 0x48), (AUDIO_BASEADDR + 0x80)); // start address
+	Xil_Out32((AUDIO_BASEADDR + 0x18),
+		  (0x8000000 | (AUDIO_LENGTH * 8))); // no. of bytes
+	Xil_Out32((AUDIO_BASEADDR + 0x58),
+		  (0x4000000 | (AUDIO_LENGTH * 8))); // no. of bytes
+	Xil_Out32((AUDIO_BASEADDR + 0x1c), 0x00); // status
+	Xil_Out32((AUDIO_BASEADDR + 0x5c), 0x00); // status
 #endif
 	for (n = 0; n < AUDIO_LENGTH; n++) {
 #if defined(PLATFORM_KC705) || defined(PLATFORM_AC701) || \
 	defined(PLATFORM_VC707)
-		Xil_Out32((AUDIO_BASEADDR+0x80+(n*4)), ((scnt << 16) | scnt));
+		Xil_Out32((AUDIO_BASEADDR + 0x80 + (n * 4)), ((scnt << 16) | scnt));
 #elif defined(PLATFORM_ZC702) || defined(PLATFORM_ZC706) || \
 		defined(PLATFORM_ZED)
-		Xil_Out32((AUDIO_BASEADDR+(n*4)), ((scnt << 16) | scnt));
+		Xil_Out32((AUDIO_BASEADDR + (n * 4)), ((scnt << 16) | scnt));
 #endif
-		scnt = (n > (AUDIO_LENGTH/2)) ? (scnt-sincr) : (scnt+sincr);
+		scnt = (n > (AUDIO_LENGTH / 2)) ? (scnt - sincr) : (scnt + sincr);
 	}
 	Xil_DCacheFlush();
 }
@@ -230,13 +218,13 @@ void InitHdmiVideoPcore(unsigned short horizontalActiveTime,
 	Xil_Out32(VDMA_BASEADDR + AXI_DMAC_REG_SRC_ADDRESS,
 		  VIDEO_BASEADDR); // start address
 	Xil_Out32(VDMA_BASEADDR + AXI_DMAC_REG_X_LENGTH,
-		  ((horizontalActiveTime*4)-1)); // h size
+		  ((horizontalActiveTime * 4) - 1)); // h size
 
 
 	Xil_Out32(VDMA_BASEADDR + AXI_DMAC_REG_SRC_STRIDE,
-		  (horizontalActiveTime*4)); // h offset
+		  (horizontalActiveTime * 4)); // h offset
 	Xil_Out32(VDMA_BASEADDR + AXI_DMAC_REG_Y_LENGTH,
-		  (verticalActiveTime-1)); // v size
+		  (verticalActiveTime - 1)); // v size
 	Xil_Out32(VDMA_BASEADDR + AXI_DMAC_REG_TRANSFER_SUBMIT,
 		  0x1); // submit transfer	Xil_Out32(VDMA_BASEADDR + DMAC_REG_CTRL,
 #else
@@ -249,9 +237,9 @@ void InitHdmiVideoPcore(unsigned short horizontalActiveTime,
 	Xil_Out32((VDMA_BASEADDR + AXI_VDMA_REG_START_3),
 		  VIDEO_BASEADDR); // start address
 	Xil_Out32((VDMA_BASEADDR + AXI_VDMA_REG_FRMDLY_STRIDE),
-		  (horizontalActiveTime*4)); // h offset
+		  (horizontalActiveTime * 4)); // h offset
 	Xil_Out32((VDMA_BASEADDR + AXI_VDMA_REG_H_SIZE),
-		  (horizontalActiveTime*4)); // h size
+		  (horizontalActiveTime * 4)); // h size
 	Xil_Out32((VDMA_BASEADDR + AXI_VDMA_REG_V_SIZE),
 		  verticalActiveTime); // v size
 #endif
@@ -303,13 +291,13 @@ void AudioClick(void)
 #if defined(PLATFORM_KC705) || defined(PLATFORM_AC701) || \
 	defined(PLATFORM_VC707)
 	/* Generating audio clicks. */
-	Xil_Out32((AUDIO_BASEADDR+0x1c), 0x00); // status
-	Xil_Out32((AUDIO_BASEADDR+0x5c), 0x00); // status
+	Xil_Out32((AUDIO_BASEADDR + 0x1c), 0x00); // status
+	Xil_Out32((AUDIO_BASEADDR + 0x5c), 0x00); // status
 	Xil_DCacheFlush();
 	Xil_Out32((ADMA_BASEADDR + 0x00), 0); // clear dma operations
 	Xil_Out32((ADMA_BASEADDR + 0x08), AUDIO_BASEADDR); // head descr.
 	Xil_Out32((ADMA_BASEADDR + 0x00), 1); // enable dma operations
-	Xil_Out32((ADMA_BASEADDR + 0x10), (AUDIO_BASEADDR+0x40)); // tail descr.
+	Xil_Out32((ADMA_BASEADDR + 0x10), (AUDIO_BASEADDR + 0x40)); // tail descr.
 #elif defined(PLATFORM_ZC702) || defined(PLATFORM_ZC706) || \
 		defined(PLATFORM_ZED)
 	u32 			Status;
@@ -332,7 +320,7 @@ void AudioClick(void)
 	DmaCmd.ChanCtrl.SrcBurstSize 	= 4;
 	DmaCmd.ChanCtrl.SrcInc 			= 1;
 	DmaCmd.BD.SrcAddr = (u32) AUDIO_BASEADDR;
-	DmaCmd.BD.DstAddr = (u32) (CFA_BASEADDR + 0x0C);
+	DmaCmd.BD.DstAddr = (u32)(CFA_BASEADDR + 0x0C);
 	DmaCmd.BD.Length = AUDIO_LENGTH * 4;
 
 	/* DMAC Program */

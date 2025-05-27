@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "adxl367.h"
 #include "no_os_delay.h"
@@ -48,15 +39,8 @@
 #include "no_os_alloc.h"
 #include "no_os_print_log.h"
 
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 static const uint8_t adxl367_scale_mul[3] = {1, 2, 4};
 static uint8_t samples_per_set = 0;
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Initializes communication with the device and checks if the part is
@@ -79,6 +63,7 @@ int adxl367_init(struct adxl367_dev **device,
 	if (!dev)
 		return -1;
 
+	dev->id = init_param.id;
 	dev->comm_type = init_param.comm_type;
 	if (dev->comm_type == ADXL367_SPI_COMM) {
 		/* SPI */
@@ -105,22 +90,30 @@ int adxl367_init(struct adxl367_dev **device,
 	status = adxl367_get_register_value(dev, &reg_value, ADXL367_REG_DEVID_AD, 1);
 	if (status)
 		goto err;
-	if(reg_value != ADXL367_DEVICE_AD)
+	if (reg_value != ADXL367_DEVICE_AD)
 		goto err;
 	status = adxl367_get_register_value(dev, &reg_value, ADXL367_REG_DEVID_MST, 1);
 	if (status)
 		goto err;
-	if(reg_value != ADXL367_DEVICE_MST)
+	if (reg_value != ADXL367_DEVICE_MST)
 		goto err;
 	status = adxl367_get_register_value(dev, &reg_value, ADXL367_REG_PARTID, 1);
 	if (status)
 		goto err;
-	if(reg_value != ADXL367_PART_ID)
+	if (reg_value != ADXL367_PART_ID) {
+		status = -EFAULT;
 		goto err;
+	}
+	status = adxl367_get_register_value(dev, &reg_value, ADXL367_REG_REVID, 1);
+	if (status)
+		goto err;
+	if (reg_value != dev->id) {
+		status = -ENODEV;
+		goto err;
+	}
 
 	*device = dev;
 
-	pr_info("ADXL367 successfully initialized\n");
 	return 0;
 
 err:
@@ -130,8 +123,7 @@ err:
 		no_os_i2c_remove(dev->i2c_desc);
 comm_err:
 	no_os_free(dev);
-	pr_err("%s: Failed initialization.\n", __func__);
-	return -1;
+	return status;
 }
 
 /***************************************************************************//**
@@ -173,16 +165,22 @@ int adxl367_self_test(struct adxl367_dev *dev)
 	switch (dev->odr) {
 	case ADXL367_ODR_12P5HZ:
 		st_delay_ms = 320;
+		break;
 	case ADXL367_ODR_25HZ:
 		st_delay_ms = 160;
+		break;
 	case ADXL367_ODR_50HZ:
 		st_delay_ms = 80;
+		break;
 	case ADXL367_ODR_100HZ:
 		st_delay_ms = 40;
+		break;
 	case ADXL367_ODR_200HZ:
 		st_delay_ms = 20;
+		break;
 	case ADXL367_ODR_400HZ:
 		st_delay_ms = 10;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -1076,14 +1074,14 @@ int adxl367_read_raw_fifo(struct adxl367_dev *dev, int16_t *x, int16_t *y,
 		return -1;
 
 	// MSB = 6 data bits + 2 bits for CH ID
-	for (i = 0; i < (stored_entr * 2); i += 2 ) {
+	for (i = 0; i < (stored_entr * 2); i += 2) {
 		id = dev->fifo_buffer[i] >> 6;
 
 		switch (id) {
 		case (ADXL367_FIFO_X_ID) :
 			if (x == NULL)
 				return -1;
-			*x = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i+1];
+			*x = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i + 1];
 			//extend sign
 			if (*x & NO_OS_BIT(13))
 				*x |= NO_OS_GENMASK(15, 14);
@@ -1093,7 +1091,7 @@ int adxl367_read_raw_fifo(struct adxl367_dev *dev, int16_t *x, int16_t *y,
 		case (ADXL367_FIFO_Y_ID) :
 			if (y == NULL)
 				return -1;
-			*y = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i+1];
+			*y = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i + 1];
 			//extend sign
 			if (*y & NO_OS_BIT(13))
 				*y |= NO_OS_GENMASK(15, 14);
@@ -1103,7 +1101,7 @@ int adxl367_read_raw_fifo(struct adxl367_dev *dev, int16_t *x, int16_t *y,
 		case (ADXL367_FIFO_Z_ID) :
 			if (z == NULL)
 				return -1;
-			*z = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i+1];
+			*z = ((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i + 1];
 			//extend sign
 			if (*z & NO_OS_BIT(13))
 				*z |= NO_OS_GENMASK(15, 14);
@@ -1114,7 +1112,7 @@ int adxl367_read_raw_fifo(struct adxl367_dev *dev, int16_t *x, int16_t *y,
 			if (temp_adc == NULL)
 				return -1;
 			*temp_adc = (int16_t)((dev->fifo_buffer[i] & 0x3F) << 8) + dev->fifo_buffer[i
-					+1];
+					+ 1];
 			//extend sign
 			if (*temp_adc & NO_OS_BIT(13))
 				*temp_adc |= NO_OS_GENMASK(15, 14);
@@ -1352,4 +1350,120 @@ int adxl367_setup_inactivity_detection(struct adxl367_dev *dev,
 	if (ret)
 		return ret;
 	return adxl367_set_register_value(dev, time & 0xFF, ADXL367_REG_TIME_INACT_L);
+}
+
+/* Enable or disable Z-axis nonlinearity compensation. */
+int adxl367_z_nonlinearity_compensation(struct adxl367_dev *dev, bool enable)
+{
+	if (!dev)
+		return -EINVAL;
+
+	if (dev->id != ADXL366_ID)
+		return -ENOTSUP;
+
+	return adxl367_reg_write_msk(dev, ADXL367_REG_TEMP_CTL,
+				     no_os_field_prep(ADXL367_NL_COMP_EN, ADXL367_INACTIVITY_ENABLE),
+				     ADXL367_NL_COMP_EN);
+}
+
+int adxl367_reference_readback(struct adxl367_dev *dev,
+			       bool inactivity,
+			       int16_t* x,
+			       int16_t* y,
+			       int16_t* z)
+{
+	int ret;
+	uint8_t reg;
+
+	if (!dev)
+		return -EINVAL;
+
+	if (dev->id != ADXL366_ID)
+		return -ENOTSUP;
+
+	// make sure we're in referenced mode
+	ret = adxl367_get_register_value(dev, &reg, ADXL367_REG_ACT_INACT_CTL, 1);
+	if (ret)
+		return ret;
+	if (inactivity
+	    && no_os_field_get(ADXL367_ACT_INACT_CTL_INACT_EN_MSK,
+			       reg) != ADXL367_REFERENCED_INACTIVITY_ENABLE)
+		return -ENOTSUP;
+	if (!inactivity
+	    && no_os_field_get(ADXL367_ACT_INACT_CTL_INACT_EN_MSK,
+			       reg) != ADXL367_REFERENCED_ACTIVITY_ENABLE)
+		return -ENOTSUP;
+
+	// enable reference readback
+	ret = adxl367_reg_write_msk(dev, ADXL367_REG_ACT_INACT_CTL,
+				    no_os_field_prep(ADXL367_ACT_INACT_CTL_REF_READBACK_MSK,
+						    inactivity ? 0x2 : 0x1),
+				    ADXL367_ACT_INACT_CTL_REF_READBACK_MSK);
+	if (ret)
+		return ret;
+
+	// reference readback
+	ret = adxl367_get_raw_xyz(dev, x, y, z);
+	if (ret)
+		return ret;
+
+	// disable reference readback
+	return adxl367_reg_write_msk(dev, ADXL367_REG_ACT_INACT_CTL,
+				     no_os_field_prep(ADXL367_ACT_INACT_CTL_REF_READBACK_MSK, 0),
+				     ADXL367_ACT_INACT_CTL_REF_READBACK_MSK);
+}
+
+int adxl367_pedometer_enable(struct adxl367_dev *dev, bool enable)
+{
+	if (!dev)
+		return -EINVAL;
+
+	if (dev->id != ADXL366_ID)
+		return -ENOTSUP;
+
+	return adxl367_reg_write_msk(dev, ADXL367_REG_PEDOMETER_CTL,
+				     no_os_field_prep(ADXL367_PEDOMETER_EN_MSK, enable),
+				     ADXL367_PEDOMETER_EN_MSK);
+}
+
+int adxl367_pedometer_get_steps(struct adxl367_dev *dev, uint16_t *steps)
+{
+	int ret;
+	uint8_t high, low;
+
+	if (!dev)
+		return -EINVAL;
+
+	if (dev->id != ADXL366_ID)
+		return -ENOTSUP;
+
+	if (!steps)
+		return -EINVAL;
+
+	ret = adxl367_get_register_value(dev, &high, ADXL367_REG_PEDOMETER_STEP_CNT_H,
+					 1);
+	if (ret)
+		return ret;
+
+	ret = adxl367_get_register_value(dev, &low, ADXL367_REG_PEDOMETER_STEP_CNT_L,
+					 1);
+	if (ret)
+		return ret;
+
+	*steps = ((uint16_t)high << 8) | low;
+
+	return 0;
+}
+
+int adxl367_pedometer_reset(struct adxl367_dev *dev)
+{
+	if (!dev)
+		return -EINVAL;
+
+	if (dev->id != ADXL366_ID)
+		return -ENOTSUP;
+
+	return adxl367_reg_write_msk(dev, ADXL367_REG_PEDOMETER_CTL,
+				     no_os_field_prep(ADXL367_PEDOMETER_RESET_STEPMSK, 1),
+				     ADXL367_PEDOMETER_RESET_STEPMSK);
 }

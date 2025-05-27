@@ -6,41 +6,31 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include "iio.h"
 #include "iio_types.h"
@@ -68,10 +58,6 @@
 #include "lwip_socket.h"
 #endif
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
-
 #define IIOD_PORT		30431
 #define MAX_SOCKET_TO_HANDLE	10
 #define REG_ACCESS_ATTRIBUTE	"direct_reg_access"
@@ -80,10 +66,6 @@
 
 #define NO_OS_STRINGIFY(x) #x
 #define NO_OS_TOSTRING(x) NO_OS_STRINGIFY(x)
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 static char uart_buff[IIOD_CONN_BUFFER_SIZE];
 
@@ -129,6 +111,7 @@ static const char * const iio_chan_type_string[] = {
 	[IIO_COUNT] = "count",
 	[IIO_DELTA_ANGL] = "deltaangl",
 	[IIO_DELTA_VELOCITY] = "deltavelocity",
+	[IIO_WEIGHT] = "weight",
 };
 
 static const char * const iio_modifier_names[] = {
@@ -223,16 +206,12 @@ struct iio_desc {
 	int (*send)(void *conn, uint8_t *buf, uint32_t len);
 	/* FIFO for socket descriptors */
 	struct no_os_circular_buffer	*conns;
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 	struct tcp_socket_desc	*current_sock;
 	/* Instance of server socket */
 	struct tcp_socket_desc	*server;
 #endif
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 static inline int32_t _pop_conn(struct iio_desc *desc, uint32_t *conn_id)
 {
@@ -276,11 +255,11 @@ static int iio_send(struct iiod_ctx *ctx, uint8_t *buf, uint32_t len)
 
 static inline void _print_ch_id(char *buff, struct iio_channel *ch)
 {
-	if(ch->modified) {
+	if (ch->modified) {
 		sprintf(buff, "%s_%s", iio_chan_type_string[ch->ch_type],
 			iio_modifier_names[ch->channel2]);
 	} else {
-		if(ch->indexed) {
+		if (ch->indexed) {
 			if (ch->diferential)
 				sprintf(buff, "%s%d-%s%d", iio_chan_type_string[ch->ch_type],
 					(int)ch->channel, iio_chan_type_string[ch->ch_type],
@@ -368,7 +347,7 @@ static int iio_set_buffers_count(struct iiod_ctx *ctx, const char *device,
 {
 	struct iio_desc *desc = ctx->instance;
 
-	if(!get_iio_device(desc, device))
+	if (!get_iio_device(desc, device))
 		return -ENODEV;
 
 	/* Our implementation uses a circular buffer to send/receive data so
@@ -571,7 +550,7 @@ static int32_t debug_reg_write(struct iio_dev_priv *dev, const char *buf,
 }
 
 static int32_t __iio_str_parse(char *buf, int32_t *integer, int32_t *_fract,
-			       bool scale_db)
+			       int32_t *_fract_scale, bool scale_db)
 {
 	char *p;
 
@@ -593,12 +572,32 @@ static int32_t __iio_str_parse(char *buf, int32_t *integer, int32_t *_fract,
 
 	*_fract = strtol(p, NULL, 10);
 
+	/* Handle leading zeroes */
+	while (*p++ == '0' && *_fract > 0)
+		*_fract_scale *= 10;
+
+	/* Handle values between -1 and 0 */
+	if (*integer == 0 && buf[0] == '-')
+		*_fract *= -1;
+
 	return 0;
 }
 
 static int32_t _iio_fract_interpret(int32_t fract, int32_t subunits)
 {
-	int32_t temp = fract;
+	int32_t temp;
+	int32_t mult = 1;
+
+	if (fract < 0) {
+		mult = -1;
+		fract = -fract;
+	}
+
+	/* Divide to nearest subunit-scale if fract part is more than subunit */
+	while (fract >= subunits)
+		fract = NO_OS_DIV_ROUND_CLOSEST(fract, 10);
+
+	temp = fract;
 
 	while ((subunits != 0) || (temp != 0)) {
 		temp /= 10;
@@ -609,14 +608,14 @@ static int32_t _iio_fract_interpret(int32_t fract, int32_t subunits)
 			fract /= 10;
 	}
 
-	return fract * subunits;
+	return fract * subunits * mult;
 }
 
 int32_t iio_parse_value(char *buf, enum iio_val fmt, int32_t *val,
 			int32_t *val2)
 {
 	int32_t ret = 0;
-	int32_t integer, _fract = 0;
+	int32_t integer, _fract = 0, _fract_scale = 1;
 	char ch;
 
 	switch (fmt) {
@@ -624,25 +623,30 @@ int32_t iio_parse_value(char *buf, enum iio_val fmt, int32_t *val,
 		integer = strtol(buf, NULL, 0);
 		break;
 	case IIO_VAL_INT_PLUS_MICRO_DB:
-		ret = __iio_str_parse(buf, &integer, &_fract, true);
+		ret = __iio_str_parse(buf, &integer, &_fract,
+				      &_fract_scale, true);
 		if (ret < 0)
 			return ret;
-		_fract = _iio_fract_interpret(_fract, 1000000);
+		_fract = _iio_fract_interpret(_fract, 1000000 / _fract_scale);
 		break;
 	case IIO_VAL_INT_PLUS_MICRO:
-		ret = __iio_str_parse(buf, &integer, &_fract, false);
+		ret = __iio_str_parse(buf, &integer, &_fract,
+				      &_fract_scale, false);
 		if (ret < 0)
 			return ret;
-		_fract = _iio_fract_interpret(_fract, 1000000);
+		_fract = _iio_fract_interpret(_fract, 1000000 / _fract_scale);
 		break;
 	case IIO_VAL_INT_PLUS_NANO:
-		ret = __iio_str_parse(buf, &integer, &_fract, false);
+		ret = __iio_str_parse(buf, &integer, &_fract,
+				      &_fract_scale, false);
 		if (ret < 0)
 			return ret;
-		_fract = _iio_fract_interpret(_fract, 1000000000);
+		_fract = _iio_fract_interpret(_fract,
+					      1000000000 / _fract_scale);
 		break;
 	case IIO_VAL_FRACTIONAL:
-		ret = __iio_str_parse(buf, &integer, &_fract, false);
+		ret = __iio_str_parse(buf, &integer, &_fract,
+				      &_fract_scale, false);
 		if (ret < 0)
 			return ret;
 		break;
@@ -679,10 +683,12 @@ int iio_format_value(char *buf, uint32_t len, enum iio_val fmt,
 		dB = true;
 	/* intentional fall through */
 	case IIO_VAL_INT_PLUS_MICRO:
-		return snprintf(buf, len, "%"PRIi32".%06"PRIu32"%s", vals[0],
+		return snprintf(buf, len, "%s%"PRIi32".%06"PRIu32"%s",
+				vals[1] < 0 ? "-" : "", vals[0],
 				(uint32_t)vals[1], dB ? " dB" : "");
 	case IIO_VAL_INT_PLUS_NANO:
-		return snprintf(buf, len, "%"PRIi32".%09"PRIu32"", vals[0],
+		return snprintf(buf, len, "%s%"PRIi32".%09"PRIu32"",
+				vals[1] < 0 ? "-" : "", vals[0],
 				(uint32_t)vals[1]);
 	case IIO_VAL_FRACTIONAL:
 		tmp = no_os_div_s64((int64_t)vals[0] * 1000000000LL, vals[1]);
@@ -822,7 +828,7 @@ static int iio_read_attr(struct iiod_ctx *ctx, const char *device,
 	trig_dev = get_iio_trig_device(ctx->instance, device);
 
 	/* If IIO trigger with given name is found, handle reading of attributes */
-	if(trig_dev) {
+	if (trig_dev) {
 		params.ch_info = NULL; /* Triggers cannot have channels */
 		params.buf = buf;
 		params.len = len;
@@ -899,7 +905,7 @@ static int iio_write_attr(struct iiod_ctx *ctx, const char *device,
 	trig_dev = get_iio_trig_device(ctx->instance, device);
 
 	/* If IIO trigger with given name is found, handle writing of attributes */
-	if(trig_dev) {
+	if (trig_dev) {
 		params.ch_info = NULL; /* Triggers cannot have channels */
 		params.buf = (char *)buf;
 		params.len = len;
@@ -1241,7 +1247,7 @@ static int iio_close_dev(struct iiod_ctx *ctx, const char *device)
 	}
 
 	desc = ctx->instance;
-	if(dev->trig_idx != NO_TRIGGER) {
+	if (dev->trig_idx != NO_TRIGGER) {
 		trig = &desc->trigs[dev->trig_idx];
 		if (trig->descriptor->disable) {
 			ret = trig->descriptor->disable(trig->instance);
@@ -1267,12 +1273,12 @@ static int iio_call_submit(struct iiod_ctx *ctx, const char *device,
 		return -EINVAL;
 
 	dev->buffer.public.dir = dir;
-	if (dev->dev_descriptor->submit && dev->trig_idx==NO_TRIGGER)
+	if (dev->dev_descriptor->submit && dev->trig_idx == NO_TRIGGER)
 		return dev->dev_descriptor->submit(&dev->dev_data);
 	else if ((dir == IIO_DIRECTION_INPUT && dev->dev_descriptor->read_dev
-		  && dev->trig_idx==NO_TRIGGER)
+		  && dev->trig_idx == NO_TRIGGER)
 		 || (dir == IIO_DIRECTION_OUTPUT &&
-		     dev->dev_descriptor->write_dev && dev->trig_idx==NO_TRIGGER)) {
+		     dev->dev_descriptor->write_dev && dev->trig_idx == NO_TRIGGER)) {
 		/* Code used to don't break devices using read_dev */
 		int32_t ret;
 		void *buff;
@@ -1435,7 +1441,7 @@ int iio_buffer_pop_scan(struct iio_buffer *buffer, void *data)
 	return ret;
 }
 
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 
 static int32_t accept_network_clients(struct iio_desc *desc)
 {
@@ -1493,7 +1499,7 @@ int iio_step(struct iio_desc *desc)
 
 	iio_process_async_triggers(desc);
 
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 	if (desc->server) {
 		ret = accept_network_clients(desc);
 		if (NO_OS_IS_ERR_VALUE(ret) && ret != -EAGAIN)
@@ -1510,7 +1516,7 @@ int iio_step(struct iio_desc *desc)
 
 	ret = iiod_conn_step(desc->iiod, conn_id);
 	if (ret == -ENOTCONN) {
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 		iiod_conn_remove(desc->iiod, conn_id, &data);
 		socket_remove(data.conn);
 		no_os_free(data.buf);
@@ -1605,7 +1611,7 @@ static uint32_t iio_generate_device_xml(struct iio_device *device, char *name,
 			i += snprintf(buff + i, no_os_max(n - i, 0),
 				      "<channel id=\"%s\"",
 				      ch_id);
-			if(ch->name)
+			if (ch->name)
 				i += snprintf(buff + i, no_os_max(n - i, 0),
 					      " name=\"%s\"",
 					      ch->name);
@@ -1915,6 +1921,7 @@ int iio_init(struct iio_desc **desc, struct iio_init_param *init_param)
 	iiod_param.ops = ops;
 	iiod_param.xml = ldesc->xml_desc;
 	iiod_param.xml_len = ldesc->xml_size;
+	iiod_param.phy_type = init_param->phy_type;
 
 	ret = iiod_init(&ldesc->iiod, &iiod_param);
 	if (NO_OS_IS_ERR_VALUE(ret))
@@ -1940,7 +1947,7 @@ int iio_init(struct iio_desc **desc, struct iio_init_param *init_param)
 			goto free_conns;
 		_push_conn(ldesc, conn_id);
 	}
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 	else if (init_param->phy_type == USE_NETWORK) {
 		ldesc->send = (int (*)())socket_send;
 		ldesc->recv = (int (*)())socket_recv;
@@ -1979,7 +1986,7 @@ int iio_init(struct iio_desc **desc, struct iio_init_param *init_param)
 	return 0;
 
 free_pylink:
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 	socket_remove(ldesc->server);
 #endif
 free_conns:
@@ -2011,7 +2018,7 @@ int iio_remove(struct iio_desc *desc)
 	if (!desc)
 		return -EINVAL;
 
-#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING)
+#if defined(NO_OS_NETWORKING) || defined(NO_OS_LWIP_NETWORKING) || defined(NO_OS_W5500_NETWORKING)
 	for (int i = 0; i < IIOD_MAX_CONNECTIONS; i++) {
 		ret = iiod_conn_remove(desc->iiod, i, &data);
 		if (!ret) {

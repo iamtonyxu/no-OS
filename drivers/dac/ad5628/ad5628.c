@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad5628.h"
 #include "no_os_alloc.h"
@@ -75,11 +66,11 @@ int32_t ad5628_init(struct ad5628_dev **device,
 	ad5628_reset(dev);
 	/* Turns on the on-board reference. */
 	ad5628_set_input_register(dev,
-				  AD5628_CMD(AD5628_CMD_SET_INT_REF)|
+				  AD5628_CMD(AD5628_CMD_SET_INT_REF) |
 				  AD5628_INT_REF_ON);
 	/* Clear code is set to 0x0000. */
 	ad5628_set_input_register(dev,
-				  AD5628_CMD(AD5628_CMD_LOAD_CLEAR_CODE)|
+				  AD5628_CMD(AD5628_CMD_LOAD_CLEAR_CODE) |
 				  AD5628_CODE_0X0000);
 	*device = dev;
 
@@ -121,8 +112,6 @@ int32_t ad5628_remove(struct ad5628_dev *dev)
  *                            AD5628_ADDR_DAC_B
  *                            ...
  *                            AD5628_ADDR_DAC_ALL
- *
- * @return none.
 *******************************************************************************/
 void ad5628_power_mode(struct ad5628_dev *dev,
 		       uint8_t pwr_mode,
@@ -130,7 +119,7 @@ void ad5628_power_mode(struct ad5628_dev *dev,
 {
 	uint8_t selected_channel = 0;
 
-	if(channel == AD5628_ADDR_DAC_ALL) {
+	if (channel == AD5628_ADDR_DAC_ALL) {
 		selected_channel = 0xFF;
 	} else {
 		selected_channel = (1 << channel);
@@ -146,8 +135,6 @@ void ad5628_power_mode(struct ad5628_dev *dev,
  * @brief Resets the device.
  *
  * @param dev - The device structure.
- *
- * @return none.
 *******************************************************************************/
 void ad5628_reset(struct ad5628_dev *dev)
 {
@@ -160,8 +147,6 @@ void ad5628_reset(struct ad5628_dev *dev)
  * @param dev            - The device structure.
  *
  * @param register_value - Value of the register.
- *
- * @return none.
 *******************************************************************************/
 void ad5628_set_input_register(struct ad5628_dev *dev,
 			       uint32_t register_value)

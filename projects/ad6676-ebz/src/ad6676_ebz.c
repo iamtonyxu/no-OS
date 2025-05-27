@@ -6,41 +6,32 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include <inttypes.h>
 #include "parameters.h"
@@ -141,72 +132,72 @@ int32_t ad6676_gpio_config(struct ad6676_init_param init_param)
 	struct no_os_gpio_desc *gpio_adc_agc2;
 
 	ret = no_os_gpio_get(&gpio_adc_oen, &gpio_adc_oen_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_s0, &gpio_adc_s0_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_s1, &gpio_adc_s1_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_sela, &gpio_adc_sela_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_selb, &gpio_adc_selb_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_resetb, &gpio_adc_resetb_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_agc1, &gpio_adc_agc1_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_get(&gpio_adc_agc2, &gpio_adc_agc2_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_direction_output(gpio_adc_oen, 0);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	switch (init_param.decimation) {
 	case 12:
 		ret = no_os_gpio_direction_output(gpio_adc_s0, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_s1, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		break;
 	case 16:
 		ret = no_os_gpio_direction_output(gpio_adc_s0, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_s1, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		break;
 	case 24:
 		ret = no_os_gpio_direction_output(gpio_adc_s0, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_s1, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		break;
 	case 32:
 		ret = no_os_gpio_direction_output(gpio_adc_s0, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_s1, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		break;
 	default:
@@ -215,28 +206,28 @@ int32_t ad6676_gpio_config(struct ad6676_init_param init_param)
 
 	if (init_param.use_extclk) {
 		ret = no_os_gpio_direction_output(gpio_adc_sela, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_selb, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 	} else {
 		ret = no_os_gpio_direction_output(gpio_adc_sela, 0);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 		ret = no_os_gpio_direction_output(gpio_adc_selb, 1);
-		if(ret != 0)
+		if (ret != 0)
 			return -1;
 	}
 
 	ret = no_os_gpio_direction_output(gpio_adc_resetb, 1);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 	ret = no_os_gpio_direction_output(gpio_adc_agc1, 0);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 	ret = no_os_gpio_direction_output(gpio_adc_agc2, 0);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	no_os_gpio_remove(gpio_adc_oen);
@@ -361,21 +352,21 @@ int main(void)
 
 	// receiver DMA configuration
 	ret = no_os_gpio_get(&gpio_sysref, &gpio_sysref_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	ret = no_os_gpio_direction_output(gpio_sysref, 1);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	// set up clock
 	ret = ad6676_gpio_config(ad6676_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	// set up the device
 	ret = ad6676_setup(&ad6676_device, ad6676_param);
-	if(ret != 0)
+	if (ret != 0)
 		return -1;
 
 	// set up the XCVR core
@@ -414,11 +405,11 @@ int main(void)
 
 	// PRBS test
 	ad6676_test(ad6676_device, TESTGENMODE_PN9_SEQ);
-	if(axi_adc_pn_mon(ad6676_core, AXI_ADC_PN9, 10) == -1) {
-		pr_err("%s ad6676 - PN23 sequence mismatch!\n", __func__);
+	if (axi_adc_pn_mon(ad6676_core, AXI_ADC_PN9, 10) == -1) {
+		pr_err("%s ad6676 - PN9 sequence mismatch!\n", __func__);
 	};
 	ad6676_test(ad6676_device, TESTGENMODE_PN23_SEQ);
-	if(axi_adc_pn_mon(ad6676_core, AXI_ADC_PN23, 10) == -1) {
+	if (axi_adc_pn_mon(ad6676_core, AXI_ADC_PN23A, 10) == -1) {
 		pr_err("%s ad6676 - PN23 sequence mismatch!\n", __func__);
 	};
 
@@ -443,10 +434,15 @@ int main(void)
 	axi_dmac_transfer_start(ad6676_dmac, &transfer_test);
 	/* Wait until transfer finishes */
 	int32_t status = axi_dmac_transfer_wait_completion(ad6676_dmac, 500);
-	if(status)
+	if (status)
 		return status;
 	/* Flush cache data. */
-	Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,16384 * 2);
+	Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR, 16384 * 2);
+
+	printf("DMA RAMP example: address=%#x samples=%u channels=%u bits=%u\n",
+	       (uintptr_t)ADC_DDR_BASEADDR,
+	       transfer_test.size / ad6676_core_param.num_channels,
+	       ad6676_core_param.num_channels, 16);
 
 	// capture data with DMA
 	ad6676_test(ad6676_device, TESTGENMODE_OFF);
@@ -461,17 +457,25 @@ int main(void)
 		// Address of data source
 		.src_addr = 0,
 		// Address of data destination
-		.dest_addr = (uintptr_t)ADC_DDR_BASEADDR
+		.dest_addr = (uintptr_t)(ADC_DDR_BASEADDR + 0x100000)
 	};
 	axi_dmac_transfer_start(ad6676_dmac, &transfer_capture);
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(ad6676_dmac, 500);
-	if(status)
+	if (status)
 		return status;
 	/* Flush cache data. */
-	Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR,16384 * 2);
+	Xil_DCacheInvalidateRange((uintptr_t)(ADC_DDR_BASEADDR + 0x100000), 16384 * 2);
+
+	printf("DMA capture example: address=%#x samples=%u channels=%u bits=%u\n",
+	       (uintptr_t)(ADC_DDR_BASEADDR + 0x100000),
+	       transfer_test.size / ad6676_core_param.num_channels,
+	       ad6676_core_param.num_channels, 16);
 
 #ifdef IIO_SUPPORT
+	// Allow time for UART messages to be displayed
+	no_os_mdelay(200);
+
 	struct xil_uart_init_param platform_uart_init_par = {
 #ifdef XPAR_XUARTLITE_NUM_INSTANCES
 		.type = UART_PL,

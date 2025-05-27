@@ -5,36 +5,30 @@
  *******************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
 /*******************************************************************************
@@ -123,31 +117,9 @@ void test_adis_init_3(void)
 }
 
 /**
- * @brief Test adis_init with unsuccessful initial startup with reset and
- * has paging false.
- */
-void test_adis_init_4(void)
-{
-	struct adis_dev *device;
-	device_alloc.spi_desc = &spi_desc;
-	device_alloc.gpio_reset = &gpio_reset_desc;
-	ip.info = adis_chip_info;
-
-	no_os_calloc_IgnoreAndReturn(&device_alloc);
-	no_os_spi_init_IgnoreAndReturn(0);
-	no_os_gpio_get_optional_IgnoreAndReturn(0);
-	no_os_gpio_direction_output_IgnoreAndReturn(0);
-	no_os_gpio_set_value_IgnoreAndReturn(-1);
-	no_os_gpio_remove_IgnoreAndReturn(0);
-	no_os_spi_remove_IgnoreAndReturn(0);
-	retval = adis_init(&device, &ip);
-	TEST_ASSERT_EQUAL_INT(-1, retval);
-}
-
-/**
  * @brief Test adis_init with valid sync mode writing and gpio reset null.
  */
-void test_adis_init_5(void)
+void test_adis_init_4(void)
 {
 	struct adis_dev *device;
 	device_alloc.spi_desc = &spi_desc;
@@ -174,7 +146,7 @@ void test_adis_init_5(void)
 /**
  * @brief Test adis_init with invalid sync mode writing.
  */
-void test_adis_init_6(void)
+void test_adis_init_5(void)
 {
 	struct adis_dev *device;
 	device_alloc.spi_desc = &spi_desc;
@@ -193,6 +165,9 @@ void test_adis_init_6(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(0);
 	no_os_spi_transfer_IgnoreAndReturn(-1);
+	no_os_gpio_remove_IgnoreAndReturn(0);
+	no_os_spi_remove_IgnoreAndReturn(0);
+	no_os_free_Ignore();
 	retval = adis_init(&device, &ip);
 	TEST_ASSERT_EQUAL_INT(-EINVAL, retval);
 }
@@ -354,6 +329,7 @@ void test_adis_read_diag_snsr_init_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_snsr_init_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_snsr_init_failure(&device_alloc, &snsr_init_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, snsr_init_failure);
@@ -370,6 +346,7 @@ void test_adis_read_diag_snsr_init_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_snsr_init_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_snsr_init_failure(&device_alloc, &snsr_init_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, snsr_init_failure);
@@ -399,6 +376,7 @@ void test_adis_read_diag_data_path_overrun_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_data_path_overrun_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_data_path_overrun(&device_alloc, &data_path_overrun);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, data_path_overrun);
@@ -415,6 +393,7 @@ void test_adis_read_diag_data_path_overrun_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_data_path_overrun_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_data_path_overrun(&device_alloc, &data_path_overrun);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, data_path_overrun);
@@ -445,6 +424,7 @@ void test_adis_read_diag_fls_mem_update_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_fls_mem_update_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_fls_mem_update_failure(&device_alloc,
 			&fls_mem_update_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -462,6 +442,7 @@ void test_adis_read_diag_fls_mem_update_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_fls_mem_update_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_fls_mem_update_failure(&device_alloc,
 			&fls_mem_update_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -492,6 +473,7 @@ void test_adis_read_diag_spi_comm_err_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_spi_comm_err_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_spi_comm_err(&device_alloc, &spi_comm_err);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, spi_comm_err);
@@ -508,6 +490,7 @@ void test_adis_read_diag_spi_comm_err_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_spi_comm_err_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_spi_comm_err(&device_alloc, &spi_comm_err);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, spi_comm_err);
@@ -537,6 +520,7 @@ void test_adis_read_diag_standby_mode_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_standby_mode_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_standby_mode(&device_alloc, &standby_mode);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, standby_mode);
@@ -553,6 +537,7 @@ void test_adis_read_diag_standby_mode_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_standby_mode_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_standby_mode(&device_alloc, &standby_mode);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, standby_mode);
@@ -582,6 +567,7 @@ void test_adis_read_diag_snsr_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_snsr_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_snsr_failure(&device_alloc, &snsr_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, snsr_failure);
@@ -598,6 +584,7 @@ void test_adis_read_diag_snsr_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_snsr_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_snsr_failure(&device_alloc, &snsr_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, snsr_failure);
@@ -627,6 +614,7 @@ void test_adis_read_diag_mem_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_mem_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_mem_failure(&device_alloc, &mem_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, mem_failure);
@@ -643,6 +631,7 @@ void test_adis_read_diag_mem_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_mem_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_mem_failure(&device_alloc, &mem_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, mem_failure);
@@ -672,6 +661,7 @@ void test_adis_read_diag_clk_err_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_clk_err_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_clk_err(&device_alloc, &clk_err);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, clk_err);
@@ -688,6 +678,7 @@ void test_adis_read_diag_clk_err_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_clk_err_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_clk_err(&device_alloc, &clk_err);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, clk_err);
@@ -717,6 +708,7 @@ void test_adis_read_diag_gyro1_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_gyro1_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_gyro1_failure(&device_alloc, &gyro1_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, gyro1_failure);
@@ -733,6 +725,7 @@ void test_adis_read_diag_gyro1_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_gyro1_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_gyro1_failure(&device_alloc, &gyro1_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, gyro1_failure);
@@ -762,6 +755,7 @@ void test_adis_read_diag_gyro2_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_gyro2_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_gyro2_failure(&device_alloc, &gyro2_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, gyro2_failure);
@@ -778,6 +772,7 @@ void test_adis_read_diag_gyro2_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_gyro2_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_gyro2_failure(&device_alloc, &gyro2_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, gyro2_failure);
@@ -807,6 +802,7 @@ void test_adis_read_diag_accl_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_accl_failure(&device_alloc, &accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, accl_failure);
@@ -823,6 +819,7 @@ void test_adis_read_diag_accl_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_accl_failure(&device_alloc, &accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, accl_failure);
@@ -854,6 +851,7 @@ void test_adis_read_diag_x_axis_gyro_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_x_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_x_axis_gyro_failure(&device_alloc,
 			&x_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -871,6 +869,7 @@ void test_adis_read_diag_x_axis_gyro_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_x_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_x_axis_gyro_failure(&device_alloc,
 			&x_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -903,6 +902,7 @@ void test_adis_read_diag_y_axis_gyro_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_y_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_y_axis_gyro_failure(&device_alloc,
 			&y_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -920,6 +920,7 @@ void test_adis_read_diag_y_axis_gyro_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_y_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_y_axis_gyro_failure(&device_alloc,
 			&y_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -953,6 +954,7 @@ void test_adis_read_diag_z_axis_gyro_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_z_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_z_axis_gyro_failure(&device_alloc,
 			&z_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -970,6 +972,7 @@ void test_adis_read_diag_z_axis_gyro_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_z_axis_gyro_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_z_axis_gyro_failure(&device_alloc,
 			&z_axis_gyro_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1002,6 +1005,7 @@ void test_adis_read_diag_x_axis_accl_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_x_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_x_axis_accl_failure(&device_alloc,
 			&x_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1019,6 +1023,7 @@ void test_adis_read_diag_x_axis_accl_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_x_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_x_axis_accl_failure(&device_alloc,
 			&x_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1051,6 +1056,7 @@ void test_adis_read_diag_y_axis_accl_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_y_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_y_axis_accl_failure(&device_alloc,
 			&y_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1068,6 +1074,7 @@ void test_adis_read_diag_y_axis_accl_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_y_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_y_axis_accl_failure(&device_alloc,
 			&y_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1101,6 +1108,7 @@ void test_adis_read_diag_z_axis_accl_failure_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_z_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_z_axis_accl_failure(&device_alloc,
 			&z_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1118,6 +1126,7 @@ void test_adis_read_diag_z_axis_accl_failure_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_z_axis_accl_failure_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_z_axis_accl_failure(&device_alloc,
 			&z_axis_accl_failure);
 	TEST_ASSERT_EQUAL_INT(0, retval);
@@ -1148,6 +1157,7 @@ void test_adis_read_diag_aduc_mcu_fault_2(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		device_alloc.info->field_map->diag_aduc_mcu_fault_mask);
+	no_os_field_get_IgnoreAndReturn(1);
 	retval = adis_read_diag_aduc_mcu_fault(&device_alloc, &aduc_mcu_fault);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, aduc_mcu_fault);
@@ -1164,6 +1174,7 @@ void test_adis_read_diag_aduc_mcu_fault_3(void)
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(
 		!device_alloc.info->field_map->diag_aduc_mcu_fault_mask);
+	no_os_field_get_IgnoreAndReturn(0);
 	retval = adis_read_diag_aduc_mcu_fault(&device_alloc, &aduc_mcu_fault);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(false, aduc_mcu_fault);
@@ -3828,7 +3839,7 @@ void test_adis_read_fls_mem_wr_cntr_2(void)
 	device_alloc.diag_flags.fls_mem_wr_cnt_exceed = false;
 	no_os_spi_transfer_IgnoreAndReturn(0);
 	no_os_get_unaligned_be32_IgnoreAndReturn(0);
-	no_os_field_get_IgnoreAndReturn(adis_chip_info->fls_mem_wr_cntr_max+1);
+	no_os_field_get_IgnoreAndReturn(adis_chip_info->fls_mem_wr_cntr_max + 1);
 	retval = adis_read_fls_mem_wr_cntr(&device_alloc, &fls_mem_wr_cntr);
 	TEST_ASSERT_EQUAL_INT(0, retval);
 	TEST_ASSERT_EQUAL_INT(true, device_alloc.diag_flags.fls_mem_wr_cnt_exceed);
@@ -3865,7 +3876,7 @@ void test_adis_read_burst_data_1(void)
 
 	no_os_spi_write_and_read_IgnoreAndReturn(-1);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      device_alloc.burst32, device_alloc.burst_sel, false);
+				      device_alloc.burst32, device_alloc.burst_sel, false, true);
 	TEST_ASSERT_EQUAL_INT(-1, retval);
 }
 
@@ -3883,7 +3894,7 @@ void test_adis_read_burst_data_2(void)
 	no_os_field_get_IgnoreAndReturn(!device_alloc.burst32);
 	no_os_spi_transfer_IgnoreAndReturn(-1);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      !device_alloc.burst32, device_alloc.burst_sel, false);
+				      !device_alloc.burst32, device_alloc.burst_sel, false, true);
 	TEST_ASSERT_EQUAL_INT(-1, retval);
 }
 
@@ -3901,7 +3912,7 @@ void test_adis_read_burst_data_3(void)
 	no_os_field_get_IgnoreAndReturn(!device_alloc.burst_sel);
 	no_os_spi_transfer_IgnoreAndReturn(-1);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      device_alloc.burst32, !device_alloc.burst_sel, false);
+				      device_alloc.burst32, !device_alloc.burst_sel, false, true);
 	TEST_ASSERT_EQUAL_INT(-1, retval);
 }
 
@@ -3919,7 +3930,7 @@ void test_adis_read_burst_data_4(void)
 	no_os_spi_write_and_read_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(0);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      device_alloc.burst32, device_alloc.burst_sel, true);
+				      device_alloc.burst32, device_alloc.burst_sel, true, true);
 	TEST_ASSERT_EQUAL_INT(-EINVAL, retval);
 }
 
@@ -3938,7 +3949,7 @@ void test_adis_read_burst_data_5(void)
 	no_os_spi_write_and_read_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(0);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      device_alloc.burst32, device_alloc.burst_sel, false);
+				      device_alloc.burst32, device_alloc.burst_sel, false, true);
 	TEST_ASSERT_EQUAL_INT(-EINVAL, retval);
 	TEST_ASSERT_EQUAL_INT(true, device_alloc.diag_flags.checksum_err);
 }
@@ -3957,7 +3968,7 @@ void test_adis_read_burst_data_6(void)
 	no_os_spi_write_and_read_IgnoreAndReturn(0);
 	no_os_get_unaligned_be16_IgnoreAndReturn(0);
 	retval = adis_read_burst_data(&device_alloc, &data,
-				      device_alloc.burst32, device_alloc.burst_sel, true);
+				      device_alloc.burst32, device_alloc.burst_sel, true, true);
 	TEST_ASSERT_EQUAL_INT(-EINVAL, retval);
 }
 

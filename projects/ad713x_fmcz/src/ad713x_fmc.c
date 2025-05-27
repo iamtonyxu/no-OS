@@ -6,41 +6,32 @@
 ********************************************************************************
 * Copyright 2020(c) Analog Devices, Inc.
 *
-* All rights reserved.
-*
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-* - Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer.
-* - Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in
-* the documentation and/or other materials provided with the
-* distribution.
-* - Neither the name of Analog Devices, Inc. nor the names of its
-* contributors may be used to endorse or promote products derived
-* from this software without specific prior written permission.
-* - The use of this software may or may not infringe the patent rights
-* of one or more patent holders. This license does not release you
-* from the requirement that you obtain separate licenses from these
-* patent holders to use this software.
-* - Use of the software either in source or binary form, must be run
-* on or directly connected to an Analog Devices Inc. component.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
 * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include <sleep.h>
 #include <stdbool.h>
@@ -77,7 +68,7 @@
 #include "iio_app.h"
 #endif // IIO_SUPPORT
 
-static uint32_t adc_buffer[ADC_BUFFER_SIZE] __attribute__((aligned));
+static uint32_t adc_buffer[ADC_BUFFER_SIZE] __attribute__((aligned(1024)));
 
 int main()
 {
@@ -153,6 +144,17 @@ int main()
 		.platform_ops = &xil_gpio_ops,
 		.extra = &gpio_extra_param
 	};
+	struct no_os_gpio_init_param ad7134_cs_sync = {
+		.number = GPIO_CS_SYNC,
+		.platform_ops = &xil_gpio_ops,
+		.extra = &gpio_extra_param
+	};
+	struct no_os_gpio_init_param ad7134_cs_sync_1 = {
+		.number = GPIO_CS_SYNC_1,
+		.platform_ops = &xil_gpio_ops,
+		.extra = &gpio_extra_param
+	};
+
 	struct no_os_spi_desc *spi_eng_desc;
 	struct spi_engine_init_param spi_eng_init_param  = {
 		.type = SPI_ENGINE,
@@ -163,25 +165,36 @@ int main()
 	};
 	const struct no_os_spi_init_param spi_eng_init_prm  = {
 		.chip_select = AD7134_1_SPI_CS,
-		.max_speed_hz = 48000000,
+		.max_speed_hz = 50000000,
 		.mode = NO_OS_SPI_MODE_1,
 		.platform_ops = &spi_eng_platform_ops,
 		.extra = (void*)&spi_eng_init_param,
 	};
 
 	struct no_os_pwm_desc *axi_pwm;
-	struct axi_pwm_init_param axi_zed_pwm_init = {
+	struct axi_pwm_init_param axi_zed_pwm_init_trigger = {
 		.base_addr = XPAR_ODR_GENERATOR_BASEADDR,
 		.ref_clock_Hz = 100000000,
 		.channel = 0
 	};
-
-	struct no_os_pwm_init_param axi_pwm_init = {
-		.period_ns = 3333,
-		.duty_cycle_ns = 600,
+	struct axi_pwm_init_param axi_zed_pwm_init_odr = {
+		.base_addr = XPAR_ODR_GENERATOR_BASEADDR,
+		.ref_clock_Hz = 100000000,
+		.channel = 1
+	};
+	struct no_os_pwm_init_param axi_pwm_init_trigger = {
+		.period_ns = 3000,
+		.duty_cycle_ns = 1,
+		.phase_ns = 45,
+		.platform_ops = &axi_pwm_ops,
+		.extra = &axi_zed_pwm_init_trigger
+	};
+	struct no_os_pwm_init_param axi_pwm_init_odr = {
+		.period_ns = 3000,
+		.duty_cycle_ns = 130,
 		.phase_ns = 0,
 		.platform_ops = &axi_pwm_ops,
-		.extra = &axi_zed_pwm_init
+		.extra = &axi_zed_pwm_init_odr
 	};
 
 	gpio_extra_param.device_id = GPIO_DEVICE_ID;
@@ -197,6 +210,7 @@ int main()
 	ad713x_init_param_1.gpio_mode = &ad7134_1_mode;
 	ad713x_init_param_1.gpio_pnd = &ad7134_1_pnd;
 	ad713x_init_param_1.gpio_resetn = &ad7134_1_resetn;
+	ad713x_init_param_1.gpio_cs_sync = &ad7134_cs_sync;
 	ad713x_init_param_1.mode_master_nslave = false;
 	ad713x_init_param_1.dclkmode_free_ngated = false;
 	ad713x_init_param_1.dclkio_out_nin = false;
@@ -204,7 +218,7 @@ int main()
 	ad713x_init_param_1.spi_init_prm.chip_select = AD7134_1_SPI_CS;
 	ad713x_init_param_1.spi_init_prm.device_id = SPI_DEVICE_ID;
 	ad713x_init_param_1.spi_init_prm.max_speed_hz = 10000000;
-	ad713x_init_param_1.spi_init_prm.mode = NO_OS_SPI_MODE_3;
+	ad713x_init_param_1.spi_init_prm.mode = NO_OS_SPI_MODE_0;
 	ad713x_init_param_1.spi_init_prm.platform_ops = &xil_spi_ops;
 	ad713x_init_param_1.spi_init_prm.extra = (void *)&spi_engine_init_params;
 	ad713x_init_param_1.spi_common_dev = 0;
@@ -219,6 +233,7 @@ int main()
 	ad713x_init_param_2.gpio_mode = &ad7134_2_mode;
 	ad713x_init_param_2.gpio_pnd = &ad7134_2_pnd;
 	ad713x_init_param_2.gpio_resetn = &ad7134_2_resetn;
+	ad713x_init_param_2.gpio_cs_sync = &ad7134_cs_sync_1;
 	ad713x_init_param_2.mode_master_nslave = false;
 	ad713x_init_param_2.dclkmode_free_ngated = false;
 	ad713x_init_param_2.dclkio_out_nin = false;
@@ -226,7 +241,7 @@ int main()
 	ad713x_init_param_2.spi_init_prm.device_id = SPI_DEVICE_ID;
 	ad713x_init_param_2.spi_init_prm.chip_select = AD7134_2_SPI_CS;
 	ad713x_init_param_2.spi_init_prm.max_speed_hz = 10000000;
-	ad713x_init_param_2.spi_init_prm.mode = NO_OS_SPI_MODE_3;
+	ad713x_init_param_2.spi_init_prm.mode = NO_OS_SPI_MODE_0;
 	ad713x_init_param_2.spi_init_prm.platform_ops = &xil_spi_ops;
 	ad713x_init_param_2.spi_init_prm.extra = (void *)&spi_engine_init_params;
 	ad713x_init_param_2.spi_common_dev = 0;
@@ -244,7 +259,11 @@ int main()
 	if (ret != 0)
 		return -1;
 
-	ret = no_os_pwm_init(&axi_pwm, &axi_pwm_init);
+	ret = no_os_pwm_init(&axi_pwm, &axi_pwm_init_trigger);
+	if (ret != 0)
+		return ret;
+
+	ret = no_os_pwm_init(&axi_pwm, &axi_pwm_init_odr);
 	if (ret != 0)
 		return ret;
 
@@ -261,7 +280,7 @@ int main()
 
 	spi_engine_offload_init_param.rx_dma_baseaddr = AD7134_DMA_BASEADDR;
 	spi_engine_offload_init_param.offload_config = OFFLOAD_RX_EN;
-	spi_engine_offload_init_param.dma_flags = &spi_eng_dma_flg;
+	spi_engine_offload_init_param.dma_flags = spi_eng_dma_flg;
 
 	ret = no_os_spi_init(&spi_eng_desc, &spi_eng_init_prm);
 	if (ret != 0)
@@ -316,7 +335,7 @@ int main()
 	struct iio_app_init_param app_init_param = { 0 };
 
 	ret = iio_dual_ad713x_init(&iio_ad713x, &iio_ad713x_init_par);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	iio_dual_ad713x_get_dev_descriptor(iio_ad713x, &ad713x_dev_desc);
@@ -348,6 +367,10 @@ int main()
 
 #endif /* IIO_SUPPORT */
 
+	ret = ad713x_channel_sync(ad713x_dev_1);
+	if (ret != 0)
+		return ret;
+
 	ret = spi_engine_offload_transfer(spi_eng_desc, spi_engine_offload_message,
 					  (AD7134_FMC_CH_NO * AD7134_FMC_SAMPLE_NO));
 	if (ret != 0)
@@ -357,18 +380,18 @@ int main()
 				  AD7134_FMC_SAMPLE_NO * AD7134_FMC_CH_NO *
 				  sizeof(uint32_t));
 
-	for(i = 0; i < AD7134_FMC_SAMPLE_NO; i++) {
+	for (i = 0; i < AD7134_FMC_SAMPLE_NO; i++) {
 		j = 0;
 		printf("%lu: ", i);
-		while(j < 8) {
-			adc_buffer[AD7134_FMC_CH_NO*i+j] &= 0xffffff00;
-			adc_buffer[AD7134_FMC_CH_NO*i+j] >>= 8;
-			data = lsb * (int32_t)adc_buffer[AD7134_FMC_CH_NO*i+j];
-			if(data > 4.095)
+		while (j < 8) {
+			adc_buffer[AD7134_FMC_CH_NO * i + j] &= 0xffffff00;
+			adc_buffer[AD7134_FMC_CH_NO * i + j] >>= 8;
+			data = lsb * (int32_t)adc_buffer[AD7134_FMC_CH_NO * i + j];
+			if (data > 4.095)
 				data = data - 8.192;
 			printf("CH%lu: 0x%08lx = %+1.5fV ", j,
-			       adc_buffer[AD7134_FMC_CH_NO*i+j], data);
-			if(j == 7)
+			       adc_buffer[AD7134_FMC_CH_NO * i + j], data);
+			if (j == 7)
 				printf("\n");
 			j++;
 		}

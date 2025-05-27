@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2018-2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
@@ -51,9 +42,6 @@
 #include "hmc7044.h"
 #include "jesd204.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define HMC7044_WRITE		(0 << 15)
 #define HMC7044_READ		(1 << 15)
 #define HMC7044_CNT(x)		(((x) - 1) << 13)
@@ -279,10 +267,6 @@ struct hmc7044_jesd204_priv {
 	struct hmc7044_dev *hmc;
 };
 
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
-
 /**
  * SPI register write to device.
  * @param dev - The device structure.
@@ -423,7 +407,7 @@ int32_t hmc7044_clk_recalc_rate(struct hmc7044_dev *dev, uint32_t chan_num,
 			break;
 		}
 	}
-	if (chan == NULL )
+	if (chan == NULL)
 		return -1;
 
 	*rate = dev->pll2_freq / chan->divider;
@@ -470,7 +454,7 @@ int32_t hmc7044_clk_set_rate(struct hmc7044_dev *dev, uint32_t chan_num,
 			break;
 		}
 	}
-	if (chan == NULL )
+	if (chan == NULL)
 		return -1;
 
 	div = hmc7044_calc_out_div(rate, dev->pll2_freq);
@@ -478,7 +462,7 @@ int32_t hmc7044_clk_set_rate(struct hmc7044_dev *dev, uint32_t chan_num,
 
 	ret = hmc7044_write(dev, HMC7044_REG_CH_OUT_CRTL_1(chan->num),
 			    HMC7044_DIV_LSB(div));
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	return hmc7044_write(dev, HMC7044_REG_CH_OUT_CRTL_2(chan->num),
@@ -1695,7 +1679,7 @@ int32_t hmc7044_set_rate(struct no_os_clk_desc *desc,
  * @brief hmc7044 clock ops
  */
 const struct no_os_clk_platform_ops hmc7044_clk_ops = {
-	.clk_recalc_rate =&hmc7044_recalc_rate,
+	.clk_recalc_rate = &hmc7044_recalc_rate,
 	.clk_round_rate = &hmc7044_round_rate,
 	.clk_set_rate = &hmc7044_set_rate,
 };

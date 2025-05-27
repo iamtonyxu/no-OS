@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2020-22(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #ifndef SRC_AD469X_H_
@@ -47,9 +41,6 @@
  * */
 //#define USE_STANDARD_SPI
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdbool.h>
 
 #if !defined(USE_STANDARD_SPI)
@@ -62,9 +53,6 @@
 
 #include "no_os_gpio.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 /* AD469x registers */
 #define AD469x_REG_IF_CONFIG_A		0x000
 #define AD469x_REG_IF_CONFIG_B		0x001
@@ -161,11 +149,7 @@
 #define AD469x_CHANNEL(x)			(NO_OS_BIT(x) & 0xFFFF)
 #define AD469x_CHANNEL_NO			16
 #define AD469x_SLOTS_NO				0x80
-#define AD469x_CHANNEL_TEMP			16
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 /**
  * @enum ad469x_channel_sequencing
  * @brief Channel sequencing modes
@@ -209,6 +193,7 @@ enum ad469x_supported_dev_ids {
 	ID_AD4695,
 	ID_AD4696,
 	ID_AD4697,
+	ID_AD4698,
 };
 
 /**
@@ -296,6 +281,12 @@ struct ad469x_init_param {
 	enum ad469x_osr_ratios adv_seq_osr_resol[AD469x_CHANNEL_NO];
 	/** Invalidate the Data cache for the given address range */
 	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
+	/** Number of data channels to enable */
+	uint8_t num_data_ch;
+	/** Temperature enabled for standard and advanced sequencer if set. */
+	bool temp_enabled;
+	/** enable extended init */
+	bool enable_extended_init;
 };
 
 /**
@@ -345,11 +336,10 @@ struct ad469x_dev {
 	bool temp_enabled;
 	/** Number of active channel slots, for advanced sequencer */
 	uint8_t num_slots;
+	/** Number of data channels to enable */
+	uint8_t num_data_ch;
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /* Read device register. */
 int32_t ad469x_spi_reg_read(struct ad469x_dev *dev,
 			    uint16_t reg_addr,
@@ -381,7 +371,7 @@ int32_t ad469x_read_data(struct ad469x_dev *dev,
 /* Read from device when converter has the channel sequencer activated */
 int32_t ad469x_seq_read_data(struct ad469x_dev *dev,
 			     uint32_t *buf,
-			     uint16_t samples);
+			     uint32_t samples);
 
 /* Set channel sequence */
 int32_t ad469x_set_channel_sequence(struct ad469x_dev *dev,
@@ -452,6 +442,14 @@ int32_t ad469x_configure_ain_high_z(struct ad469x_dev *dev,
 int32_t ad469x_get_ain_high_z_status(struct ad469x_dev *dev,
 				     uint8_t ch,
 				     enum ad469x_ain_high_z *status);
+
+/* Get the number of channels that are enabled */
+int32_t ad469x_get_num_channels(struct ad469x_dev *dev,
+				uint8_t *num_channels);
+
+/* check if channel is a temperature channel */
+bool ad469x_is_temp_channel(struct ad469x_dev *dev,
+			    uint8_t channel);
 
 /* Initialize the device. */
 int32_t ad469x_init(struct ad469x_dev **device,

@@ -5,50 +5,37 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <malloc.h>
 #include "admv8818.h"
 #include "no_os_error.h"
 #include "no_os_alloc.h"
 #include "no_os_units.h"
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 static const unsigned long long freq_range_hpf[4][2] = {
 	{1750000000ULL, 3550000000ULL},
@@ -64,10 +51,6 @@ static const unsigned long long freq_range_lpf[4][2] = {
 	{12550000000, 18500000000}
 };
 
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
-
 /**
  * @brief Writes data to ADMV8818 over SPI.
  * @param dev - The device structure.
@@ -75,13 +58,14 @@ static const unsigned long long freq_range_lpf[4][2] = {
  * @param data - Data value to write.
  * @return Returns 0 in case of success or negative error code otherwise.
  */
-int admv8818_spi_write(struct admv8818_dev *dev, uint8_t reg_addr,
+int admv8818_spi_write(struct admv8818_dev *dev, uint16_t reg_addr,
 		       uint8_t data)
 {
 	uint8_t buff[ADMV8818_BUFF_SIZE_BYTES];
 
-	buff[0] = reg_addr;
-	buff[1] = data;
+	buff[0] = no_os_field_get(NO_OS_GENMASK(15, 8), reg_addr);
+	buff[1] = no_os_field_get(NO_OS_GENMASK(7, 0), reg_addr);
+	buff[2] = data;
 
 	return no_os_spi_write_and_read(dev->spi_desc, buff,
 					ADMV8818_BUFF_SIZE_BYTES);
@@ -94,17 +78,19 @@ int admv8818_spi_write(struct admv8818_dev *dev, uint8_t reg_addr,
  * @param data - Data read from the device.
  * @return Returns 0 in case of success or negative error code otherwise.
  */
-int admv8818_spi_read(struct admv8818_dev *dev, uint8_t reg_addr,
+int admv8818_spi_read(struct admv8818_dev *dev, uint16_t reg_addr,
 		      uint8_t *data)
 {
 	uint8_t buff[ADMV8818_BUFF_SIZE_BYTES];
 	int ret;
 
-	buff[0] = ADMV8818_SPI_READ_CMD | reg_addr;
-	buff[1] = 0;
+	buff[0] = ADMV8818_SPI_READ_CMD | no_os_field_get(NO_OS_GENMASK(15, 8),
+			reg_addr);
+	buff[1] = no_os_field_get(NO_OS_GENMASK(7, 0), reg_addr);
+	buff[2] = 0;
 
 	ret = no_os_spi_write_and_read(dev->spi_desc, buff, ADMV8818_BUFF_SIZE_BYTES);
-	if(ret)
+	if (ret)
 		return ret;
 
 	*data = buff[1];
@@ -120,7 +106,7 @@ int admv8818_spi_read(struct admv8818_dev *dev, uint8_t reg_addr,
  * @param data - Data written to the device (requires prior bit shifting).
  * @return Returns 0 in case of success or negative error code otherwise.
  */
-int admv8818_spi_update_bits(struct admv8818_dev *dev, uint8_t reg_addr,
+int admv8818_spi_update_bits(struct admv8818_dev *dev, uint16_t reg_addr,
 			     uint8_t mask, uint8_t data)
 {
 	uint8_t read_val;
@@ -301,7 +287,7 @@ int admv8818_read_lpf_freq(struct admv8818_dev *dev, unsigned long long *freq)
 
 	lpf_band = no_os_field_get(ADMV8818_SW_OUT_WR0_MSK, data);
 	if (!lpf_band || lpf_band > 4) {
-		*freq= 0;
+		*freq = 0;
 		return ret;
 	}
 
@@ -360,19 +346,15 @@ int admv8818_init(struct admv8818_dev **device,
 	if (ret)
 		goto error_dev;
 
-	ret = admv8818_spi_update_bits(dev, ADMV8818_REG_SPI_CONFIG_A,
-				       ADMV8818_SOFTRESET_N_MSK |
-				       ADMV8818_SOFTRESET_MSK,
-				       no_os_field_prep(ADMV8818_SOFTRESET_N_MSK, 1) |
-				       no_os_field_prep(ADMV8818_SOFTRESET_MSK, 1));
+	ret = admv8818_spi_write(dev, ADMV8818_REG_SPI_CONFIG_A,
+				 no_os_field_prep(ADMV8818_SOFTRESET_N_MSK, 1) |
+				 no_os_field_prep(ADMV8818_SOFTRESET_MSK, 1));
 	if (ret)
 		goto error_spi;
 
-	ret = admv8818_spi_update_bits(dev, ADMV8818_REG_SPI_CONFIG_A,
-				       ADMV8818_SDOACTIVE_N_MSK |
-				       ADMV8818_SDOACTIVE_MSK,
-				       no_os_field_prep(ADMV8818_SDOACTIVE_N_MSK, 1) |
-				       no_os_field_prep(ADMV8818_SDOACTIVE_MSK, 1));
+	ret = admv8818_spi_write(dev, ADMV8818_REG_SPI_CONFIG_A,
+				 no_os_field_prep(ADMV8818_SDOACTIVE_N_MSK, 1) |
+				 no_os_field_prep(ADMV8818_SDOACTIVE_MSK, 1));
 	if (ret)
 		goto error_spi;
 

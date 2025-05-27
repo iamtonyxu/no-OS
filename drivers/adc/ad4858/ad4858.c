@@ -3,36 +3,30 @@
  *   @brief  Source file for the ad4858 drivers
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -345,12 +339,25 @@ int ad4858_set_packet_format(struct ad4858_dev *dev,
 	int ret;
 	uint32_t val;
 
-	if (!dev || (packet_format >= AD4858_NUM_OF_PACKETS))
+	if (!dev || (dev->prod_id == AD4858_PROD_ID_L
+		     && packet_format < AD4858_PACKET_20_BIT)
+	    || (dev->prod_id == AD4855_PROD_ID_L && (packet_format == AD4858_PACKET_20_BIT
+			    || packet_format == AD4858_PACKET_32_BIT)))
 		return -EINVAL;
 
 	val = no_os_field_prep(AD4858_PACKET_FORMAT_MSK, packet_format);
-	ret = ad4858_reg_mask(dev, AD4858_REG_PACKET, AD4858_PACKET_FORMAT_MSK,
-			      val);
+
+	if (dev->prod_id == AD4855_PROD_ID_L)
+		ret = ad4858_reg_mask(dev,
+				      AD4858_REG_PACKET,
+				      AD4858_PACKET_FORMAT_MSK,
+				      val / 2);
+	else
+		ret = ad4858_reg_mask(dev,
+				      AD4858_REG_PACKET,
+				      AD4858_PACKET_FORMAT_MSK,
+				      val - 1);
+
 	if (ret)
 		return ret;
 
@@ -487,8 +494,14 @@ int ad4858_set_chn_offset(struct ad4858_dev *dev, uint8_t chn, uint32_t offset)
 	if (!dev || (chn >= AD4858_NUM_CHANNELS))
 		return -EINVAL;
 
-	/* Offset value is spanned over bits [24:4] */
-	ret = ad4858_reg_write(dev, AD4858_REG_CH_OFFSET(chn), (offset << 4));
+	if (dev->prod_id == AD4855_PROD_ID_L) {
+		/* Offset value is spanned over bits [23:8] */
+		ret = ad4858_reg_write(dev, AD4858_REG_CH_OFFSET(chn), (offset << 8));
+	} else {
+		/* Offset value is spanned over bits [23:4] */
+		ret = ad4858_reg_write(dev, AD4858_REG_CH_OFFSET(chn), (offset << 4));
+	}
+
 	if (ret)
 		return ret;
 
@@ -670,6 +683,10 @@ int ad4858_spi_data_read(struct ad4858_dev *dev, struct ad4858_conv_data *data)
 		return -EINVAL;
 
 	switch (dev->packet_format) {
+	case AD4858_PACKET_16_BIT:
+		nb_bytes = (16 * AD4858_NUM_CHANNELS) >> 3;
+		break;
+
 	case AD4858_PACKET_20_BIT:
 		nb_bytes = (20 * AD4858_NUM_CHANNELS) >> 3;
 		break;
@@ -691,46 +708,82 @@ int ad4858_spi_data_read(struct ad4858_dev *dev, struct ad4858_conv_data *data)
 	if (ret)
 		return ret;
 
-	switch (dev->packet_format) {
-	case AD4858_PACKET_20_BIT:
-		/* 20-bit conversion result */
-		for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
-			indx = buff_chn_offset[chn];
-			if (!(chn % 2))
-				data->raw[chn] = (((uint32_t)buff[indx] << 16) |
-						  ((uint32_t)buff[indx + 1] << 8) |
-						  (buff[indx + 2])) >> 4;
-			else
-				data->raw[chn] = ((uint32_t)(buff[indx] & 0x0f) << 16) |
-						 ((uint32_t)buff[indx + 1] << 8) |
-						 (buff[indx + 2]);
+	switch (dev->prod_id) {
+	case AD4855_PROD_ID_L:
+		switch (dev->packet_format) {
+		case AD4858_PACKET_16_BIT:
+			/* 16-bit conversion result */
+			for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
+				indx = chn * 2;
+				data->raw[chn] = no_os_get_unaligned_be16(buff + indx);
+			}
+			break;
+
+		case AD4858_PACKET_24_BIT:
+			/* 16-bit conversion result + 1-bit OR/UR + 3-bit channel ID + 4-bit softspan ID */
+			for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
+				indx = chn * 3;
+				data->raw[chn] = no_os_get_unaligned_be16(buff + indx);
+				data->or_ur_status[chn] = no_os_field_get(AD4858_OR_UR_STATUS_MSK_16_BIT,
+							  buff[indx + 2]);
+				data->chn_id[chn] = no_os_field_get(AD4858_CHN_ID_MSK_16_BIT, buff[indx + 2]);
+				data->softspan_id[chn] = no_os_field_get(AD4858_SOFTSPAN_ID_MSK_16_BIT,
+							 buff[indx + 2]);
+			}
+			break;
+
+		default:
+			return -EINVAL;
 		}
+
 		break;
 
-	case AD4858_PACKET_24_BIT:
-		/* 20-bit conversion result + 1-bit OR/UR + 3-bit channel ID */
-		for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
-			indx = chn * 3;
-			data->raw[chn] = (((uint32_t)buff[indx] << 16) |
-					  ((uint32_t)buff[indx + 1] << 8) |
-					  (buff[indx + 2])) >> 4;
-			data->or_ur_status[chn] = (buff[indx + 2] >> 3) & 0x1;
-			data->chn_id[chn] = buff[indx + 2] & 0x7;
-		}
-		chn = 0;
-		break;
+	case AD4858_PROD_ID_L:
+		switch (dev->packet_format) {
+		case AD4858_PACKET_20_BIT:
+			/* 20-bit conversion result */
+			for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
+				indx = buff_chn_offset[chn];
+				if (!(chn % 2))
+					data->raw[chn] = no_os_field_get(AD4858_RAW_DATA_MSK_EVEN_20_BIT,
+									 no_os_get_unaligned_be24(buff + indx));
+				else
+					data->raw[chn] = no_os_field_get(AD4858_RAW_DATA_MSK_ODD_20_BIT,
+									 no_os_get_unaligned_be24(buff + indx));
+			}
+			break;
 
-	case AD4858_PACKET_32_BIT:
-		/* 20-bit conversion result + 1-bit OR/UR + 3-bit channel ID + 4-bit softspan ID + 4 0's */
-		for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
-			indx = chn * 4;
-			data->raw[chn] = (((uint32_t)buff[indx] << 16) |
-					  ((uint32_t)buff[indx + 1] << 8) |
-					  (buff[indx + 2])) >> 4;
-			data->or_ur_status[chn] = (buff[indx + 2] >> 3) & 0x1;
-			data->chn_id[chn] = buff[indx + 2] & 0x7;
-			data->softspan_id[chn] = (buff[indx + 3] >> 4) & 0xf;
+		case AD4858_PACKET_24_BIT:
+			/* 20-bit conversion result + 1-bit OR/UR + 3-bit channel ID */
+			for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
+				indx = chn * 3;
+				data->raw[chn] = no_os_field_get(AD4858_RAW_DATA_MSK_20_BIT,
+								 no_os_get_unaligned_be24(buff + indx));
+				data->or_ur_status[chn] = no_os_field_get(AD4858_OR_UR_STATUS_MSK_20_BIT,
+							  buff[indx + 2]);
+				data->chn_id[chn] = no_os_field_get(AD4858_CHN_ID_MSK_20_BIT, buff[indx + 2]);
+			}
+			chn = 0;
+			break;
+
+		case AD4858_PACKET_32_BIT:
+			/* 20-bit conversion result + 1-bit OR/UR + 3-bit channel ID + 4-bit softspan ID + 4 0's */
+			for (chn = 0; chn < AD4858_NUM_CHANNELS; chn++) {
+				indx = chn * 4;
+				data->raw[chn] = no_os_field_get(AD4858_RAW_DATA_MSK_20_BIT,
+								 no_os_get_unaligned_be24(buff + indx));
+				data->or_ur_status[chn] = no_os_field_get(AD4858_OR_UR_STATUS_MSK_20_BIT,
+							  buff[indx + 2]);
+				data->chn_id[chn] = no_os_field_get(AD4858_CHN_ID_MSK_20_BIT, buff[indx + 2]);
+				data->softspan_id[chn] = no_os_field_get(AD4858_SOFTSPAN_ID_MSK_20_BIT,
+							 buff[indx + 3]);
+			}
+			break;
+
+		default:
+			return -EINVAL;
 		}
+
 		break;
 
 	default:
@@ -1005,6 +1058,8 @@ int ad4858_init(struct ad4858_dev **device,
 
 	dev->big_endian = no_os_is_big_endian();
 
+	dev->prod_id = init_param->prod_id;
+
 	/* Configure GPIOs */
 	ret = ad4858_gpio_config(dev, init_param);
 	if (ret)
@@ -1048,8 +1103,8 @@ int ad4858_init(struct ad4858_dev **device,
 	if (ret)
 		goto error_spi;
 
-	if ((product_id_l != AD4858_PRODUCT_ID_L)
-	    || (product_id_h != AD4858_PRODUCT_ID_H)) {
+	if ((product_id_l != dev->prod_id)
+	    || (product_id_h != AD485X_PRODUCT_ID_H)) {
 		pr_err("Product ID mismatch \r\n");
 		return -EFAULT;
 	}

@@ -6,36 +6,30 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 /*
@@ -44,19 +38,11 @@
  *  - AD4134.
  */
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
-
 #include <stdlib.h>
 #include "ad713x.h"
 #include "no_os_delay.h"
 #include "no_os_error.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/***************************** Variable definition ****************************/
-/******************************************************************************/
 
 static const int ad713x_output_data_frame[4][9][2] = {
 	{
@@ -96,10 +82,6 @@ static const int ad713x_output_data_frame[4][9][2] = {
 	},
 };
 
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
-
 /**
  * @brief Read from device.
  * @param dev - The device structure.
@@ -118,7 +100,7 @@ int32_t ad713x_spi_reg_read(struct ad713x_dev *dev,
 	buf[1] = 0x00;
 
 	ret = no_os_spi_write_and_read(dev->spi_desc, buf, 2);
-	if(NO_OS_IS_ERR_VALUE(ret))
+	if (NO_OS_IS_ERR_VALUE(ret))
 		return -1;
 	*reg_data = buf[1];
 
@@ -161,7 +143,7 @@ int32_t ad713x_spi_write_mask(struct ad713x_dev *dev,
 	int32_t ret;
 
 	ret = ad713x_spi_reg_read(dev, reg_addr, &reg_data);
-	if(NO_OS_IS_ERR_VALUE(ret))
+	if (NO_OS_IS_ERR_VALUE(ret))
 		return -1;
 	reg_data &= ~mask;
 	reg_data |= data;
@@ -214,7 +196,7 @@ int32_t ad713x_set_out_data_frame(struct ad713x_dev *dev,
 	id = dev->dev_id;
 
 	while (ad713x_output_data_frame[id][i][0] != INVALID) {
-		if((adc_data_len == ad713x_output_data_frame[id][i][0]) &&
+		if ((adc_data_len == ad713x_output_data_frame[id][i][0]) &&
 		    (crc_header == ad713x_output_data_frame[id][i][1])) {
 			return ad713x_spi_write_mask(dev,
 						     AD713X_REG_DATA_PACKET_CONFIG,
@@ -300,6 +282,29 @@ int32_t ad713x_mag_phase_clk_delay_chan(struct ad713x_dev *dev,
 	return ad713x_spi_write_mask(dev, AD713X_REG_MPC_CONFIG,
 				     AD713X_MPC_CLKDEL_EN_CH_MSK(chan),
 				     AD713X_MPC_CLKDEL_EN_CH_MODE(mode, chan));
+}
+
+/**
+ * @brief Multidevice synchronization between channels on different devices.
+ * @param dev - The device structure.
+ * @return 0 in case of success, -1 otherwise.
+ */
+
+int32_t ad713x_channel_sync(struct ad713x_dev *dev)
+{
+	int ret = 0;
+	ret = no_os_gpio_set_value(dev->gpio_cs_sync, true);
+	if (NO_OS_IS_ERR_VALUE(ret))
+		return -1;
+
+	ret = ad713x_spi_write_mask(dev, AD713X_REG_INTERFACE_CONFIG_B,
+				    AD713X_INT_CONFIG_B_DIG_IF_RST_MSK | AD713X_INT_CONFIG_B_SINGLE_INSTR_MSK,
+				    AD713X_INT_CONFIG_B_DIG_IF_RST_MSK | AD713X_INT_CONFIG_B_SINGLE_INSTR_MSK);
+
+	ret = no_os_gpio_set_value(dev->gpio_cs_sync, false);
+	if (NO_OS_IS_ERR_VALUE(ret))
+		return -1;
+	return ret;
 }
 
 /**
@@ -408,6 +413,14 @@ static int32_t ad713x_init_gpio(struct ad713x_dev *dev,
 	if (NO_OS_IS_ERR_VALUE(ret))
 		return -1;
 
+	ret = no_os_gpio_get_optional(&dev->gpio_cs_sync, init_param->gpio_cs_sync);
+	if (NO_OS_IS_ERR_VALUE(ret))
+		return -1;
+
+	ret = no_os_gpio_direction_output(dev->gpio_cs_sync, false);
+	if (NO_OS_IS_ERR_VALUE(ret))
+		return -1;
+
 	/** Tie this pin to IOVDD for master mode operation, tie this pin to
 	 *  IOGND for slave mode operation. */
 	if (init_param->gpio_mode) {
@@ -469,27 +482,27 @@ static int32_t ad713x_remove_gpio(struct ad713x_dev *dev)
 
 	if (dev->gpio_dclkio) {
 		ret = no_os_gpio_remove(dev->gpio_dclkio);
-		if(NO_OS_IS_ERR_VALUE(ret))
+		if (NO_OS_IS_ERR_VALUE(ret))
 			return -1;
 	}
 	if (dev->gpio_dclkio) {
 		ret = no_os_gpio_remove(dev->gpio_dclkmode);
-		if(NO_OS_IS_ERR_VALUE(ret))
+		if (NO_OS_IS_ERR_VALUE(ret))
 			return -1;
 	}
 	if (dev->gpio_mode) {
 		ret = no_os_gpio_remove(dev->gpio_mode);
-		if(NO_OS_IS_ERR_VALUE(ret))
+		if (NO_OS_IS_ERR_VALUE(ret))
 			return -1;
 	}
 	if (dev->gpio_pnd) {
 		ret = no_os_gpio_remove(dev->gpio_pnd);
-		if(NO_OS_IS_ERR_VALUE(ret))
+		if (NO_OS_IS_ERR_VALUE(ret))
 			return -1;
 	}
 	if (dev->gpio_resetn) {
 		ret = no_os_gpio_remove(dev->gpio_resetn);
-		if(NO_OS_IS_ERR_VALUE(ret))
+		if (NO_OS_IS_ERR_VALUE(ret))
 			return -1;
 	}
 
@@ -539,7 +552,7 @@ int32_t ad713x_init(struct ad713x_dev **device,
 		if (NO_OS_IS_ERR_VALUE(ret))
 			goto error_dev;
 	} else {
-		dev->spi_desc = no_os_calloc(1, sizeof *dev->spi_desc);
+		dev->spi_desc = no_os_calloc(1, sizeof * dev->spi_desc);
 		dev->spi_desc->chip_select = init_param->spi_init_prm.chip_select;
 		dev->spi_desc->extra = init_param->spi_common_dev->extra;
 		dev->spi_desc->max_speed_hz = init_param->spi_init_prm.max_speed_hz;
@@ -548,7 +561,7 @@ int32_t ad713x_init(struct ad713x_dev **device,
 	}
 
 	ret = ad713x_init_gpio(dev, init_param);
-	if(NO_OS_IS_ERR_VALUE(ret))
+	if (NO_OS_IS_ERR_VALUE(ret))
 		goto error_gpio;
 
 	dev->dev_id = init_param->dev_id;
@@ -614,15 +627,15 @@ int32_t ad713x_remove(struct ad713x_dev *dev)
 {
 	int32_t ret;
 
-	if(!dev)
+	if (!dev)
 		return -1;
 
 	ret = no_os_spi_remove(dev->spi_desc);
-	if(NO_OS_IS_ERR_VALUE(ret))
+	if (NO_OS_IS_ERR_VALUE(ret))
 		return -1;
 
 	ret = ad713x_remove_gpio(dev);
-	if(NO_OS_IS_ERR_VALUE(ret))
+	if (NO_OS_IS_ERR_VALUE(ret))
 		return -1;
 
 	no_os_free(dev);

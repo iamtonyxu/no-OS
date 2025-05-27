@@ -5,56 +5,40 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "adxl345.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 static const uint8_t adxl345_part_id[] = {
 	[ID_ADXL345] = ADXL345_ID,
 	[ID_ADXL346] = ADXL346_ID,
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Reads the value of a register.
@@ -97,8 +81,6 @@ uint8_t adxl345_get_register_value(struct adxl345_dev *dev,
  * @param dev              - The device structure.
  * @param register_address - Address of the register.
  * @param register_value   - Data value to write.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_register_value(struct adxl345_dev *dev,
 				uint8_t register_address,
@@ -193,8 +175,6 @@ int32_t adxl345_remove(struct adxl345_dev *dev)
  * @param pwr_mode - Power mode.
  *                   Example: 0x0 - standby mode.
  *                            0x1 - measure mode.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_power_mode(struct adxl345_dev *dev,
 			    uint8_t pwr_mode)
@@ -218,8 +198,6 @@ void adxl345_set_power_mode(struct adxl345_dev *dev,
  * @param x   - X-axis's output data.
  * @param y   - Y-axis's output data.
  * @param z   - Z-axis's output data.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_get_xyz(struct adxl345_dev *dev,
 		     int16_t* x,
@@ -267,8 +245,6 @@ void adxl345_get_xyz(struct adxl345_dev *dev,
  * @param x   - X-axis's output data.
  * @param y   - Y-axis's output data.
  * @param z   - Z-axis's output data.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_get_g_xyz(struct adxl345_dev *dev,
 		       float* x,
@@ -313,8 +289,6 @@ void adxl345_get_g_xyz(struct adxl345_dev *dev,
  *						     INT2 pin.
  *				ADXL345_DOUBLE_TAP - double tap interrupts on
  *						     INT2 pin.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_tap_detection(struct adxl345_dev *dev,
 			       uint8_t tap_type,
@@ -392,8 +366,6 @@ void adxl345_set_tap_detection(struct adxl345_dev *dev,
  *                    Example: 0x0 - activity interrupts on INT1 pin.
  *                             ADXL345_ACTIVITY - activity interrupts on INT2
  *                                                pin.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_activity_detection(struct adxl345_dev *dev,
 				    uint8_t act_on_off,
@@ -460,8 +432,6 @@ void adxl345_set_activity_detection(struct adxl345_dev *dev,
  *		         Example: 0x0 - inactivity interrupts on INT1 pin.
  *				  ADXL345_INACTIVITY - inactivity interrupts on
  *						       INT2 pin.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_inactivity_detection(struct adxl345_dev *dev,
 				      uint8_t inact_on_off,
@@ -525,8 +495,6 @@ void adxl345_set_inactivity_detection(struct adxl345_dev *dev,
  *		      Example: 0x0 - free-fall interrupts on INT1 pin.
  *			       ADXL345_FREE_FALL - free-fall interrupts on
  *                                                 INT2 pin.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_free_fall_detection(struct adxl345_dev *dev,
 				     uint8_t ff_on_off,
@@ -579,8 +547,6 @@ void adxl345_set_free_fall_detection(struct adxl345_dev *dev,
                                          (disables 2d orientation detection).
  * @param dead_zone     - Dead zone angle encoding.
  * @param divisor       - Bandwidth divisor encoding.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_orientation_detection(struct adxl345_dev *dev,
 				       uint8_t orient_int,
@@ -628,8 +594,6 @@ void adxl345_set_orientation_detection(struct adxl345_dev *dev,
  * @param x_offset - X-axis's offset.
  * @param y_offset - Y-axis's offset.
  * @param z_offset - Z-axis's offset.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_offset(struct adxl345_dev *dev,
 			uint8_t x_offset,
@@ -659,8 +623,6 @@ void adxl345_set_offset(struct adxl345_dev *dev,
  * @param full_res - Full resolution option.
  *                   Example: 0x0 - Disables full resolution.
  *                            ADXL345_FULL_RES - Enables full resolution.
- *
- * @return None.
 *******************************************************************************/
 void adxl345_set_range_resolution(struct adxl345_dev *dev,
 				  uint8_t g_range,

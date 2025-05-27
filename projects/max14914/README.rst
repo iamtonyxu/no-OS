@@ -1,11 +1,9 @@
-Evaluating the MAX14914
-=======================
+MAX14914 no-OS Example Project
+==============================
 
+.. no-os-doxygen::
 
-Contents
---------
-
-.. contents:: Table of Contents
+.. contents::
 	:depth: 3
 
 Supported Evaluation Boards

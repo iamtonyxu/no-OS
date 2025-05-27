@@ -9,41 +9,31 @@
 ********************************************************************************
 * Copyright 2015(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad717x.h"
 #include "no_os_error.h"
@@ -425,7 +415,7 @@ int32_t AD717X_ReadRegister(ad717x_dev *device,
 	uint8_t msgBuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	ad717x_st_reg *pReg;
 
-	if(!device)
+	if (!device)
 		return INVALID_VAL;
 
 	pReg = AD717X_GetReg(device, addr);
@@ -441,35 +431,35 @@ int32_t AD717X_ReadRegister(ad717x_dev *device,
 				       buffer,
 				       ((device->useCRC != AD717X_DISABLE) ? pReg->size + 1
 					: pReg->size) + 1);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	/* Check the CRC */
-	if(device->useCRC == AD717X_USE_CRC) {
+	if (device->useCRC == AD717X_USE_CRC) {
 		msgBuf[0] = AD717X_COMM_REG_WEN | AD717X_COMM_REG_RD |
 			    AD717X_COMM_REG_RA(pReg->addr);
-		for(i = 1; i < pReg->size + 2; ++i) {
+		for (i = 1; i < pReg->size + 2; ++i) {
 			msgBuf[i] = buffer[i];
 		}
 		check8 = AD717X_ComputeCRC8(msgBuf, pReg->size + 2);
 	}
-	if(device->useCRC == AD717X_USE_XOR) {
+	if (device->useCRC == AD717X_USE_XOR) {
 		msgBuf[0] = AD717X_COMM_REG_WEN | AD717X_COMM_REG_RD |
 			    AD717X_COMM_REG_RA(pReg->addr);
-		for(i = 1; i < pReg->size + 2; ++i) {
+		for (i = 1; i < pReg->size + 2; ++i) {
 			msgBuf[i] = buffer[i];
 		}
 		check8 = AD717X_ComputeXOR8(msgBuf, pReg->size + 2);
 	}
 
-	if(check8 != 0) {
+	if (check8 != 0) {
 		/* ReadRegister checksum failed. */
 		return COMM_ERR;
 	}
 
 	/* Build the result */
 	pReg->value = 0;
-	for(i = 1; i < pReg->size + 1; i++) {
+	for (i = 1; i < pReg->size + 1; i++) {
 		pReg->value <<= 8;
 		pReg->value += buffer[i];
 	}
@@ -497,7 +487,7 @@ int32_t AD717X_WriteRegister(ad717x_dev *device,
 	uint8_t crc8     = 0;
 	ad717x_st_reg *preg;
 
-	if(!device)
+	if (!device)
 		return INVALID_VAL;
 
 	preg = AD717X_GetReg(device, addr);
@@ -510,13 +500,13 @@ int32_t AD717X_WriteRegister(ad717x_dev *device,
 
 	/* Fill the write buffer */
 	regValue = preg->value;
-	for(i = 0; i < preg->size; i++) {
+	for (i = 0; i < preg->size; i++) {
 		wrBuf[preg->size - i] = regValue & 0xFF;
 		regValue >>= 8;
 	}
 
 	/* Compute the CRC */
-	if(device->useCRC != AD717X_DISABLE) {
+	if (device->useCRC != AD717X_DISABLE) {
 		crc8 = AD717X_ComputeCRC8(wrBuf, preg->size + 1);
 		wrBuf[preg->size + 1] = crc8;
 	}
@@ -542,7 +532,7 @@ int32_t AD717X_Reset(ad717x_dev *device)
 	int32_t ret = 0;
 	uint8_t wrBuf[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
-	if(!device)
+	if (!device)
 		return INVALID_VAL;
 
 	ret = no_os_spi_write_and_read(device->spi_desc,
@@ -568,17 +558,17 @@ int32_t AD717X_WaitForReady(ad717x_dev *device,
 	int32_t ret;
 	int8_t ready = 0;
 
-	if(!device || !device->regs)
+	if (!device || !device->regs)
 		return INVALID_VAL;
 
 	statusReg = AD717X_GetReg(device, AD717X_STATUS_REG);
 	if (!statusReg)
 		return INVALID_VAL;
 
-	while(!ready && --timeout) {
+	while (!ready && --timeout) {
 		/* Read the value of the Status Register */
 		ret = AD717X_ReadRegister(device, AD717X_STATUS_REG);
-		if(ret < 0)
+		if (ret < 0)
 			return ret;
 
 		/* Check the RDY bit in the Status Register */
@@ -602,7 +592,7 @@ int32_t AD717X_ReadData(ad717x_dev *device,
 	ad717x_st_reg *dataReg;
 	int32_t ret;
 
-	if(!device || !device->regs)
+	if (!device || !device->regs)
 		return INVALID_VAL;
 
 	dataReg = AD717X_GetReg(device, AD717X_DATA_REG);
@@ -653,7 +643,7 @@ int32_t AD717X_ComputeDataregSize(ad717x_dev *device)
 	reg_ptr = AD717X_GetReg(device, AD717X_ID_REG);
 
 	/* If the part is 32/24 bit wide add a byte to the read */
-	if((reg_ptr->value & AD717X_ID_REG_MASK) == AD7177_2_ID_REG_VALUE)
+	if ((reg_ptr->value & AD717X_ID_REG_MASK) == AD7177_2_ID_REG_VALUE)
 		datareg_ptr->size++;
 
 	return 0;
@@ -673,10 +663,10 @@ uint8_t AD717X_ComputeCRC8(uint8_t * pBuf,
 	uint8_t i   = 0;
 	uint8_t crc = 0;
 
-	while(bufSize) {
-		for(i = 0x80; i != 0; i >>= 1) {
-			if(((crc & 0x80) != 0) != ((*pBuf & i) !=
-						   0)) { /* MSB of CRC register XOR input Bit from Data */
+	while (bufSize) {
+		for (i = 0x80; i != 0; i >>= 1) {
+			if (((crc & 0x80) != 0) != ((*pBuf & i) !=
+						    0)) { /* MSB of CRC register XOR input Bit from Data */
 				crc <<= 1;
 				crc ^= AD717X_CRC8_POLYNOMIAL_REPRESENTATION;
 			} else {
@@ -702,7 +692,7 @@ uint8_t AD717X_ComputeXOR8(uint8_t * pBuf,
 {
 	uint8_t xor = 0;
 
-	while(bufSize) {
+	while (bufSize) {
 		xor ^= *pBuf;
 		pBuf++;
 		bufSize--;
@@ -721,7 +711,7 @@ int32_t AD717X_UpdateCRCSetting(ad717x_dev *device)
 {
 	ad717x_st_reg *interfaceReg;
 
-	if(!device || !device->regs)
+	if (!device || !device->regs)
 		return INVALID_VAL;
 
 	interfaceReg = AD717X_GetReg(device, AD717X_IFMODE_REG);
@@ -729,9 +719,9 @@ int32_t AD717X_UpdateCRCSetting(ad717x_dev *device)
 		return INVALID_VAL;
 
 	/* Get CRC State. */
-	if(AD717X_IFMODE_REG_CRC_STAT(interfaceReg->value)) {
+	if (AD717X_IFMODE_REG_CRC_STAT(interfaceReg->value)) {
 		device->useCRC = AD717X_USE_CRC;
-	} else if(AD717X_IFMODE_REG_XOR_STAT(interfaceReg->value)) {
+	} else if (AD717X_IFMODE_REG_XOR_STAT(interfaceReg->value)) {
 		device->useCRC = AD717X_USE_XOR;
 	} else {
 		device->useCRC = AD717X_DISABLE;
@@ -810,17 +800,17 @@ int32_t AD717X_Init(ad717x_dev **device,
 
 	/* Initialize ADC mode register. */
 	ret = AD717X_WriteRegister(dev, AD717X_ADCMODE_REG);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	/* Initialize Interface mode register. */
 	ret = AD717X_WriteRegister(dev, AD717X_IFMODE_REG);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	/* Get CRC State */
 	ret = AD717X_UpdateCRCSetting(dev);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 
 	/* Initialize registers AD717X_GPIOCON_REG through AD717X_OFFSET0_REG */
@@ -842,7 +832,7 @@ int32_t AD717X_Init(ad717x_dev **device,
 
 	/* Read ID register to identify the part */
 	ret = AD717X_ReadRegister(dev, AD717X_ID_REG);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 	dev->active_device = init_param.active_device;
 	dev->num_channels = init_param.num_channels;
@@ -891,7 +881,7 @@ int32_t AD717X_Init(ad717x_dev **device,
 		if (ret < 0)
 			return ret;
 
-		ret = ad717x_set_channel_status(dev,ch_index,
+		ret = ad717x_set_channel_status(dev, ch_index,
 						init_param.chan_map[ch_index].channel_enable);
 		if (ret < 0)
 			return ret;

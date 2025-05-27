@@ -5,49 +5,37 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad6673.h"
 #include "ad6673_cfg.h"
 #include "no_os_alloc.h"
 
-/*****************************************************************************/
-/***************************** Constant definition ***************************/
-/*****************************************************************************/
 static const int32_t shadow_regs[SHADOW_REGISTER_COUNT] = {
 	0,
 	0x01, // AD6673_SHD_REG_CLOCK
@@ -68,19 +56,12 @@ static const int32_t shadow_regs[SHADOW_REGISTER_COUNT] = {
 	0x00  // AD6673_SHD_REG_FD_DWELL_TIME
 };
 
-/******************************************************************************/
-/************************ Private Functions Prototypes ************************/
-/******************************************************************************/
 int32_t ad6673_set_bits_to_reg(struct ad6673_dev *dev,
 			       uint32_t register_address,
 			       uint8_t bits_value,
 			       uint8_t mask);
 
 int32_t ad6673_is_shadow_register(int32_t register_address);
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Configures the device.
@@ -104,12 +85,12 @@ int32_t ad6673_setup(struct ad6673_dev **device,
 
 	/* Initializes the SPI peripheral */
 	ret = no_os_spi_init(&dev->spi_desc, &init_param.spi_init);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
 	/* Initialize registers */
-	for(i = 0; i < SHADOW_REGISTER_COUNT; i++)
+	for (i = 0; i < SHADOW_REGISTER_COUNT; i++)
 		dev->shadow_regs[i] = shadow_regs[i];
 
 	/* Reset ad6673 registers to their default values. */
@@ -120,14 +101,14 @@ int32_t ad6673_setup(struct ad6673_dev **device,
 	ret = ad6673_write(dev,
 			   AD6673_REG_SPI_CFG,
 			   AD6673_SPI_CFG_SOFT_RST);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_set_bits_to_reg(dev,
 				     AD6673_REG_PDWN,
 				     dev->ad6673_st.pdata->extrn_pdwnmode * AD6673_PDWN_EXTERN,
 				     AD6673_PDWN_EXTERN);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -135,44 +116,44 @@ int32_t ad6673_setup(struct ad6673_dev **device,
 			   AD6673_REG_CLOCK,
 			   dev->ad6673_st.pdata->en_clk_dcs * AD6673_CLOCK_DUTY_CYCLE |
 			   AD6673_CLOCK_SELECTION(dev->ad6673_st.pdata->clk_selection));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_CLOCK_DIV,
 			   AD6673_CLOCK_DIV_RATIO(dev->ad6673_st.pdata->clk_div_ratio) |
 			   AD6673_CLOCK_DIV_PHASE(dev->ad6673_st.pdata->clk_div_phase));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_VREF,
 			   AD6673_VREF_FS_ADJUST(dev->ad6673_st.pdata->adc_vref));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_PLL_ENCODE,
 			   AD6673_PLL_ENCODE(dev->ad6673_st.pdata->pll_low_encode));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
 	/* Synchronously update registers. */
 	ret = ad6673_transfer(dev);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
 	/* Configure the JESD204B interface. */
 	ret = ad6673_jesd204b_setup(dev);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
 	/* Configure the Fast-detect circuit. */
 	ret = ad6673_fast_detect_setup(dev);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -220,14 +201,14 @@ int32_t ad6673_read(struct ad6673_dev *dev,
 	int32_t ret = 0;
 
 	reg_address = AD6673_READ + AD6673_ADDR(register_address);
-	for(i = 0; i < AD6673_TRANSF_LEN(register_address); i++) {
+	for (i = 0; i < AD6673_TRANSF_LEN(register_address); i++) {
 		buffer[0] = (reg_address & 0xFF00) >> 8;
 		buffer[1] = reg_address & 0x00FF;
 		buffer[2] = 0;
 		ret = no_os_spi_write_and_read(dev->spi_desc,
 					       buffer,
 					       3);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		reg_address--;
@@ -260,11 +241,11 @@ int32_t ad6673_write(struct ad6673_dev *dev,
 	/* Check if the register is shadowed. */
 	ret = ad6673_is_shadow_register(register_address);
 	/* Synchronize shadow register with on-chip register. */
-	if(ret > 0) {
+	if (ret > 0) {
 		dev->shadow_regs[ret] = register_value;
 	}
 	reg_address = AD6673_WRITE + AD6673_ADDR(register_address);
-	for(i = 0; i < AD6673_TRANSF_LEN(register_address); i++) {
+	for (i = 0; i < AD6673_TRANSF_LEN(register_address); i++) {
 		reg_value = (register_value >>
 			     ((AD6673_TRANSF_LEN(register_address) - i - 1) * 8)) & 0xFF;
 		tx_buffer[0] = (reg_address & 0xFF00) >> 8;
@@ -273,7 +254,7 @@ int32_t ad6673_write(struct ad6673_dev *dev,
 		ret = no_os_spi_write_and_read(dev->spi_desc,
 					       tx_buffer,
 					       3);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		reg_address--;
@@ -300,18 +281,18 @@ int32_t ad6673_transfer(struct ad6673_dev *dev)
 	ret = ad6673_write(dev,
 			   AD6673_REG_DEVICE_UPDATE,
 			   AD6673_DEVICE_UPDATE_SW);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	do {
 		ret = ad6673_read(dev,
 				  AD6673_REG_DEVICE_UPDATE);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		sw_bit = ret & AD6673_REG_DEVICE_UPDATE;
 		timeout--;
-	} while((sw_bit == 1) && (timeout != 0));
+	} while ((sw_bit == 1) && (timeout != 0));
 
 	return 0;
 }
@@ -332,17 +313,17 @@ int32_t ad6673_soft_reset(struct ad6673_dev *dev)
 	ret = ad6673_write(dev,
 			   AD6673_REG_SPI_CFG,
 			   AD6673_SPI_CFG_SOFT_RST);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	do {
 		ret = ad6673_read(dev,
 				  AD6673_REG_SPI_CFG);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		timeout--;
-	} while(((ret & AD6673_SPI_CFG_SOFT_RST) != 0) && (timeout != 0));
+	} while (((ret & AD6673_SPI_CFG_SOFT_RST) != 0) && (timeout != 0));
 
 	return ret;
 }
@@ -369,12 +350,12 @@ int32_t ad6673_set_bits_to_reg(struct ad6673_dev *dev,
 	/* Read from the shadow register instead of the on-chip register when
 	   shadowed register is discovered. */
 	ret = ad6673_is_shadow_register(register_address);
-	if(ret > 0) {
+	if (ret > 0) {
 		reg_value = dev->shadow_regs[ret];
 	} else {
 		ret = ad6673_read(dev,
 				  register_address);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		reg_value = ret;
@@ -384,7 +365,7 @@ int32_t ad6673_set_bits_to_reg(struct ad6673_dev *dev,
 	ret = ad6673_write(dev,
 			   register_address,
 			   reg_value);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -420,7 +401,7 @@ int32_t ad6673_chip_pwr_mode(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if((mode >= 0) && (mode < 3)) {
+	if ((mode >= 0) && (mode < 3)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_PDWN,
 					     AD6673_PDWN_CHIP(mode),
@@ -428,7 +409,7 @@ int32_t ad6673_chip_pwr_mode(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_PDWN);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_PDWN_CHIP(0x3)) >> 0;
@@ -453,14 +434,14 @@ int32_t ad6673_select_channel_for_config(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((channel > 0) && (channel <= 3)) {
+	if ((channel > 0) && (channel <= 3)) {
 		ret = ad6673_write(dev,
 				   AD6673_REG_CH_INDEX,
 				   channel);
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_CH_INDEX);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return ret & (AD6673_CH_INDEX_ADC_A | AD6673_CH_INDEX_ADC_B);
@@ -493,7 +474,7 @@ int32_t ad6673_test_mode(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((mode >= 0) && (mode < 16)) {
+	if ((mode >= 0) && (mode < 16)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_TEST,
 					     AD6673_TEST_OUTPUT_TEST(mode),
@@ -501,7 +482,7 @@ int32_t ad6673_test_mode(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_TEST);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_TEST_OUTPUT_TEST(0xF)) >> 0;
@@ -523,7 +504,7 @@ int32_t ad6673_offset_adj(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((adj >= -32) && (adj <= 31)) {
+	if ((adj >= -32) && (adj <= 31)) {
 		ret = ad6673_write(dev,
 				   AD6673_REG_OFFSET,
 				   AD6673_REG_OFFSET_ADJUST(adj));
@@ -553,7 +534,7 @@ int32_t ad6673_output_disable(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if((en == 0) || (en == 1)) {
+	if ((en == 0) || (en == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_OUT_MODE,
 					     en * AD6673_OUT_MODE_DISABLE,
@@ -561,7 +542,7 @@ int32_t ad6673_output_disable(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_OUT_MODE);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_OUT_MODE_DISABLE) != 0;
@@ -588,7 +569,7 @@ int32_t ad6673_output_invert(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if( (invert == 0) || (invert == 1)) {
+	if ((invert == 0) || (invert == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_OUT_MODE,
 					     invert * AD6673_OUT_MODE_INVERT_DATA,
@@ -596,7 +577,7 @@ int32_t ad6673_output_invert(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_OUT_MODE);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_OUT_MODE_INVERT_DATA) != 0;
@@ -624,7 +605,7 @@ int32_t ad6673_output_format(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if( (format == 0) || (format == 1)) {
+	if ((format == 0) || (format == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_OUT_MODE,
 					     AD6673_OUT_MODE_DATA_FORMAT(format),
@@ -632,7 +613,7 @@ int32_t ad6673_output_format(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_OUT_MODE);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_OUT_MODE_DATA_FORMAT(-1)) >> 0;
@@ -656,7 +637,7 @@ int32_t ad6673_reset_pn9(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((rst == 0) || (rst == 1)) {
+	if ((rst == 0) || (rst == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_TEST,
 					     rst * AD6673_TEST_RST_PN_SHOR,
@@ -664,7 +645,7 @@ int32_t ad6673_reset_pn9(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_TEST);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_TEST_RST_PN_SHOR) != 0;
@@ -688,7 +669,7 @@ int32_t ad6673_reset_pn23(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((rst == 0) || (rst == 1)) {
+	if ((rst == 0) || (rst == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_TEST,
 					     rst * AD6673_TEST_RST_PN_LONG,
@@ -696,7 +677,7 @@ int32_t ad6673_reset_pn23(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_TEST);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_TEST_RST_PN_LONG) != 0;
@@ -741,7 +722,7 @@ int32_t ad6673_bist_enable(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((enable == 0) || (enable == 1)) {
+	if ((enable == 0) || (enable == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_BIST,
 					     enable * AD6673_BIST_ENABLE,
@@ -749,7 +730,7 @@ int32_t ad6673_bist_enable(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_BIST);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_BIST_ENABLE) >> 0;
@@ -771,7 +752,7 @@ int32_t ad6673_bist_reset(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((reset == 0) || (reset == 1)) {
+	if ((reset == 0) || (reset == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_BIST,
 					     reset * AD6673_BIST_RESET,
@@ -779,7 +760,7 @@ int32_t ad6673_bist_reset(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_BIST);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_BIST_RESET) >> 2;
@@ -805,10 +786,10 @@ int32_t ad6673_jesd204b_set_frames(struct ad6673_dev *dev,
 	int32_t mod4 = 0;
 	int32_t ret = 0;
 
-	if(k_frames >=0 && k_frames <= 32) {
+	if (k_frames >= 0 && k_frames <= 32) {
 		mod4 = k_frames % 4;
-		if(mod4 != 0) {
-			if(mod4 < 2) {
+		if (mod4 != 0) {
+			if (mod4 < 2) {
 				k_reg_val -= mod4;
 			} else {
 				k_reg_val += 4 - mod4;
@@ -817,7 +798,7 @@ int32_t ad6673_jesd204b_set_frames(struct ad6673_dev *dev,
 		ret = ad6673_write(dev,
 				   AD6673_REG_204B_PARAM_K,
 				   k_reg_val - 1);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return k_reg_val;
@@ -846,14 +827,14 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_CTRL1,
 				     AD6673_204B_CTRL1_POWER_DOWN,
 				     AD6673_204B_CTRL1_POWER_DOWN);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Select quick configuration option */
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_QUICK_CFG,
 			   AD6673_204B_QUICK_CFG(dev->ad6673_st.p_jesd204b->quick_cfg_option));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Configure detailed options */
@@ -861,7 +842,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 	ret = ad6673_write(dev,
 			   AD6673_REG_CML,
 			   AD6673_CML_DIFF_OUT_LEVEL(dev->ad6673_st.p_jesd204b->cml_level));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Select the behavioral of the 204B core when in standby. */
@@ -869,7 +850,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_PDWN,
 				     dev->ad6673_st.p_jesd204b->jtx_in_standby * AD6673_PDWN_JTX,
 				     AD6673_PDWN_JTX);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -878,7 +859,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_PARAM_NP,
 				     AD6673_204B_PARAM_NP_JESD_SUBCLASS(dev->ad6673_st.p_jesd204b->subclass),
 				     AD6673_204B_PARAM_NP_JESD_SUBCLASS(-1));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Configure the tail bits and control bits. */
@@ -886,27 +867,27 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_PARAM_CS_N,
 				     AD6673_204B_PARAM_CS_N_NR_CTRL_BITS(dev->ad6673_st.p_jesd204b->ctrl_bits_no),
 				     AD6673_204B_PARAM_CS_N_NR_CTRL_BITS(-1));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_set_bits_to_reg(dev,
 				     AD6673_REG_OUT_MODE,
 				     AD6673_OUT_MODE_JTX_BIT_ASSIGN(dev->ad6673_st.p_jesd204b->ctrl_bits_assign),
 				     AD6673_OUT_MODE_JTX_BIT_ASSIGN(-1));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* A transfer operation is needed because AD6673_REG_OUT_MODE is a shadowed register. */
 	ret = ad6673_transfer(dev);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
-	if(dev->ad6673_st.p_jesd204b->ctrl_bits_no == 0) {
+	if (dev->ad6673_st.p_jesd204b->ctrl_bits_no == 0) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_204B_CTRL1,
 					     AD6673_204B_CTRL1_TAIL_BITS * dev->ad6673_st.p_jesd204b->tail_bits_mode,
 					     AD6673_204B_CTRL1_TAIL_BITS);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 	}
@@ -914,31 +895,31 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_DID_CFG,
 			   dev->ad6673_st.p_jesd204b->did);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_BID_CFG,
 			   dev->ad6673_st.p_jesd204b->bid);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_LID_CFG1,
 			   dev->ad6673_st.p_jesd204b->lid0);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_LID_CFG2,
 			   dev->ad6673_st.p_jesd204b->lid1);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Set number of frames per multiframe, K */
 	ret = ad6673_jesd204b_set_frames(dev,
 					 dev->ad6673_st.p_jesd204b->k);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Scramble, SCR. */
@@ -946,7 +927,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_PARAM_SCR_L,
 				     AD6673_204B_PARAM_SCR_L_SCRAMBLING * dev->ad6673_st.p_jesd204b->scrambling,
 				     AD6673_204B_PARAM_SCR_L_SCRAMBLING);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Select lane synchronization options */
@@ -954,14 +935,14 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_CTRL1,
 				     AD6673_204B_CTRL1_ILAS_MODE(dev->ad6673_st.p_jesd204b->ilas_mode),
 				     AD6673_204B_CTRL1_ILAS_MODE(-1));
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_set_bits_to_reg(dev,
 				     AD6673_REG_204B_CTRL1,
 				     dev->ad6673_st.p_jesd204b->en_ilas_test * AD6673_204B_CTRL1_TEST_SAMPLE_EN,
 				     AD6673_204B_CTRL1_TEST_SAMPLE_EN);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -969,7 +950,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 	/* Set polarity of serial output data */
 	ret = ad6673_jesd204b_invert_logic(dev,
 					   dev->ad6673_st.p_jesd204b->invert_logic_bits);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Options for interpreting single on SYSREF+- and SYNCINB+- */
@@ -981,12 +962,12 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 			   dev->ad6673_st.p_jesd204b->align_sys_ref * AD6673_SYS_CTRL_REALIGN_ON_SYSREF |
 			   dev->ad6673_st.p_jesd204b->align_sync_in_b *
 			   AD6673_SYS_CTRL_REALIGN_ON_SYNCINB);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* A transfer operation is needed, because AD6673_REG_SYS_CTRL is a shadowed register. */
 	ret = ad6673_transfer(dev);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Option to remap converter and lane assignments */
@@ -994,14 +975,14 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 			   AD6673_REG_204B_LANE_ASSGN1,
 			   AD6673_204B_LANE_ASSGN1(dev->ad6673_st.p_jesd204b->lane0_assign) |
 			   0x02);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_204B_LANE_ASSGN2,
 			   AD6673_204B_LANE_ASSGN2(dev->ad6673_st.p_jesd204b->lane1_assign) |
 			   0x30);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	/* Re-enable lane(s) */
@@ -1009,7 +990,7 @@ int32_t ad6673_jesd204b_setup(struct ad6673_dev *dev)
 				     AD6673_REG_204B_CTRL1,
 				     0,
 				     AD6673_204B_CTRL1_POWER_DOWN);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -1032,7 +1013,7 @@ int32_t ad6673_jesd204b_pwr_mode(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if((mode >= 0) && (mode < 3)) {
+	if ((mode >= 0) && (mode < 3)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_PDWN,
 					     AD6673_PDWN_JESD204B(mode),
@@ -1040,7 +1021,7 @@ int32_t ad6673_jesd204b_pwr_mode(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_PDWN);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_PDWN_JESD204B(0x3)) >> 2;
@@ -1066,7 +1047,7 @@ int32_t ad6673_jesd204b_select_test_injection_point(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((inj_point == 1) || (inj_point == 2)) {
+	if ((inj_point == 1) || (inj_point == 2)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_204B_CTRL3,
 					     AD6673_204B_CTRL3_TEST_DATA_INJ_PT(inj_point),
@@ -1074,7 +1055,7 @@ int32_t ad6673_jesd204b_select_test_injection_point(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_204B_CTRL3);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret &  AD6673_204B_CTRL3_TEST_DATA_INJ_PT(-1)) >> 4;
@@ -1107,7 +1088,7 @@ int32_t ad6673_jesd204b_test_mode(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((test_mode >= 0) && (test_mode < 14)) {
+	if ((test_mode >= 0) && (test_mode < 14)) {
 		ad6673_set_bits_to_reg(dev,
 				       AD6673_REG_204B_CTRL3,
 				       AD6673_204B_CTRL3_JESD_TEST_MODE(test_mode),
@@ -1115,7 +1096,7 @@ int32_t ad6673_jesd204b_test_mode(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_204B_CTRL3);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret &  AD6673_204B_CTRL3_JESD_TEST_MODE(-1)) >> 0;
@@ -1139,7 +1120,7 @@ int32_t ad6673_jesd204b_invert_logic(struct ad6673_dev *dev,
 {
 	uint32_t ret = 0;
 
-	if( (invert == 0) || (invert == 1)) {
+	if ((invert == 0) || (invert == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_204B_CTRL2,
 					     invert * AD6673_204B_CTRL2_INVERT_JESD_BITS,
@@ -1147,7 +1128,7 @@ int32_t ad6673_jesd204b_invert_logic(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_204B_CTRL2);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_204B_CTRL2_INVERT_JESD_BITS) != 0;
@@ -1174,26 +1155,26 @@ int32_t ad6673_fast_detect_setup(struct ad6673_dev *dev)
 			   AD6673_FAST_DETECT_OUTPUT_ENABLE * dev->ad6673_st.p_fd->en_fd |
 			   AD6673_FAST_DETECT_FORCE_FDA_FDB_VAL * dev->ad6673_st.p_fd->pin_force_value |
 			   AD6673_FAST_DETECT_FORCE_FDA_FDB_PIN * dev->ad6673_st.p_fd->force_pins |
-			   AD6673_FAST_DETECT_PIN_FCT * dev->ad6673_st.p_fd->pin_function );
-	if(ret != 0) {
+			   AD6673_FAST_DETECT_PIN_FCT * dev->ad6673_st.p_fd->pin_function);
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_FD_UPPER_THD,
 			   dev->ad6673_st.p_fd->fd_upper_tresh);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_FD_LOWER_THD,
 			   dev->ad6673_st.p_fd->fd_lower_tresh);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 	ret = ad6673_write(dev,
 			   AD6673_REG_FD_DWELL_TIME,
 			   dev->ad6673_st.p_fd->df_dwell_time);
-	if(ret != 0) {
+	if (ret != 0) {
 		return ret;
 	}
 
@@ -1215,7 +1196,7 @@ int32_t ad6673_dcc_enable(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((enable == 0) || (enable == 1)) {
+	if ((enable == 0) || (enable == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_DCC_CTRL,
 					     AD6673_DCC_CTRL_DCC_EN * enable,
@@ -1223,7 +1204,7 @@ int32_t ad6673_dcc_enable(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_DCC_CTRL);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_DCC_CTRL_DCC_EN) >> 0;
@@ -1249,7 +1230,7 @@ int32_t ad6673_dcc_bandwidth(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((bw >= 0) && (bw <= 13)) {
+	if ((bw >= 0) && (bw <= 13)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_DCC_CTRL,
 					     AD6673_DCC_CTRL_DCC_BW(bw),
@@ -1257,7 +1238,7 @@ int32_t ad6673_dcc_bandwidth(struct ad6673_dev *dev,
 	} else {
 		ad6673_read(dev,
 			    AD6673_REG_DCC_CTRL);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_DCC_CTRL_DCC_BW(-1)) >> 2;
@@ -1281,7 +1262,7 @@ int32_t ad6673_dcc_freeze(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((freeze == 0) || (freeze == 1)) {
+	if ((freeze == 0) || (freeze == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_DCC_CTRL,
 					     AD6673_DCC_CTRL_FREEZE_DCC * freeze,
@@ -1289,7 +1270,7 @@ int32_t ad6673_dcc_freeze(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_DCC_CTRL);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_DCC_CTRL_FREEZE_DCC) >> 6;
@@ -1313,7 +1294,7 @@ int32_t ad6673_nsr_enable(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((enable == 0) || (enable == 1)) {
+	if ((enable == 0) || (enable == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_NSR_CTRL,
 					     AD6673_NSR_CTRL_ENABLE * enable,
@@ -1321,7 +1302,7 @@ int32_t ad6673_nsr_enable(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_NSR_CTRL);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_NSR_CTRL_ENABLE) >> 0;
@@ -1345,7 +1326,7 @@ int32_t ad6673_nsr_bandwidth_mode(struct ad6673_dev *dev,
 {
 	int32_t ret = 0;
 
-	if((mode == 0) || (mode == 1)) {
+	if ((mode == 0) || (mode == 1)) {
 		ret = ad6673_set_bits_to_reg(dev,
 					     AD6673_REG_NSR_CTRL,
 					     AD6673_NSR_CTRL_BW_MODE * mode,
@@ -1353,7 +1334,7 @@ int32_t ad6673_nsr_bandwidth_mode(struct ad6673_dev *dev,
 	} else {
 		ret = ad6673_read(dev,
 				  AD6673_REG_NSR_CTRL);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 		return (ret & AD6673_NSR_CTRL_BW_MODE) >> 0;
@@ -1381,9 +1362,9 @@ int32_t ad6673_nsr_tuning_freq(int64_t tune_freq,
 	int32_t bw_mode = 22;
 	float bw_percent = (float)bw_mode / 100.0;
 
-	tune_word = (int32_t)( ( (tune_freq * 200) / (float)f_adc) + 0.5) -
+	tune_word = (int32_t)(((tune_freq * 200) / (float)f_adc) + 0.5) -
 		    bw_mode;   // TW = ((fCenter/fAdc) - 0.11[or 0.165]) / 0.005
-	if((tune_word >= 0) && (tune_word < 57)) {
+	if ((tune_word >= 0) && (tune_word < 57)) {
 		p_band->f0 = (int32_t)(f_adc * 0.005 *
 				       tune_word);                        // f0 = fAdc * 0.005 * TW
 		p_band->f_center = p_band->f0 + (int32_t)(bw_percent / 2 *

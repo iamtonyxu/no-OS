@@ -5,46 +5,38 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 /* In debug mode the printf function used in displaying the messages is causing
 significant delays */
 //#define DEBUG_LEVEL 2
+#include "spi_engine.h"
 
+#ifndef USE_STANDARD_SPI
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -56,6 +48,7 @@ significant delays */
 #include "no_os_axi_io.h"
 #include "no_os_error.h"
 #include "no_os_alloc.h"
+#include "no_os_util.h"
 #include "spi_engine.h"
 
 /**
@@ -67,19 +60,11 @@ const struct no_os_spi_platform_ops spi_eng_platform_ops = {
 	.remove = &spi_engine_remove
 };
 
-/******************************************************************************/
-/***************************** Static variables *******************************/
-/******************************************************************************/
-
 /**
  * @brief Static variable used to sync transfers
  *
  */
 static uint8_t _sync_id = 0x01;
-
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
 
 /**
  * @brief Write SPI Engine's axi registers
@@ -172,7 +157,7 @@ static uint8_t spi_get_words_number(struct spi_engine_desc *desc,
 	uint8_t xfer_word_len;
 	uint8_t words_number;
 
-	xfer_word_len = desc->data_width / 8;
+	xfer_word_len = NO_OS_DIV_ROUND_UP(desc->data_width, 8);
 	words_number = bytes_number / xfer_word_len;
 
 	if ((bytes_number % xfer_word_len) != 0)
@@ -191,7 +176,7 @@ static uint8_t spi_get_word_lenght(struct spi_engine_desc *desc)
 {
 	uint8_t word_lenght;
 
-	word_lenght = desc->data_width / 8;
+	word_lenght = NO_OS_DIV_ROUND_UP(desc->data_width, 8);
 
 	return word_lenght;
 }
@@ -240,7 +225,7 @@ static int32_t spi_engine_queue_new_cmd(struct spi_engine_cmd_queue **fifo,
 
 	local_fifo = (spi_engine_cmd_queue*)no_os_malloc(sizeof(*local_fifo));
 
-	if(!local_fifo)
+	if (!local_fifo)
 		return -1;
 
 	local_fifo->cmd = cmd;
@@ -329,9 +314,9 @@ static int32_t spi_engine_queue_get_cmd(struct spi_engine_cmd_queue **fifo,
  */
 static int32_t spi_engine_queue_no_os_free(struct spi_engine_cmd_queue **fifo)
 {
-	if(*fifo && (*fifo)->next)
+	if (*fifo && (*fifo)->next)
 		spi_engine_queue_no_os_free(&(*fifo)->next);
-	if((*fifo) != NULL) {
+	if ((*fifo) != NULL) {
 		no_os_free(*fifo);
 		*fifo = NULL;
 	}
@@ -352,7 +337,7 @@ static int32_t spi_engine_write_cmd_reg(struct spi_engine_desc *desc,
 	int32_t ret;
 
 	/* Check if offload is enabled */
-	if(desc->offload_config & (OFFLOAD_TX_EN | OFFLOAD_RX_EN)) {
+	if (desc->offload_config & (OFFLOAD_TX_EN | OFFLOAD_RX_EN)) {
 		ret = spi_engine_write(desc,
 				       SPI_ENGINE_REG_OFFLOAD_CMD_MEM(0),
 				       cmd);
@@ -467,16 +452,16 @@ static int32_t spi_engine_write_cmd(struct no_os_spi_desc *desc,
 	modifier = (cmd >> 8) & 0x0F;
 	parameter = cmd & 0xFF;
 
-	switch(engine_command) {
+	switch (engine_command) {
 	case SPI_ENGINE_INST_TRANSFER:
 		spi_engine_transfer(desc_extra, modifier, parameter);
 		break;
 
 	case SPI_ENGINE_INST_ASSERT:
-		if(parameter == 0xFF) {
+		if (parameter == 0xFF) {
 			/* Set the CS HIGH */
 			spi_engine_set_cs(desc, true);
-		} else if(parameter == 0x00) {
+		} else if (parameter == 0x00) {
 			/* Set the CS LOW */
 			spi_engine_set_cs(desc, false);
 		}
@@ -486,9 +471,9 @@ static int32_t spi_engine_write_cmd(struct no_os_spi_desc *desc,
 	modifier */
 	case SPI_ENGINE_INST_SYNC_SLEEP:
 		/* SYNC instruction */
-		if(modifier == 0x00) {
+		if (modifier == 0x00) {
 			spi_engine_write_cmd_reg(desc_extra, cmd);
-		} else if(modifier == 0x01) {
+		} else if (modifier == 0x01) {
 			spi_gen_sleep_ns(desc, parameter);
 		}
 		break;
@@ -516,6 +501,7 @@ static int32_t spi_engine_compile_message(struct no_os_spi_desc *desc,
 		struct spi_engine_msg *msg)
 {
 	struct spi_engine_desc	*desc_extra;
+	uint8_t cfg_reg;
 
 	desc_extra = desc->extra;
 
@@ -532,14 +518,19 @@ static int32_t spi_engine_compile_message(struct no_os_spi_desc *desc,
 					    desc_extra->data_width));
 	/*
 	 * Configure the spi mode :
+	 * 	- sdo_idle_state
 	 *	- 3 wire
 	 *	- CPOL
 	 *	- CPHA
 	 */
+	cfg_reg = desc->mode;
+	if (desc_extra->sdo_idle_state != 0)
+		cfg_reg |= SPI_ENGINE_CONFIG_SDO_IDLE;
+
 	spi_engine_queue_append_cmd(&msg->cmds,
 				    SPI_ENGINE_CMD_CONFIG(
 					    SPI_ENGINE_CMD_REG_CONFIG,
-					    desc->mode));
+					    cfg_reg));
 
 	/* Add a sync command to signal that the transfer has finished */
 	spi_engine_queue_add_cmd(&msg->cmds, SPI_ENGINE_CMD_SYNC(_sync_id));
@@ -572,21 +563,21 @@ static int32_t spi_engine_transfer_message(struct no_os_spi_desc *desc,
 		     (desc_extra->offload_config & OFFLOAD_RX_EN);
 
 	/* Write the command fifo buffer */
-	while(msg->cmds != NULL) {
+	while (msg->cmds != NULL) {
 		spi_engine_queue_get_cmd(&msg->cmds, &data);
 		spi_engine_write_cmd(desc, data);
 	}
 
 	/* Write a number of tx_length WORDS on the SDO line */
 
-	if(offload_en) {
-		for(i = 0; i < desc_extra->offload_tx_len; i++)
+	if (offload_en) {
+		for (i = 0; i < desc_extra->offload_tx_len; i++)
 			spi_engine_write(desc_extra,
 					 SPI_ENGINE_REG_OFFLOAD_SDO_MEM(0),
 					 msg->tx_buf[i]);
 
 	} else {
-		for(i = 0; i < msg->length; i++)
+		for (i = 0; i < msg->length; i++)
 			spi_engine_write(desc_extra,
 					 SPI_ENGINE_REG_SDO_DATA_FIFO,
 					 msg->tx_buf[i]);
@@ -596,12 +587,12 @@ static int32_t spi_engine_transfer_message(struct no_os_spi_desc *desc,
 					&sync_id);
 		}
 		/* Wait for the end sync signal */
-		while(sync_id != _sync_id);
+		while (sync_id != _sync_id);
 		_sync_id++;
 
 		/* Read a number of rx_length WORDS from the SDI line and store
 		them */
-		for(i = 0; i < msg->length; i++) {
+		for (i = 0; i < msg->length; i++) {
 			spi_engine_read(desc_extra,
 					SPI_ENGINE_REG_SDI_DATA_FIFO,
 					&data);
@@ -633,7 +624,7 @@ int32_t spi_engine_init(struct no_os_spi_desc **desc,
 	}
 
 	*desc = no_os_malloc(sizeof(**desc));
-	if(! *desc) {
+	if (! *desc) {
 		no_os_free(*desc);
 		return -1;
 	}
@@ -665,7 +656,9 @@ int32_t spi_engine_init(struct no_os_spi_desc **desc,
 
 	/* Get current data width */
 	spi_engine_read(eng_desc, SPI_ENGINE_REG_DATA_WIDTH, &data_width);
-	eng_desc->max_data_width = data_width;
+	/* Only the lower 16 bits are relevant for the actual data-width */
+	eng_desc->max_data_width = no_os_field_get(SPI_ENGINE_REG_DATA_WIDTH_MSK,
+				   data_width);
 
 	spi_engine_set_transfer_width(*desc, spi_engine_init->data_width);
 
@@ -715,8 +708,8 @@ int32_t spi_engine_write_and_read(struct no_os_spi_desc *desc,
 	if (!msg.cmds)
 		return -1;
 
-	msg.tx_buf =(uint32_t*)no_os_calloc(words_number, sizeof(msg.tx_buf[0]));
-	msg.rx_buf =(uint32_t*)no_os_calloc(words_number, sizeof(msg.rx_buf[0]));
+	msg.tx_buf = (uint32_t*)no_os_calloc(words_number, sizeof(msg.tx_buf[0]));
+	msg.rx_buf = (uint32_t*)no_os_calloc(words_number, sizeof(msg.rx_buf[0]));
 	msg.length = words_number;
 
 	/* Get the length of transfered word */
@@ -731,7 +724,7 @@ int32_t spi_engine_write_and_read(struct no_os_spi_desc *desc,
 
 	/* Pack the bytes into engine WORDS */
 	for (i = 0; i < bytes_number; i++)
-		msg.tx_buf[i / word_len] |= data[i] << (desc_extra->data_width-
+		msg.tx_buf[i / word_len] |= data[i] << (desc_extra->data_width -
 							(i % word_len + 1) * 8);
 
 	ret = spi_engine_transfer_message(desc, &msg);
@@ -765,28 +758,28 @@ int32_t spi_engine_offload_init(struct no_os_spi_desc *desc,
 
 	eng_desc->offload_config = param->offload_config;
 
-	if(!(param->dma_flags)) {
+	if (!param->dma_flags) {
 		eng_desc->cyclic = CYCLIC;
 	} else {
-		if((*(param->dma_flags)) & DMA_CYCLIC)
+		if (param->dma_flags & DMA_CYCLIC)
 			eng_desc->cyclic = CYCLIC;
 		else
 			eng_desc->cyclic = NO;
 	}
 
-
-	if(param->offload_config & OFFLOAD_TX_EN) {
+	dmac_init.irq_option = IRQ_DISABLED;
+	if (param->offload_config & OFFLOAD_TX_EN) {
 		dmac_init.name = "DAC DMAC";
 		dmac_init.base = param->tx_dma_baseaddr;
 		axi_dmac_init(&eng_desc->offload_tx_dma, &dmac_init);
-		if(!eng_desc->offload_tx_dma)
+		if (!eng_desc->offload_tx_dma)
 			return -1;
 	}
-	if(param->offload_config & OFFLOAD_RX_EN) {
+	if (param->offload_config & OFFLOAD_RX_EN) {
 		dmac_init.name = "ADC DMAC";
 		dmac_init.base = param->rx_dma_baseaddr;
 		axi_dmac_init(&eng_desc->offload_rx_dma, &dmac_init);
-		if(!eng_desc->offload_rx_dma)
+		if (!eng_desc->offload_rx_dma)
 			return -1;
 	}
 
@@ -808,13 +801,13 @@ int32_t spi_engine_offload_transfer(struct no_os_spi_desc *desc,
 	struct spi_engine_msg	transfer;
 	struct spi_engine_desc	*eng_desc;
 	uint32_t 		i;
-	uint8_t 		word_length;
+	int32_t			ret;
 
 	eng_desc = desc->extra;
 
 	/* Check if offload is disabled */
-	if(!((eng_desc->offload_config & OFFLOAD_TX_EN) |
-	     (eng_desc->offload_config & OFFLOAD_RX_EN)))
+	if (!((eng_desc->offload_config & OFFLOAD_TX_EN) |
+	      (eng_desc->offload_config & OFFLOAD_RX_EN)))
 		return -1;
 
 	spi_engine_write(eng_desc, SPI_ENGINE_REG_OFFLOAD_RESET(0), 1);
@@ -834,21 +827,20 @@ int32_t spi_engine_offload_transfer(struct no_os_spi_desc *desc,
 	transfer.cmds->next = NULL;
 	transfer.cmds->cmd = msg.commands[0];
 	i = 1;
-	while(i < msg.no_commands) {
+	while (i < msg.no_commands) {
 		spi_engine_queue_add_cmd(&transfer.cmds, msg.commands[i++]);
 
 	}
 
+	ret = 0;
 	spi_engine_transfer_message(desc, &transfer);
 
 	/* Start transfer */
 	spi_engine_write(eng_desc, SPI_ENGINE_REG_OFFLOAD_CTRL(0), 0x0001);
-
-	word_length = spi_get_word_lenght(eng_desc);
-	if(eng_desc->offload_config & OFFLOAD_TX_EN) {
+	if (eng_desc->offload_config & OFFLOAD_TX_EN) {
 		struct axi_dma_transfer tx_transfer = {
 			// Number of bytes to write/read
-			.size = word_length * eng_desc->offload_tx_len * no_samples,
+			.size = eng_desc->offload_tx_dma->width_src * eng_desc->offload_tx_len * no_samples,
 			// Transfer done flag
 			.transfer_done = 0,
 			// Signal transfer mode
@@ -858,13 +850,15 @@ int32_t spi_engine_offload_transfer(struct no_os_spi_desc *desc,
 			// Address of data destination
 			.dest_addr = 0
 		};
-		axi_dmac_transfer_start(eng_desc->offload_tx_dma, &tx_transfer);
+		ret = axi_dmac_transfer_start(eng_desc->offload_tx_dma, &tx_transfer);
+		if (ret)
+			goto error;
 	}
 
-	if(eng_desc->offload_config & OFFLOAD_RX_EN) {
+	if (eng_desc->offload_config & OFFLOAD_RX_EN) {
 		struct axi_dma_transfer rx_transfer = {
 			// Number of bytes to write/read
-			.size = word_length * eng_desc->offload_tx_len * no_samples,
+			.size = eng_desc->offload_rx_dma->width_src * eng_desc->offload_tx_len * no_samples,
 			// Transfer done flag
 			.transfer_done = 0,
 			// Signal transfer mode
@@ -874,15 +868,20 @@ int32_t spi_engine_offload_transfer(struct no_os_spi_desc *desc,
 			// Address of data destination
 			.dest_addr = (uintptr_t)msg.rx_addr
 		};
-		axi_dmac_transfer_start(eng_desc->offload_rx_dma, &rx_transfer);
-		axi_dmac_transfer_wait_completion(eng_desc->offload_rx_dma, 500);
+		ret = axi_dmac_transfer_start(eng_desc->offload_rx_dma, &rx_transfer);
+		if (ret)
+			goto error;
+		ret = axi_dmac_transfer_wait_completion(eng_desc->offload_rx_dma, 500);
+		if (ret)
+			goto error;
 	}
 
 	usleep(1000);
 
+error:
 	spi_engine_queue_no_os_free(&transfer.cmds);
 
-	return 0;
+	return ret;
 }
 
 /**
@@ -897,12 +896,68 @@ int32_t spi_engine_remove(struct no_os_spi_desc *desc)
 
 	eng_desc = desc->extra;
 
-	if(eng_desc->offload_config & OFFLOAD_TX_EN)
+	if (eng_desc->offload_config & OFFLOAD_TX_EN)
 		axi_dmac_remove(eng_desc->offload_tx_dma);
-	if(eng_desc->offload_config & OFFLOAD_RX_EN)
+	if (eng_desc->offload_config & OFFLOAD_RX_EN)
 		axi_dmac_remove(eng_desc->offload_rx_dma);
 	no_os_free(desc->extra);
 	no_os_free(desc);
 
 	return 0;
 }
+
+#else
+int32_t spi_engine_write(struct spi_engine_desc *desc,
+			 uint32_t reg_addr,
+			 uint32_t reg_data)
+{
+	return 0;
+}
+
+int32_t spi_engine_read(struct spi_engine_desc *desc,
+			uint32_t reg_addr,
+			uint32_t *reg_data)
+{
+	return 0;
+}
+
+int32_t spi_engine_init(struct no_os_spi_desc **desc,
+			const struct no_os_spi_init_param *param)
+{
+	return 0;
+}
+
+int32_t spi_engine_write_and_read(struct no_os_spi_desc *desc,
+				  uint8_t *data,
+				  uint16_t bytes_number)
+{
+	return 0;
+}
+
+int32_t spi_engine_remove(struct no_os_spi_desc *desc)
+{
+	return 0;
+}
+
+int32_t spi_engine_offload_init(struct no_os_spi_desc *desc,
+				const struct spi_engine_offload_init_param *param)
+{
+	return 0;
+}
+
+int32_t spi_engine_offload_transfer(struct no_os_spi_desc *desc,
+				    struct spi_engine_offload_message msg,
+				    uint32_t no_samples)
+{
+	return 0;
+}
+
+int32_t spi_engine_set_transfer_width(struct no_os_spi_desc *desc,
+				      uint8_t data_wdith)
+{
+	return 0;
+}
+
+void spi_engine_set_speed(struct no_os_spi_desc *desc,
+			  uint32_t speed_hz) { }
+#endif

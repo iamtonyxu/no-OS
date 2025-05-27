@@ -5,43 +5,33 @@
 ********************************************************************************
  * Copyright 2021(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #ifdef IIO_SUPPORT
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <errno.h>
 #include <string.h>
@@ -55,10 +45,6 @@
 #include "spi_engine.h"
 
 #define MEGA 1000000UL
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /**
  * @struct ad713x_iio
@@ -85,10 +71,6 @@ struct ad713x_iio {
 	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
-
 #define AD713x_IIO_FUNC(_name)	static int _name(void *device, char *buf, \
 		uint32_t len, const struct iio_ch_info *channel, intptr_t priv)
 
@@ -99,10 +81,6 @@ AD713x_IIO_FUNC(ad713x_iio_show_raw);
 AD713x_IIO_FUNC(ad713x_iio_show_odr);
 AD713x_IIO_FUNC(ad713x_iio_store_odr);
 AD713x_IIO_FUNC(ad713x_iio_show_scale);
-
-/******************************************************************************/
-/********************* Static Variables Definitions ***************************/
-/******************************************************************************/
 
 static struct iio_attribute channel_attributes[] = {
 	{
@@ -172,10 +150,6 @@ static struct iio_channel ad713x_channels[] = {
 	AD713X_IIO_CHANN_DEF("ch2", 2),
 	AD713X_IIO_CHANN_DEF("ch3", 3)
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * @brief Transform decimal floating point into hexadecimal floating point for
@@ -468,8 +442,7 @@ static int32_t ad713x_iio_read_dev(struct ad713x_iio *desc, uint32_t *buff,
 	if (!desc)
 		return -1;
 
-	bytes = nb_samples * desc->iio_dev->num_ch *
-		(desc->iio_dev->channels[0].scan_type->storagebits / 8);
+	bytes = nb_samples * desc->iio_dev->num_ch * sizeof(buff[0]);
 
 	spi_eng_msg_cmds[0] = READ(4);
 
@@ -482,7 +455,7 @@ static int32_t ad713x_iio_read_dev(struct ad713x_iio *desc, uint32_t *buff,
 	if (desc->dcache_invalidate_range)
 		desc->dcache_invalidate_range(msg.rx_addr, bytes);
 
-	ret = spi_engine_offload_transfer(desc->spi_eng_desc, msg, bytes);
+	ret = spi_engine_offload_transfer(desc->spi_eng_desc, msg, nb_samples);
 	if (ret < 0)
 		return ret;
 

@@ -6,41 +6,31 @@
  *   @copyright
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <stdlib.h>
 #include "no_os_error.h"
@@ -52,10 +42,6 @@
 #include "noos_mbedtls_config.h"
 #include "no_os_trng.h"
 #endif /* DISABLE_SECURE_SOCKET */
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 #ifdef DISABLE_SECURE_SOCKET
 
@@ -72,10 +58,6 @@
 #endif /* MAX_CONTENT_LEN */
 
 #endif /* DISABLE_SECURE_SOCKET */
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 #ifndef DISABLE_SECURE_SOCKET
 /**
@@ -98,10 +80,6 @@ struct secure_socket_desc {
 	mbedtls_ssl_context	ssl;
 };
 #endif /* DISABLE_SECURE_SOCKET */
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 #ifndef DISABLE_SECURE_SOCKET
 /* Wrapper over socket_recv */
@@ -175,16 +153,16 @@ static int32_t stcp_socket_init(struct secure_socket_desc **desc,
 
 	if (param->ca_cert) {
 #ifdef ENABLE_PEM_CERT
-		ret = mbedtls_x509_crt_parse( &ldesc->cacert,
+		ret = mbedtls_x509_crt_parse(&ldesc->cacert,
 #else
 		ret = mbedtls_x509_crt_parse_der_nocopy(&ldesc->cacert,
 #endif /* ENABLE_PEM_CERT */
-					      (const unsigned char *)param->ca_cert,
-					      (size_t)param->ca_cert_len);
+					     (const unsigned char *)param->ca_cert,
+					     (size_t)param->ca_cert_len);
 		if (ret < 0)
 			goto exit;
 
-		mbedtls_ssl_conf_ca_chain(&ldesc->conf, &ldesc->cacert, NULL );
+		mbedtls_ssl_conf_ca_chain(&ldesc->conf, &ldesc->cacert, NULL);
 		/* Verify server identity */
 		mbedtls_ssl_conf_authmode(&ldesc->conf,
 					  param->cert_verify_mode);
@@ -200,17 +178,17 @@ static int32_t stcp_socket_init(struct secure_socket_desc **desc,
 			goto exit;
 		}
 #ifdef ENABLE_PEM_CERT
-		ret = mbedtls_x509_crt_parse( &ldesc->clicert,
+		ret = mbedtls_x509_crt_parse(&ldesc->clicert,
 #else
 		ret = mbedtls_x509_crt_parse_der_nocopy(&ldesc->clicert,
 #endif /* ENABLE_PEM_CERT */
-					      (const unsigned char *)param->cli_cert,
-					      (size_t)param->cli_cert_len);
+					     (const unsigned char *)param->cli_cert,
+					     (size_t)param->cli_cert_len);
 		if (NO_OS_IS_ERR_VALUE(ret))
 			goto exit;
 		ret = mbedtls_pk_parse_key(&ldesc->pkey,
 					   (const unsigned char *)param->cli_pk,
-					   param->cli_pk_len, NULL, 0 );
+					   param->cli_pk_len, NULL, 0);
 		if (NO_OS_IS_ERR_VALUE(ret))
 			goto exit;
 

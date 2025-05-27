@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 // stdlibs
 #include <string.h>
@@ -125,7 +119,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 
 	/*Open Talise Hw Device*/
 	talAction = TALISE_openHw(pd);
-	if(talAction != TALACT_NO_ACTION) {
+	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
 		printf("error: TALISE_openHw() failed\n");
 		goto error_0;
@@ -292,6 +286,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 		printf("talise: Calibrations completed successfully\n");
 	}
 
+#ifndef ADRV9008_2
 	/***************************************************/
 	/**** Enable  Talise JESD204B Framer ***/
 	/***************************************************/
@@ -319,6 +314,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			goto error_11;
 		}
 	}
+#endif
 
 	/***************************************************/
 	/**** Enable  Talise JESD204B Framer ***/
@@ -380,13 +376,16 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 
 	ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_ON);
 
-	if(talInit.rx.rxChannels != TAL_RXOFF)
+#ifndef ADRV9008_2
+	if (talInit.rx.rxChannels != TAL_RXOFF)
 		axi_jesd204_rx_lane_clk_enable(rx_jesd);
+#endif
 
-	if(talInit.obsRx.obsRxChannelsEnable != TAL_RXOFF)
+#ifndef ADRV9008_1
+	if (talInit.obsRx.obsRxChannelsEnable != TAL_RXOFF)
 		axi_jesd204_rx_lane_clk_enable(rx_os_jesd);
 
-	if(talInit.tx.txChannels != TAL_RXOFF) {
+	if (talInit.tx.txChannels != TAL_RXOFF) {
 		axi_jesd204_tx_lane_clk_enable(tx_jesd);
 
 		/* RESET CDR */
@@ -398,6 +397,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 		ADIHAL_spiWriteByte(pd->devHalInfo, TALISE_ADDR_DES_PHY_GENERAL_CTL_1,
 				    phy_ctrl);
 	}
+#endif
 
 	ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_OFF);
 
@@ -420,6 +420,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			printf("warning: TAL_DEFRAMER_A status 0x%X\n", deframerStatus);
 	}
 
+#ifndef ADRV9008_2
 	/************************************/
 	/**** Check Talise Framer Status ***/
 	/************************************/
@@ -435,6 +436,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			printf("warning: TAL_FRAMER_A status 0x%X\n", framerStatus);
 		}
 	}
+#endif
 
 	/************************************/
 	/**** Check Talise Framer Status ***/
@@ -480,7 +482,8 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 #ifndef ADRV9008_2
 	talAction = TALISE_setRxTxEnable(pd, TAL_RX1RX2_EN, TAL_TX1TX2);
 #else
-	talAction = TALISE_setRxTxEnable(pd, TAL_ORX1_EN, TAL_TX1TX2);
+	talAction = TALISE_setRxTxEnable(pd, talInit.obsRx.obsRxChannelsEnable << 2,
+					 TAL_TX1TX2);
 #endif
 	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
@@ -509,7 +512,9 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 		ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_OFF);
 
 		axi_jesd204_rx_lane_clk_disable(rx_os_jesd);
+#ifndef ADRV9008_2
 		axi_jesd204_rx_lane_clk_disable(rx_jesd);
+#endif
 		axi_jesd204_tx_lane_clk_disable(tx_jesd);
 		break;
 	case 1:
@@ -549,6 +554,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 		ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_ON);
 		break;
 	case 8:
+#ifndef ADRV9008_2
 		/***************************************************/
 		/**** Enable Talise JESD204B Framer ***/
 		/***************************************************/
@@ -587,6 +593,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 				break;
 			}
 		}
+#endif
 
 		/***************************************************/
 		/**** Enable Talise JESD204B Framer ***/
@@ -682,7 +689,9 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 			break;
 
 		axi_jesd204_rx_lane_clk_enable(rx_os_jesd);
+#ifndef ADRV9008_2
 		axi_jesd204_rx_lane_clk_enable(rx_jesd);
+#endif
 
 		break;
 	case 10:
@@ -706,6 +715,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 				printf("TAL_DEFRAMER_A deframerStatus 0x%X\n", deframerStatus);
 		}
 
+#ifndef ADRV9008_2
 		/************************************/
 		/**** Check Talise Framer Status ***/
 		/************************************/
@@ -720,6 +730,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 			if ((framerStatus & 0x07) != 0x05)
 				printf("TAL_FRAMER_A framerStatus 0x%X\n", framerStatus);
 		}
+#endif
 		/************************************/
 		/**** Check Talise Framer Status ***/
 		/************************************/
@@ -764,7 +775,7 @@ void talise_shutdown(taliseDevice_t * const pd)
 
 	/*Close Talise Hw Device*/
 	talAction = TALISE_closeHw(pd);
-	if(talAction != TALACT_NO_ACTION) {
+	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
 	}
 }

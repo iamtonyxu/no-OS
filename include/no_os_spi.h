@@ -5,58 +5,40 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #ifndef _NO_OS_SPI_H_
 #define _NO_OS_SPI_H_
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
-
 #include <stdint.h>
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 #define	NO_OS_SPI_CPHA	0x01
 #define	NO_OS_SPI_CPOL	0x02
 #define SPI_MAX_BUS_NUMBER 8
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /**
  * @enum no_os_spi_mode
@@ -82,6 +64,21 @@ enum no_os_spi_bit_order {
 	NO_OS_SPI_BIT_ORDER_MSB_FIRST = 0,
 	/** Least-significant bit (LSB) first */
 	NO_OS_SPI_BIT_ORDER_LSB_FIRST = 1,
+};
+
+/**
+ * @enum no_os_spi_lanes
+ * @brief SPI configuration for number of lanes.
+ */
+enum no_os_spi_lanes {
+	/** Single Lane */
+	NO_OS_SPI_SINGLE_LANE,
+	/** Dual Lane */
+	NO_OS_SPI_DUAL_LANE,
+	/** Quad Lane */
+	NO_OS_SPI_QUAD_LANE,
+	/** Octo Lane */
+	NO_OS_SPI_OCTO_LANE,
 };
 
 /**
@@ -139,7 +136,11 @@ struct no_os_spi_init_param {
 	enum no_os_spi_mode	mode;
 	/** SPI bit order */
 	enum no_os_spi_bit_order	bit_order;
+	/** SPI Lanes */
+	enum no_os_spi_lanes   lanes;
+	/** SPI bus platform ops */
 	const struct no_os_spi_platform_ops *platform_ops;
+	/** SPI delays */
 	struct no_os_platform_spi_delays platform_delays;
 	/**  SPI extra parameters (device specific) */
 	void		*extra;
@@ -164,6 +165,8 @@ struct no_os_spibus_desc {
 	enum no_os_spi_mode	mode;
 	/** SPI bus bit order */
 	enum no_os_spi_bit_order	bit_order;
+	/** SPI Lanes */
+	enum no_os_spi_lanes   lanes;
 	/** SPI bus platform ops */
 	const struct no_os_spi_platform_ops *platform_ops;
 	/** SPI bus extra */
@@ -187,7 +190,11 @@ struct no_os_spi_desc {
 	enum no_os_spi_mode	mode;
 	/** SPI bit order */
 	enum no_os_spi_bit_order	bit_order;
+	/** SPI Lanes */
+	enum no_os_spi_lanes   lanes;
+	/** SPI bus platform ops */
 	const struct no_os_spi_platform_ops *platform_ops;
+	/** SPI delays */
 	struct no_os_platform_spi_delays platform_delays;
 	/**  SPI extra parameters (device specific) */
 	void		*extra;
@@ -210,21 +217,19 @@ struct no_os_spi_platform_ops {
 	/** Iterate over the spi_msg array and send all messages using DMA.
 	 * Blocks until the transfer is completed.
 	 */
-	int32_t (*dma_transfer_sync)(struct no_os_spi_desc *, struct no_os_spi_msg *,
-				     uint32_t);
+	int32_t (*transfer_dma)(struct no_os_spi_desc *, struct no_os_spi_msg *,
+				uint32_t);
 	/** Iterate over the spi_msg array and send all messages using DMA.
 	 * Returns immediately after the transfer is started and invokes a
 	 * callback once all the messages have been transfered.
 	 */
-	int32_t (*dma_transfer_async)(struct no_os_spi_desc *, struct no_os_spi_msg *,
+	int32_t (*transfer_dma_async)(struct no_os_spi_desc *, struct no_os_spi_msg *,
 				      uint32_t, void (*)(void *), void *);
 	/** SPI remove function pointer */
 	int32_t (*remove)(struct no_os_spi_desc *);
+	/** SPI abort function pointer */
+	int32_t (*transfer_abort)(struct no_os_spi_desc *);
 };
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /* Initialize the SPI communication peripheral. */
 int32_t no_os_spi_init(struct no_os_spi_desc **desc,
@@ -244,9 +249,9 @@ int32_t no_os_spi_transfer(struct no_os_spi_desc *desc,
 			   uint32_t len);
 
 /* Transfer a list of messages using DMA. Wait until all transfers are done */
-int32_t no_os_spi_transfer_dma_sync(struct no_os_spi_desc *desc,
-				    struct no_os_spi_msg *msgs,
-				    uint32_t len);
+int32_t no_os_spi_transfer_dma(struct no_os_spi_desc *desc,
+			       struct no_os_spi_msg *msgs,
+			       uint32_t len);
 /*
  * Transfer a list of messages using DMA. Return once the first one started and
  * invoke a callback when they are done.
@@ -256,6 +261,9 @@ int32_t no_os_spi_transfer_dma_async(struct no_os_spi_desc *desc,
 				     uint32_t len,
 				     void (*callback)(void *),
 				     void *ctx);
+
+/* Abort SPI transfers. */
+int32_t no_os_spi_transfer_abort(struct no_os_spi_desc *desc);
 
 /* Initialize SPI bus descriptor*/
 int32_t no_os_spibus_init(const struct no_os_spi_init_param *param);

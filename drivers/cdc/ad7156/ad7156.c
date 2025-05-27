@@ -5,48 +5,35 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad7156.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Performs a burst read of a specified number of registers.
@@ -55,8 +42,6 @@
  * @param p_read_data       - The read values are stored in this buffer.
  * @param register_address  - The start address of the burst read.
  * @param bytes_number      - Number of bytes to read.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_get_register_value(struct ad7156_dev *dev,
 			       uint8_t* p_read_data,
@@ -74,8 +59,6 @@ void ad7156_get_register_value(struct ad7156_dev *dev,
  * @param register_value   - Data value to write.
  * @param register_address - Address of the register.
  * @param bytes_number     - Number of bytes. Accepted values: 0 - 1.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_register_value(struct ad7156_dev *dev,
 			       uint16_t register_value,
@@ -123,7 +106,7 @@ int8_t ad7156_init(struct ad7156_dev **device,
 				  &test,
 				  AD7156_REG_CHIP_ID,
 				  1);
-	if(test != AD7156_DEFAULT_ID) {
+	if (test != AD7156_DEFAULT_ID) {
 		status = -1;
 	}
 
@@ -154,8 +137,6 @@ int32_t ad7156_remove(struct ad7156_dev *dev)
  * @brief Resets the device.
  *
  * @param dev - The device structure.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_reset(struct ad7156_dev *dev)
 {
@@ -174,8 +155,6 @@ void ad7156_reset(struct ad7156_dev *dev)
  *                           AD7156_CONV_MODE_CONT_CONV  - Continuous conversion
  *                           AD7156_CONV_MODE_SINGLE_CONV - Single conversion
  *                           AD7156_CONV_MODE_PWR_DWN - Power-down
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_power_mode(struct ad7156_dev *dev,
 			   uint8_t pwr_mode)
@@ -188,7 +167,7 @@ void ad7156_set_power_mode(struct ad7156_dev *dev,
 				  AD7156_REG_CONFIG,
 				  1);
 	old_config_reg &= ~AD7156_CONFIG_MD(0x3);
-	new_config_reg = old_config_reg| AD7156_CONFIG_MD(pwr_mode);
+	new_config_reg = old_config_reg | AD7156_CONFIG_MD(pwr_mode);
 	ad7156_set_register_value(dev,
 				  new_config_reg,
 				  AD7156_REG_CONFIG,
@@ -205,8 +184,6 @@ void ad7156_set_power_mode(struct ad7156_dev *dev,
  * @param enable_conv - The state of channel activity.
  *                      Example: 0 - disable conversion on selected channel.
  *                               1 - enable conversion on selected channel.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_channel_state(struct ad7156_dev *dev,
 			  uint8_t channel,
@@ -242,8 +219,6 @@ void ad7156_channel_state(struct ad7156_dev *dev,
  *                           AD7156_CDC_RANGE_0_5_PF - 0.5pF input range.
  *                           AD7156_CDC_RANGE_1_PF   - 1pF input range.
  *                           AD7156_CDC_RANGE_4_PF   - 4pF input range.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_range(struct ad7156_dev *dev,
 		      uint32_t channel,
@@ -265,7 +240,7 @@ void ad7156_set_range(struct ad7156_dev *dev,
 				  reg_address,
 				  1);
 	/* Update global variables that hold range information. */
-	if(channel == 1) {
+	if (channel == 1) {
 		dev->ad7156_channel1_range = ad7156_get_range(dev,
 					     channel);
 	} else {
@@ -297,7 +272,7 @@ float ad7156_get_range(struct ad7156_dev *dev,
 				  reg_address,
 				  1);
 	setup_reg = (setup_reg & AD7156_CH1_SETUP_RANGE(0x3)) >> 6;
-	switch(setup_reg) {
+	switch (setup_reg) {
 	case AD7156_CDC_RANGE_2_PF:
 		range =  2.0;
 		break;
@@ -312,7 +287,7 @@ float ad7156_get_range(struct ad7156_dev *dev,
 		break;
 	}
 	/* Update global variables that hold range information. */
-	if(channel == 1) {
+	if (channel == 1) {
 		dev->ad7156_channel1_range = range;
 	} else {
 		dev->ad7156_channel2_range = range;
@@ -333,8 +308,6 @@ float ad7156_get_range(struct ad7156_dev *dev,
  * @param thr_fixed - Selects the threshold mode.
  *                   Example: AD7156_ADAPTIVE_THRESHOLD
  *                            AD7156_FIXED_THRESHOLD
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_threshold_mode(struct ad7156_dev *dev,
 			       uint8_t thr_mode,
@@ -366,8 +339,6 @@ void ad7156_set_threshold_mode(struct ad7156_dev *dev,
  *                           AD7156_CHANNEL2
  * @param p_fthr   - The threshold value in picofarads(pF). The value must not be
  *                  out of the selected input range.
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_threshold(struct ad7156_dev *dev,
 			  uint8_t channel,
@@ -382,9 +353,9 @@ void ad7156_set_threshold(struct ad7156_dev *dev,
 	range = ad7156_get_range(dev,
 				 channel);
 	raw_thr = (uint16_t)((p_fthr * 0xA000 / range) + 0x3000);
-	if(raw_thr > 0xD000) {
+	if (raw_thr > 0xD000) {
 		raw_thr = 0xD000;
-	} else if(raw_thr < 0x3000) {
+	} else if (raw_thr < 0x3000) {
 		raw_thr = 0x3000;
 	}
 	ad7156_set_register_value(dev,
@@ -402,8 +373,6 @@ void ad7156_set_threshold(struct ad7156_dev *dev,
  *                        Example: AD7156_CHANNEL1
  *                                 AD7156_CHANNEL2
  * @param p_fsensitivity - The sensitivity value in picofarads(pF).
- *
- * @return None.
 *******************************************************************************/
 void ad7156_set_sensitivity(struct ad7156_dev *dev,
 			    uint8_t channel,
@@ -441,7 +410,7 @@ uint16_t ad7156_read_channel_data(struct ad7156_dev *dev,
 	uint8_t reg_data[2] = {0, 0};
 	uint8_t ch_address = 0;
 
-	if(channel == 1) {
+	if (channel == 1) {
 		ch_address = AD7156_REG_CH1_DATA_H;
 	} else {
 		ch_address = AD7156_REG_CH2_DATA_H;
@@ -474,7 +443,7 @@ uint16_t ad7156_wait_read_channel_data(struct ad7156_dev *dev,
 	uint8_t ch_rdy_mask = 0;
 	uint8_t ch_address = 0;
 
-	if(channel == 1) {
+	if (channel == 1) {
 		ch_rdy_mask = AD7156_STATUS_RDY1;
 		ch_address = AD7156_REG_CH1_DATA_H;
 	} else {
@@ -486,7 +455,7 @@ uint16_t ad7156_wait_read_channel_data(struct ad7156_dev *dev,
 					  &status,
 					  AD7156_REG_STATUS,
 					  1);
-	} while((status & ch_rdy_mask) != 0);
+	} while ((status & ch_rdy_mask) != 0);
 	ad7156_get_register_value(dev,
 				  reg_data,
 				  ch_address,
@@ -517,9 +486,9 @@ float ad7156_read_channel_capacitance(struct ad7156_dev *dev,
 		   dev->ad7156_channel2_range;
 	raw_ch = ad7156_read_channel_data(dev,
 					  channel);
-	if(raw_ch < 0x3000) {
-		raw_ch= 0x3000;
-	} else if(raw_ch > 0xD000) {
+	if (raw_ch < 0x3000) {
+		raw_ch = 0x3000;
+	} else if (raw_ch > 0xD000) {
 		raw_ch = 0xD000;
 	}
 	p_fdata = (((raw_ch) - 0x3000) * ch_range) / 0xA000;
@@ -548,9 +517,9 @@ float ad7156_wait_read_channel_capacitance(struct ad7156_dev *dev,
 		   dev->ad7156_channel2_range;
 	raw_ch = ad7156_wait_read_channel_data(dev,
 					       channel);
-	if(raw_ch < 0x3000) {
-		raw_ch= 0x3000;
-	} else if(raw_ch > 0xD000) {
+	if (raw_ch < 0x3000) {
+		raw_ch = 0x3000;
+	} else if (raw_ch > 0xD000) {
 		raw_ch = 0xD000;
 	}
 	p_fdata = (((raw_ch) - 0x3000) * ch_range) / 0xA000;

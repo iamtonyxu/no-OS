@@ -43,6 +43,9 @@ TARGET_HARDWARE=TARGET=$(TARGET)
 
 PLATFORM_DRIVERS := $(NO-OS)/drivers/platform/maxim/$(TARGET_LCASE)
 
+# Choose between the v1 and v2 version of the SPI driver for MAX32690 and MAX78002
+MXC_SPI_VERSION ?= v1
+
 ifeq ($(TARGET_LCASE), $(filter $(TARGET_LCASE),max32655 max32690))
 include $(MAXIM_LIBRARIES)/CMSIS/Device/Maxim/$(TARGET_UCASE)/Source/GCC/$(TARGET_LCASE)_memory.mk
 endif
@@ -63,13 +66,13 @@ VSCODE_CMSISCFG_FILE="interface/cmsis-dap.cfg","target/$(TARGET).cfg"
 LDFLAGS = -mcpu=cortex-m4 	\
 	-Wl,--gc-sections 	\
 	--specs=nosys.specs	\
-	-mfloat-abi=hard 	\
+	-mfloat-abi=$(CFLAGS_MFLOAT_TYPE) 	\
 	-mfpu=fpv4-sp-d16 	\
 	--entry=Reset_Handler		
 	
 CFLAGS += -mthumb                                                                 \
         -mcpu=cortex-m4                                                         \
-        -mfloat-abi=hard                                                        \
+        -mfloat-abi=$(CFLAGS_MFLOAT_TYPE)                                       \
         -mfpu=fpv4-sp-d16                                                       \
         -Wa,-mimplicit-it=thumb                                                 \
         -fsingle-precision-constant                                             \
@@ -129,7 +132,7 @@ SRC_DIRS += $(MAXIM_LIBRARIES)/MAXUSB/src/core/musbhsfc \
 endif
 
 $(PLATFORM)_project:
-	$(call print, Building for target $(TARGET_LCASE))
+	$(call print,Building for target $(TARGET_LCASE))
 	$(call print,Creating IDE project)
 	$(call mk_dir,$(BUILD_DIR))
 	$(call mk_dir,$(VSCODE_CFG_DIR))
@@ -137,15 +140,25 @@ $(PLATFORM)_project:
 	$(MAKE) --no-print-directory $(PROJECT_TARGET)_configure
 
 $(PROJECT_TARGET)_configure:
-	$(file > $(CPP_PROP_JSON),$(CPP_FINAL_CONTENT))
-	$(file > $(SETTINGSJSON),$(VSC_SET_CONTENT))
-	$(file > $(LAUNCHJSON),$(VSC_LAUNCH_CONTENT))
-	$(file > $(TASKSJSON),$(VSC_TASKS_CONTENT))
+	$(file > $(CPP_PROP_JSON).default,$(CPP_FINAL_CONTENT))
+	$(file > $(SETTINGSJSON).default,$(VSC_SET_CONTENT))
+	$(file > $(LAUNCHJSON).default,$(VSC_LAUNCH_CONTENT))
+	$(file > $(TASKSJSON).default,$(VSC_TASKS_CONTENT))
+
+	[ -s $(CPP_PROP_JSON) ]	&& echo '.vscode/c_cpp_properties.json already exists, not overwriting'	|| cp $(CPP_PROP_JSON).default $(CPP_PROP_JSON)
+	[ -s $(SETTINGSJSON) ] 	&& echo '.vscode/settings.json already exists, not overwriting'			|| cp $(SETTINGSJSON).default $(SETTINGSJSON)
+	[ -s $(LAUNCHJSON) ] 	&& echo '.vscode/launch.json already exists, not overwriting'			|| cp $(LAUNCHJSON).default $(LAUNCHJSON)
+	[ -s $(TASKSJSON) ] 	&& echo '.vscode/tasks.json already exists, not overwriting'			|| cp $(TASKSJSON).default $(TASKSJSON)
+
+	rm $(CPP_PROP_JSON).default $(SETTINGSJSON).default $(LAUNCHJSON).default $(TASKSJSON).default
 
 $(PLATFORM)_sdkopen:
 	code $(PROJECT)
 
 $(PLATFORM)_sdkclean: clean
+
+$(PLATFORM)_reset:
+	$(call remove_dir,$(VSCODE_CFG_DIR))
 
 $(PLATFORM)_sdkbuild: build
 
@@ -172,7 +185,7 @@ $(PLATFORM)_post_build: $(HEX)
 
 clean_hex:
 	@$(call print,[Delete] $(HEX))
-	-$(call remove_fun,$(HEX))
+	-$(call remove_file,$(HEX))
 
 clean: clean_hex
 

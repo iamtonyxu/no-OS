@@ -5,64 +5,44 @@
 ********************************************************************************
  * Copyright (c) 2023 Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "no_os_print_log.h"
 #include "common_data.h"
 #include "maxim_spi.h"
 #include "supply.h"
 #include "spi.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
-
-/******************************************************************************/
-/********************************** Variables *********************************/
-/******************************************************************************/
 // Flag indicating that power supply signal crossed x axis
 static volatile int flag_zx = 0;
 
-/******************************************************************************/
-/*************************** Functions Definitions ****************************/
-/******************************************************************************/
 /**
  * @brief Zero crossing callback function
  * @param context - context variable
- * @return none
  */
 static void zx_zero_cross_fn(void *context)
 {
@@ -82,7 +62,6 @@ int get_zero_cross_flag_state(void)
 /**
  * @brief Reset zero crossing flag value
  *
- * @return none
  */
 void reset_zero_cross_flag_state(void)
 {
@@ -120,9 +99,9 @@ static int supply_read_wavs(struct ade9113_dev *dev)
 
 	MXC_SPI_MasterTransaction(&req);
 
-	dev->i_wav = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[1]), 23);
-	dev->v1_wav = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[5]), 23);
-	dev->v2_wav = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[9]), 23);
+	dev->i_wav[0] = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[1]), 23);
+	dev->v1_wav[0] = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[5]), 23);
+	dev->v2_wav[0] = no_os_sign_extend32(no_os_get_unaligned_le24(&rx_buff[9]), 23);
 
 	return 0;
 }
@@ -298,23 +277,91 @@ int32_t supply_scale_v2(int32_t val)
 }
 
 /**
- * @brief Convert values measured by the ADE9113 device to mV (mA val for I)
- * @param stout - state  machine descriptor
- * @param i_val - value of I waveform (in mA)
- * @param v1_val - value of V1 waveform in mV
- * @param v2_val - value of V2 waveform in mV
- * @return 0 in case of success, error code otherwise
+ * @brief Compute v1 rms value
+ * @param sample - v1 sample
+ * @return v1 rms value
  */
-int supply_conv_vals_to_mv(struct stout *stout, int32_t *i_val, int32_t *v1_val,
-			   int32_t *v2_val)
+int64_t rms_filter_v1(int32_t sample)
 {
+	static int32_t rms = INITIAL;
+	static int64_t sum_squares = 1UL * SAMPLES * INITIAL * INITIAL;
+
+	sum_squares -= sum_squares / SAMPLES;
+	sum_squares += (int64_t) sample * sample;
+	if (rms == 0) rms = 1;    /* do not divide by zero */
+	rms = (rms + sum_squares / SAMPLES / rms) / 2;
+	return rms;
+}
+
+/**
+ * @brief Compute v2 rms value
+ * @param sample - v2 sample
+ * @return v2 rms value
+ */
+int64_t rms_filter_v2(int32_t sample)
+{
+	static int32_t rms = INITIAL;
+	static int64_t sum_squares = 1UL * SAMPLES * INITIAL * INITIAL;
+
+	sum_squares -= sum_squares / SAMPLES;
+	sum_squares += (int64_t) sample * sample;
+	if (rms == 0) rms = 1;    /* do not divide by zero */
+	rms = (rms + sum_squares / SAMPLES / rms) / 2;
+	return rms;
+}
+
+/**
+ * @brief Compute i rms value
+ * @param sample - i sample
+ * @return i rms value
+ */
+int64_t rms_filter_i(int32_t sample)
+{
+	static int32_t rms = INITIAL;
+	static int64_t sum_squares = 1UL * SAMPLES * INITIAL * INITIAL;
+
+	sum_squares -= sum_squares / SAMPLES;
+	sum_squares += (int64_t) sample * sample;
+	if (rms == 0) rms = 1;    /* do not divide by zero */
+	rms = (rms + sum_squares / SAMPLES / rms) / 2;
+	return rms;
+}
+
+/**
+ * @brief saves the current and voltage values in rms_adc structure
+ * @param stout - application strucutre
+ * @param rms - structure holding the measurements values
+ * @return 0 in case of success, negative error code otherwise
+ */
+int rms_adc_values_read(struct stout *stout, struct rms_adc_values *rms)
+{
+	int32_t i_val, v1_val, v2_val, v1_rms, v2_rms, i_rms;
 	int ret;
 
-	ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_I_WAV, i_val);
+	ret = ade9113_convert_to_millivolts(stout->ade9113, 0, ADE9113_I_WAV, &i_val);
 	if (ret)
 		return ret;
-	ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V1_WAV, v1_val);
+	ret = ade9113_convert_to_millivolts(stout->ade9113, 0, ADE9113_V1_WAV, &v1_val);
 	if (ret)
 		return ret;
-	return ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V2_WAV, v2_val);
+	ret = ade9113_convert_to_millivolts(stout->ade9113, 0, ADE9113_V2_WAV, &v2_val);
+	if (ret)
+		return ret;
+	rms->v1_rms_adc = (int32_t)rms_filter_v1((int32_t)v1_val);
+	rms->v2_rms_adc = (int32_t)rms_filter_v2((int32_t)v2_val);
+	rms->i_rms_adc = (int32_t)rms_filter_i((int32_t)i_val);
+	// Scale is 0,03125 = 3125/100000 = 1/32 = 1/2^5
+	rms->i_rms = (((int64_t)((int32_t)(int64_t)rms->i_rms_adc)) * ADE9113_VREF) /
+		     (1 << 28);
+	rms->v1_rms = (((int64_t)((int32_t)(supply_scale_v1((int64_t)rms->v1_rms_adc))))
+		       * ADE9113_VREF) / (1 << 23);
+#if defined(REV_A)
+	rms->v2_rms = (((int64_t)((int32_t)(supply_scale_v2((int64_t)rms->v2_rms_adc))))
+		       * ADE9113_VREF) / (1 << 23);
+#elif defined(REV_D)
+	rms->v2_rms = (((int64_t)((int32_t)(supply_scale_v1((int64_t)rms->v2_rms_adc))))
+		       * ADE9113_VREF) / (1 << 23);
+#endif
+
+	return 0;
 }

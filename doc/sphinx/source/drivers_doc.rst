@@ -10,6 +10,7 @@ ACCELEROMETERS
    :maxdepth: 1
 
    drivers/adxl355
+   drivers/adxl38x
 
 ANALOG TO DIGITAL CONVERTERS
 ============================
@@ -17,6 +18,20 @@ ANALOG TO DIGITAL CONVERTERS
    :maxdepth: 1
 
    drivers/adm1177
+   drivers/ad405x
+   drivers/ad796x
+   drivers/pulsar_adc
+   drivers/ad7768
+   drivers/ad7768-1
+   drivers/ad9083
+   drivers/ad9208
+
+ADC / DAC
+==========
+.. toctree::
+   :maxdepth: 1
+   
+   drivers/ad74416h
 
 AXI CORES
 =========
@@ -42,7 +57,20 @@ DIGITAL TO ANALOG CONVERTERS
 .. toctree::
    :maxdepth: 1
 
-   drivers/max2201x
+   drivers/ad8460
+   drivers/max22017
+
+FREQUENCY GENERATORS
+====================
+.. toctree::
+   :maxdepth: 1
+
+   drivers/adf4382
+   drivers/adf4368
+   drivers/adf4377
+   drivers/adf5611
+   drivers/adf4030
+   drivers/admfm2000
 
 INERTIAL MEASUREMENT UNITS
 ==========================
@@ -51,6 +79,21 @@ INERTIAL MEASUREMENT UNITS
 
    drivers/imu
 
+LED
+===
+.. toctree::
+   :maxdepth: 1
+
+   drivers/max25603
+
+METER
+=====
+.. toctree::
+   :maxdepth: 1
+
+   drivers/ade7816
+   drivers/ade7913
+
 RF TRANSCEIVER
 ==============
 .. toctree::
@@ -58,9 +101,56 @@ RF TRANSCEIVER
 
    drivers/madura
 
+TEMPERATURE
+==============
+.. toctree::
+   :maxdepth: 1
+
+   drivers/max31827
+   drivers/ltc2983
+
 POWER MANAGEMENT
 ================
 .. toctree::
    :maxdepth: 1
 
+   drivers/ades1754
    drivers/adp1050
+   drivers/adp1055
+   drivers/adp5055
+   drivers/ltc2992
+   drivers/ltc4162l
+   drivers/ltc4296
+   drivers/ltc7841
+   drivers/ltc7871
+   drivers/ltm4686
+   drivers/lt3074
+   drivers/lt7170
+   drivers/lt7182s
+   drivers/lt8491
+   drivers/lt8722
+   drivers/ltp8800
+   drivers/max17851
+   drivers/max42500
+
+POTENTIOMETER
+================
+.. toctree::
+   :maxdepth: 1
+
+   drivers/ad5293
+
+ETHERNET
+========
+.. toctree::
+   :maxdepth: 1
+
+   drivers/adin1110
+
+GYROSCOPES
+============
+.. toctree::
+   :maxdepth: 1
+
+   drivers/adxrs290
+   

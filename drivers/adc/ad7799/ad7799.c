@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,9 +38,6 @@
 #include "ad7799.h"
 #include "no_os_alloc.h"
 
-/*****************************************************************************/
-/***************************** Constant definition ***************************/
-/*****************************************************************************/
 static const uint8_t ad7798_reg_size[] = {
 	[AD7799_REG_COMM] = AD7799_REG_SIZE_1B,
 	[AD7799_REG_MODE] = AD7799_REG_SIZE_2B,
@@ -71,10 +59,6 @@ static const uint8_t ad7799_reg_size[] = {
 	[AD7799_REG_OFFSET] = AD7799_REG_SIZE_3B,
 	[AD7799_REG_FULLSCALE] = AD7799_REG_SIZE_3B
 };
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /**
  * @brief Read device register.
@@ -100,10 +84,10 @@ int32_t ad7799_read(struct ad7799_dev *device, uint8_t reg_addr,
 	memset((buff + 1), 0, buff_size + 1);
 
 	ret = no_os_spi_write_and_read(device->spi_desc, buff, buff_size + 1);
-	if(ret)
+	if (ret)
 		return -1;
 
-	for(i = 1; i < buff_size + 1 ; i++)
+	for (i = 1; i < buff_size + 1 ; i++)
 		*reg_data = (*reg_data << 8) | buff[i];
 
 	return ret;
@@ -131,7 +115,7 @@ int32_t ad7799_write(struct ad7799_dev *device, uint8_t reg_addr,
 		buff[i] = reg_data >> ((buff_size - i) * 8);
 
 	ret = no_os_spi_write_and_read(device->spi_desc, buff, buff_size + 1);
-	if(ret)
+	if (ret)
 		return -1;
 
 	return ret;
@@ -254,7 +238,7 @@ int32_t ad7799_read_channel(struct ad7799_dev *device, uint8_t ch,
 		vref_scaled *= 1000;
 
 	ret = ad7799_get_channel(device, ch, &data);
-	if(ret)
+	if (ret)
 		return ret;
 
 	if (device->polarity) { // AD7799_UNIPOLAR
@@ -263,7 +247,7 @@ int32_t ad7799_read_channel(struct ad7799_dev *device, uint8_t ch,
 	} else { // AD7799_BIPOLAR
 		temp = 1 << ((device->reg_size[AD7799_REG_DATA] * 8) - 1);
 
-		if(data >= temp)
+		if (data >= temp)
 			data = ((data - temp) * vref_scaled) / (temp - 1);
 		else
 			data = -(((temp - data) * vref_scaled) / (temp - 1));
@@ -412,7 +396,7 @@ int32_t ad7799_init(struct ad7799_dev **device,
 	dev->vref_mv = init_param->vref_mv;
 	dev->precision = init_param->precision;
 
-	switch(dev->chip_type) {
+	switch (dev->chip_type) {
 	case ID_AD7798:
 		dev->reg_size = ad7798_reg_size;
 		break;
@@ -439,7 +423,7 @@ int32_t ad7799_init(struct ad7799_dev **device,
 	if (ret)
 		return -1;
 
-	switch(dev->chip_type) {
+	switch (dev->chip_type) {
 	case ID_AD7798:
 		if ((chip_id & AD7799_ID_MASK) != ID_AD7798) {
 			printf("Invalid AD7798 Chip ID");

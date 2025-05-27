@@ -3,7 +3,6 @@ INCS += $(PLATFORM_DRIVERS)/maxim_gpio.h      \
         $(PLATFORM_DRIVERS)/maxim_spi.h       \
         $(PLATFORM_DRIVERS)/../common/maxim_dma.h       \
         $(PLATFORM_DRIVERS)/maxim_gpio_irq.h  \
-		$(PLATFORM_DRIVERS)/maxim_hal.h       \
         $(PLATFORM_DRIVERS)/maxim_irq.h       \
         $(PLATFORM_DRIVERS)/maxim_uart.h      \
 		$(PLATFORM_DRIVERS)/maxim_i2c.h 	  \
@@ -27,6 +26,12 @@ INCS += $(PROJECT)/src/state_machine/state_machine.h
 # Pilot phase files
 SRCS += $(PROJECT)/src/pilot/pilot.c
 INCS += $(PROJECT)/src/pilot/pilot.h
+
+ifneq (y,$(strip $(REV_A)))
+# Interrupt phase
+SRCS += $(PROJECT)/src/inter/inter.c
+INCS += $(PROJECT)/src/inter/inter.h
+endif
 
 # User interface files
 SRCS += $(PROJECT)/src/interface/interface.c

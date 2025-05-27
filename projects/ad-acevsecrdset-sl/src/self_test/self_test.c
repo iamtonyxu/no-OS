@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright (c) 2023 Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "no_os_print_log.h"
 #include "common_data.h"
 #include "no_os_delay.h"
@@ -47,79 +38,62 @@
 #include "no_os_util.h"
 #include "self_test.h"
 #include "interface.h"
+#if defined(REV_D)
+#include "inter.h"
+#endif
 #include "supply.h"
 #include "pilot.h"
 #include "relay.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
-/******************************************************************************/
-/********************************** Variables *********************************/
-/******************************************************************************/
-
-/******************************************************************************/
-/*************************** Functions Definitions ****************************/
-/******************************************************************************/
 /**
  * @brief Startup test for power supply
  * @param stout - state  machine descriptor
+ * @param rms_adc_values - structure holding the measurements values
  * @return 0 in case of success, error code otherwise
  */
-int self_test_supply(struct stout *stout)
+int self_test_supply(struct stout *stout, struct rms_adc_values *rms_adc_values)
 {
-	int32_t i_val, v1_val, v2_val;
 	uint8_t r_state = 1;
-	int32_t v1_max = 0;
-	int32_t v2_max = 0;
-	//used to count the periodes of the input signal
+	//used to count the cycles of the input signal
 	uint32_t cnt = 0;
-	int64_t v1,v2;
 	int ret;
 
 	// Test Vin value within limits
-	// Skip a number of periodes
-	while (SELF_TEST_SKIP_PERIODES_NO >= cnt) {
-		while(!get_zero_cross_flag_state());
+	// Skip a number of cycles
+	while (SELF_TEST_SKIP_CYCLES_NO >= cnt) {
+		while (!get_zero_cross_flag_state());
 		reset_zero_cross_flag_state();
 		cnt++;
 	}
 	cnt = 0;
 
-	// Calculate maximum amplitude over a number of periodes defined by SELF_TEST_SKIP_PERIODES_NO
-	while (SELF_TEST_SKIP_PERIODES_NO >= cnt) {
+	// Calculate rms and ADC values over a number of cycles defined by SELF_TEST_SKIP_CYCLES_NO
+	while (SELF_TEST_SKIP_CYCLES_NO >= cnt) {
 		while (!get_zero_cross_flag_state()) {
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_I_WAV, &i_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V1_WAV, &v1_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V2_WAV, &v2_val);
-			if (ret)
-				return ret;
-			v1 = supply_scale_v1(v1_val);
-			v2 = supply_scale_v2(v2_val);
-			v1_max = no_os_max_t(int32_t, v1, v1_max);
-			v2_max = no_os_max_t(int32_t, v2, v2_max);
+			ret = rms_adc_values_read(stout, rms_adc_values);
 		}
+		reset_zero_cross_flag_state();
 		cnt++;
 	}
 	cnt = 0;
-	pr_debug("TEST SUPPLY: Vin %d mV\n", v1_max);
+	pr_debug("TEST SUPPLY: Vin %d mV \n", rms_adc_values->v1_rms);
 	if (INTF_INPUT_V_ERR_U != stout->err_status) {
-		if ((VIN_LOW_LIMIT < v1_max) && (VIN_HIGH_LIMIT > v1_max))
+		if ((VIN_LOW_LIMIT < rms_adc_values->v1_rms)
+		    && (VIN_HIGH_LIMIT > rms_adc_values->v1_rms))
 			// If grid voltage is 230 than variable grid = 0;
 			stout->grid = 0;
-		else if ((VIN_LOW_LIMIT_2 < v1_max) || (VIN_HIGH_LIMIT_2 > v1_max))
+		else if ((VIN_LOW_LIMIT_2 < rms_adc_values->v1_rms)
+			 || (VIN_HIGH_LIMIT_2 > rms_adc_values->v1_rms))
 			// If grid voltage is 120 than variable grid = 1;
 			stout->grid = 1;
 	}
 	if (stout->grid >= 1) {
-		if ((VIN_LOW_LIMIT_2 > v1_max) || (VIN_HIGH_LIMIT_2 < v1_max))
+		if ((VIN_LOW_LIMIT_2 > rms_adc_values->v1_rms)
+		    || (VIN_HIGH_LIMIT_2 < rms_adc_values->v1_rms))
 			goto error;
-	} else if ((VIN_LOW_LIMIT > v1_max) || (VIN_HIGH_LIMIT < v1_max))
+	} else if ((VIN_LOW_LIMIT > rms_adc_values->v1_rms)
+		   || (VIN_HIGH_LIMIT < rms_adc_values->v1_rms))
 		goto error;
 	// Test relay close value
 	pr_debug("TEST SUPPLY: Relay open \n");
@@ -129,63 +103,46 @@ int self_test_supply(struct stout *stout)
 	pr_debug("PASSED \n");
 	// Allow time for relay to switch
 	no_os_mdelay(DELAY_SELF_TEST_READING);
-	v1_max = 0;
-	v2_max = 0;
 	// Test Vin value within limits
-	// Skip SELF_TEST_SKIP_PERIODES_NO periods
-	while(!get_zero_cross_flag_state());
+	// Skip SELF_TEST_SKIP_CYCLES_NO periods
+	while (!get_zero_cross_flag_state());
 	reset_zero_cross_flag_state();
-	// Calculate maximum amplitude over a number of periodes
-	while (SELF_TEST_SKIP_PERIODES_NO >= cnt) {
+	// Calculate rms and ADC values
+#if defined(REV_A)
+	while (SKIP_CYCLES_AFTER_RELAY_SW >= cnt) {
 		while (!get_zero_cross_flag_state()) {
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_I_WAV, &i_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V1_WAV, &v1_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V2_WAV, &v2_val);
-			if (ret)
-				return ret;
-			v1 = supply_scale_v1(v1_val);
-			v2 = supply_scale_v2(v2_val);
-			v1_max = no_os_max_t(int32_t, v1, v1_max);
-			v2_max = no_os_max_t(int32_t, v2, v2_max);
+			ret = rms_adc_values_read(stout, rms_adc_values);
 		}
+		reset_zero_cross_flag_state();
 		cnt++;
 	}
+#elif defined(REV_D)
+	while (SELF_TEST_SKIP_CYCLES_NO >= cnt) {
+		while (!get_zero_cross_flag_state()) {
+			ret = rms_adc_values_read(stout, rms_adc_values);
+		}
+		reset_zero_cross_flag_state();
+		cnt++;
+	}
+#endif
 	cnt = 0;
-	ret = self_test_relay_closed(stout, v2_max);
+	ret = self_test_relay_closed(stout, rms_adc_values->v2_rms);
 	if (ret)
 		goto error1;
-	v1_max = 0;
-	v2_max = 0;
 	ret = relay_open(stout->relay);
 	if (ret)
 		goto error1;
 	no_os_mdelay(DELAY_SELF_TEST_READING);
 	// Test Vin value within limits
-	// Skip SELF_TEST_SKIP_PERIODES_NO periods
-	while(!get_zero_cross_flag_state());
+	// Skip SELF_TEST_SKIP_CYCLES_NO periods
+	while (!get_zero_cross_flag_state());
 	reset_zero_cross_flag_state();
-	// Calculate maximum amplitude over a number of periodes
-	while (SELF_TEST_SKIP_PERIODES_NO >= cnt) {
+	// Calculate rms and ADC values
+	while (SELF_TEST_SKIP_CYCLES_NO >= cnt) {
 		while (!get_zero_cross_flag_state()) {
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_I_WAV, &i_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V1_WAV, &v1_val);
-			if (ret)
-				return ret;
-			ret = ade9113_convert_to_millivolts(stout->ade9113, ADE9113_V2_WAV, &v2_val);
-			if (ret)
-				return ret;
-
-			v1 = supply_scale_v1(v1_val);
-			v2 = supply_scale_v2(v2_val);
-			v1_max = no_os_max_t(int32_t, v1, v1_max);
-			v2_max = no_os_max_t(int32_t, v2, v2_max);
+			ret = rms_adc_values_read(stout, rms_adc_values);
 		}
+		reset_zero_cross_flag_state();
 		cnt++;
 	}
 	cnt = 0;
@@ -195,10 +152,24 @@ int self_test_supply(struct stout *stout)
 	if (ret)
 		goto error1;
 	if (!r_state) {
-		if ((VR_OPEN_LOW_LIMIT > v2_max) || (VR_OPEN_HIGH_LIMIT < v2_max)) {
-			pr_debug("Relay Soldered\n");
+#if defined(REV_A)
+		if (VR_OPEN_LOW_LIMIT > rms_adc_values->v2_rms) {
+			pr_debug("Relay Soldered %d, %d \n", rms_adc_values->v2_rms,
+				 rms_adc_values->v1_rms);
 			goto error1;
 		}
+#elif defined(REV_D)
+		if (stout->grid >= 1)
+			if ((VIN_LOW_LIMIT_2 - VR_OPEN_LOW_LIMIT) < rms_adc_values->v2_rms) {
+				pr_debug("Relay Soldered %d, %d \n", rms_adc_values->v2_rms,
+					 rms_adc_values->v1_rms);
+				goto error1;
+			} else if ((VIN_LOW_LIMIT - VR_OPEN_LOW_LIMIT < rms_adc_values->v2_rms)) {
+				pr_debug("Relay Soldered %d, %d \n", rms_adc_values->v2_rms,
+					 rms_adc_values->v1_rms);
+				goto error1;
+			}
+#endif
 	} else
 		goto error1;
 	pr_debug("PASSED \n");
@@ -382,6 +353,7 @@ int self_test_rcd_running(struct stout *stout, uint16_t step,
 			return ret;
 
 		*event = S_M_RCD_TEST_COMPLETED;
+		reset_rcd_flag_state();
 		pr_debug("TEST RCD: Passed\n");
 	}
 
@@ -410,8 +382,18 @@ int self_test_relay_closed(struct stout *stout, int32_t v2)
 		return ret;
 
 	if (r_state) {
-		if (V2_CLOSED_LIMIT < v2)
+#if defined(REV_A)
+		if (V2_CLOSED_LIMIT < v2) {
+			pr_debug("Relay error Vrel: %d \n", v2);
 			return INTF_RELAY_ERR;
+		}
+#elif defined(REV_D)
+		if (stout->grid >= 1) {
+			if ((VIN_LOW_LIMIT_2 > v2) || (VIN_HIGH_LIMIT_2 < v2))
+				return INTF_RELAY_ERR;
+		} else if ((VIN_LOW_LIMIT > v2) || (VIN_HIGH_LIMIT < v2))
+			return INTF_RELAY_ERR;
+#endif
 	}
 	pr_debug("PASSED \n");
 
@@ -441,19 +423,47 @@ static int self_test_pilot(struct stout *stout)
 	return 0;
 }
 
+#if defined(REV_D)
 /**
- * @brief Startup test
+ * @brief Startup test for PE upstream presence
  * @param stout - state  machine descriptor
  * @return 0 in case of success, error code otherwise
  */
-int self_test_startup(struct stout *stout)
+int self_test_pe_upstream(struct stout *stout)
+{
+	pr_debug("TEST upstream PE. opto1 = %d, opto2 = %d \n",
+		 get_gpio_opto_out1_flag_state(), get_gpio_opto_out2_flag_state());
+
+	if (!(get_gpio_opto_out1_flag_state() ^ get_gpio_opto_out2_flag_state()))
+		return INTF_PE_UPSTREAM_ERR;
+
+	pr_debug("PE upstream presence: Passed\n");
+
+	return INTF_NO_ERR;
+}
+#endif
+
+/**
+ * @brief Startup test
+ * @param stout - state  machine descriptor
+ * @param rms_adc_values - structure holding the measurements values
+ * @return 0 in case of success, error code otherwise
+ */
+int self_test_startup(struct stout *stout,
+		      struct rms_adc_values *rms_adc_values)
 {
 	int ret;
 	//self test power supply
 
-	ret = self_test_supply(stout);
+	ret = self_test_supply(stout, rms_adc_values);
 	if (ret)
 		goto error;
+#if defined(REV_D)
+	//Self test the PE upstream
+	ret = self_test_pe_upstream(stout);
+	if (ret)
+		goto error;
+#endif
 	// Start the CP signal, so we can test it
 	// Test only the high portion of the CP
 	pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
@@ -488,14 +498,23 @@ int self_test_relay_stuck(struct stout *stout)
 		goto error;
 
 	if (!r_state) {
-		if ((stout->v2_max < VR_OPEN_LOW_LIMIT)
-		    || (VR_OPEN_HIGH_LIMIT < stout->v2_max)) {
-			pr_debug("Error: Relay contacts soldered\n");
+#if defined(REV_A)
+		if (stout->v2_val < VR_OPEN_LOW_LIMIT) {
+			pr_debug("Error: Relay contacts soldered %d \n", stout->v2_val);
 			goto error;
 		}
+#elif defined(REV_D)
+		if (stout->grid >= 1)
+			if ((VIN_LOW_LIMIT_2 - VR_OPEN_LOW_LIMIT) < stout->v2_val) {
+				pr_debug("Error: Relay contacts soldered %d \n", stout->v2_val);
+				goto error;
+			} else if ((VIN_LOW_LIMIT - VR_OPEN_LOW_LIMIT) < stout->v2_val) {
+				pr_debug("Error: Relay contacts soldered %d \n", stout->v2_val);
+				goto error;
+			}
+#endif
 	} else
 		goto error;
-
 	return 0;
 error:
 	ret = INTF_RELAY_ERR;

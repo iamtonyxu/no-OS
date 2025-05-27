@@ -5,41 +5,32 @@
  ********************************************************************************
  * Copyright 2014-2016(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * - Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in
- * the documentation and/or other materials provided with the
- * distribution.
- * - Neither the name of Analog Devices, Inc. nor the names of its
- * contributors may be used to endorse or promote products derived
- * from this software without specific prior written permission.
- * - The use of this software may or may not infringe the patent rights
- * of one or more patent holders. This license does not release you
- * from the requirement that you obtain separate licenses from these
- * patent holders to use this software.
- * - Use of the software either in source or binary form, must be run
- * on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -146,7 +137,7 @@ int32_t ad9144_spi_check_status(struct ad9144_dev *dev,
 			timeout++;
 			no_os_mdelay(1);
 		}
-	} while(timeout < 100);
+	} while (timeout < 100);
 
 	return -1;
 }
@@ -428,7 +419,7 @@ int32_t ad9144_set_nco(struct ad9144_dev *dev, int32_t f_carrier_khz,
 			return ret;
 	}
 
-	phase_offset = (phase/180) * (1 << 15);
+	phase_offset = (phase / 180) * (1 << 15);
 	ret = ad9144_spi_write(dev, REG_NCO_PHASE_OFFSET0, phase_offset & 0xFF);
 	if (ret != 0)
 		return ret;
@@ -999,14 +990,14 @@ int32_t ad9144_setup_legacy(struct ad9144_dev **device,
 	no_os_mdelay(1);
 
 	ad9144_spi_read(dev, REG_SPI_PRODIDL, &chip_id);
-	if(chip_id != AD9144_CHIP_ID) {
+	if (chip_id != AD9144_CHIP_ID) {
 		printf("%s : Invalid CHIP ID (0x%x).\n", __func__, chip_id);
 		return -1;
 	}
 
 	ad9144_spi_write(dev, REG_SPI_SCRATCHPAD, 0xAD);
 	ad9144_spi_read(dev, REG_SPI_SCRATCHPAD, &scratchpad);
-	if(scratchpad != 0xAD) {
+	if (scratchpad != 0xAD) {
 		printf("%s : scratchpad read-write failed (0x%x)!\n", __func__,
 		       scratchpad);
 		return -1;
@@ -1155,14 +1146,14 @@ int32_t ad9144_setup_jesd_fsm(struct ad9144_dev **device,
 	no_os_mdelay(1);
 
 	ad9144_spi_read(dev, REG_SPI_PRODIDL, &chip_id);
-	if(chip_id != AD9144_CHIP_ID) {
+	if (chip_id != AD9144_CHIP_ID) {
 		printf("%s : Invalid CHIP ID (0x%x).\n", __func__, chip_id);
 		return -1;
 	}
 
 	ad9144_spi_write(dev, REG_SPI_SCRATCHPAD, 0xAD);
 	ad9144_spi_read(dev, REG_SPI_SCRATCHPAD, &scratchpad);
-	if(scratchpad != 0xAD) {
+	if (scratchpad != 0xAD) {
 		printf("%s : scratchpad read-write failed (0x%x)!\n", __func__,
 		       scratchpad);
 		return -1;
@@ -1298,9 +1289,9 @@ int32_t ad9144_short_pattern_test(struct ad9144_dev *dev,
 			ad9144_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x00));
 			ad9144_spi_write(dev, REG_SHORT_TPL_TEST_2,
-					 (init_param->stpl_samples[dac][sample]>>8));
+					 (init_param->stpl_samples[dac][sample] >> 8));
 			ad9144_spi_write(dev, REG_SHORT_TPL_TEST_1,
-					 (init_param->stpl_samples[dac][sample]>>0));
+					 (init_param->stpl_samples[dac][sample] >> 0));
 			ad9144_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x01));
 			ad9144_spi_write(dev, REG_SHORT_TPL_TEST_0,

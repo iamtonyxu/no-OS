@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * ADRV9025 RF Transceiver
  *
@@ -25,7 +24,7 @@ int adrv9025_hdl_loopback(struct adrv9025_rf_phy *phy, bool enable)
 	addr = 0x4418;
 
 	for (chan = 0; chan < 8; chan++) {
-		axi_adc_read(phy->rx_adc, addr + (chan)*0x40, &reg);
+		axi_adc_read(phy->rx_adc, addr + (chan) * 0x40, &reg);
 
 		if (enable && reg != 0x8) {
 			scratch_reg = reg;
@@ -33,7 +32,7 @@ int adrv9025_hdl_loopback(struct adrv9025_rf_phy *phy, bool enable)
 		} else if (reg == 0x8)
 			reg = scratch_reg;
 
-		axi_adc_write(phy->rx_adc, addr + (chan)*0x40, reg);
+		axi_adc_write(phy->rx_adc, addr + (chan) * 0x40, reg);
 	}
 
 	return 0;

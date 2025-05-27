@@ -5,50 +5,38 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <errno.h>
 #include "adxl355.h"
 #include "no_os_delay.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 static uint8_t shadow_reg_val[5] = {0, 0, 0, 0, 0};
 static const uint8_t adxl355_scale_mul[4] = {0, 1, 2, 4};
 static const uint8_t adxl355_part_id[] = {
@@ -57,17 +45,11 @@ static const uint8_t adxl355_part_id[] = {
 	[ID_ADXL359] = GET_ADXL355_RESET_VAL(ADXL359_PARTID),
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 static uint32_t adxl355_accel_array_conv(struct adxl355_dev *dev,
 		uint8_t *raw_array);
 static int64_t adxl355_accel_conv(struct adxl355_dev *dev, uint32_t raw_accel);
 static int64_t adxl355_temp_conv(struct adxl355_dev *dev, uint16_t raw_temp);
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 /***************************************************************************//**
  * @brief Reads from the device.
  *
@@ -88,7 +70,7 @@ int adxl355_read_device_data(struct adxl355_dev *dev, uint8_t base_address,
 		ret = no_os_spi_write_and_read(dev->com_desc.spi_desc, dev->comm_buff,
 					       1 + size);
 		for (uint16_t idx = 0; idx < size; idx++)
-			read_data[idx] = dev->comm_buff[idx+1];
+			read_data[idx] = dev->comm_buff[idx + 1];
 	} else {
 		ret = no_os_i2c_write(dev->com_desc.i2c_desc, &base_address, 1, 0);
 		if (ret)
@@ -116,7 +98,7 @@ int adxl355_write_device_data(struct adxl355_dev *dev, uint8_t base_address,
 	int ret;
 
 	for (uint16_t idx = 0; idx < size; idx++)
-		dev->comm_buff[1+idx] = write_data[idx];
+		dev->comm_buff[1 + idx] = write_data[idx];
 
 	if (dev->comm_type == ADXL355_SPI_COMM) {
 		dev->comm_buff[0] = ADXL355_SPI_WRITE | (base_address << 1);
@@ -181,12 +163,12 @@ int adxl355_init(struct adxl355_dev **device,
 		goto error_com;
 
 	ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_DEVID_MST),
-				       GET_ADXL355_TRANSF_LEN(ADXL355_DEVID_MST),&reg_value);
+				       GET_ADXL355_TRANSF_LEN(ADXL355_DEVID_MST), &reg_value);
 	if (ret || (reg_value != GET_ADXL355_RESET_VAL(ADXL355_DEVID_MST)))
 		goto error_com;
 
 	ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_PARTID),
-				       GET_ADXL355_TRANSF_LEN(ADXL355_PARTID),&reg_value);
+				       GET_ADXL355_TRANSF_LEN(ADXL355_PARTID), &reg_value);
 
 	if (ret || reg_value != adxl355_part_id[dev->dev_type])
 		goto error_com;
@@ -402,7 +384,7 @@ int adxl355_set_odr_lpf(struct adxl355_dev *dev,
 
 	current_op_mode = dev->op_mode;
 
-	switch(current_op_mode) {
+	switch (current_op_mode) {
 	case ADXL355_MEAS_TEMP_ON_DRDY_ON:
 	case ADXL355_MEAS_TEMP_OFF_DRDY_ON:
 	case ADXL355_MEAS_TEMP_ON_DRDY_OFF:
@@ -454,7 +436,7 @@ int adxl355_set_hpf_corner(struct adxl355_dev *dev,
 
 	current_op_mode = dev->op_mode;
 
-	switch(current_op_mode) {
+	switch (current_op_mode) {
 	case ADXL355_MEAS_TEMP_ON_DRDY_ON:
 	case ADXL355_MEAS_TEMP_OFF_DRDY_ON:
 	case ADXL355_MEAS_TEMP_ON_DRDY_OFF:
@@ -492,7 +474,7 @@ int adxl355_set_hpf_corner(struct adxl355_dev *dev,
  *
  * @return ret     - Result of the writing procedure.
 *******************************************************************************/
-int adxl355_set_offset(struct adxl355_dev *dev,uint16_t x_offset,
+int adxl355_set_offset(struct adxl355_dev *dev, uint16_t x_offset,
 		       uint16_t y_offset, uint16_t z_offset)
 {
 	int ret;
@@ -543,19 +525,19 @@ int adxl355_get_raw_xyz(struct adxl355_dev *dev, uint32_t *raw_x,
 	uint8_t array_raw_z[GET_ADXL355_TRANSF_LEN(ADXL355_ZDATA)] = {0};
 	int ret;
 
-	ret = adxl355_read_device_data(dev,ADXL355_ADDR(ADXL355_XDATA),
-				       GET_ADXL355_TRANSF_LEN(ADXL355_XDATA),array_raw_x);
+	ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_XDATA),
+				       GET_ADXL355_TRANSF_LEN(ADXL355_XDATA), array_raw_x);
 	if (ret)
 		return ret;
 	*raw_x = adxl355_accel_array_conv(dev, array_raw_x);
 
-	ret = adxl355_read_device_data(dev,ADXL355_ADDR(ADXL355_YDATA),
-				       GET_ADXL355_TRANSF_LEN(ADXL355_YDATA),array_raw_y);
+	ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_YDATA),
+				       GET_ADXL355_TRANSF_LEN(ADXL355_YDATA), array_raw_y);
 	if (ret)
 		return ret;
 	*raw_y = adxl355_accel_array_conv(dev, array_raw_y);
 
-	ret = adxl355_read_device_data(dev,ADXL355_ADDR(ADXL355_ZDATA),
+	ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_ZDATA),
 				       GET_ADXL355_TRANSF_LEN(ADXL355_ZDATA), array_raw_z);
 	if (ret)
 		return ret;
@@ -635,16 +617,16 @@ int adxl355_get_temp(struct adxl355_dev *dev, struct adxl355_frac_repr *temp)
 	int32_t divisor;
 
 	ret = adxl355_get_raw_temp(dev, &raw_temp);
-	if(ret)
+	if (ret)
 		return ret;
 
-	switch(dev->dev_type) {
+	switch (dev->dev_type) {
 	case ID_ADXL355:
 	case ID_ADXL357:
-		divisor = ADXL355_TEMP_OFFSET_DIV*ADXL355_TEMP_SCALE_FACTOR_DIV;
+		divisor = ADXL355_TEMP_OFFSET_DIV * ADXL355_TEMP_SCALE_FACTOR_DIV;
 		break;
 	case ID_ADXL359:
-		divisor = ADXL359_TEMP_OFFSET_DIV*ADXL359_TEMP_SCALE_FACTOR_DIV;
+		divisor = ADXL359_TEMP_OFFSET_DIV * ADXL359_TEMP_SCALE_FACTOR_DIV;
 		break;
 	default:
 		return -EINVAL;
@@ -737,6 +719,8 @@ int adxl355_get_raw_fifo_data(struct adxl355_dev *dev, uint8_t *fifo_entries,
 	if (ret)
 		return ret;
 
+	*fifo_entries = (*fifo_entries / 3) * 3;
+
 	if (*fifo_entries > 0) {
 
 		ret = adxl355_read_device_data(dev, ADXL355_ADDR(ADXL355_FIFO_DATA),
@@ -745,13 +729,13 @@ int adxl355_get_raw_fifo_data(struct adxl355_dev *dev, uint8_t *fifo_entries,
 			return ret;
 
 		for (uint16_t idx = 0; idx < *fifo_entries * 3; idx = idx + 9) {
-			if (((dev->comm_buff[idx+2] & 1) == 1)
-			    && ((dev->comm_buff[idx+2] & 2) == 0)) {
+			if (((dev->comm_buff[idx + 2] & 1) == 1)
+			    && ((dev->comm_buff[idx + 2] & 2) == 0)) {
 				// This is x-axis
 				// Process data
-				raw_x[idx/9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx]);
-				raw_y[idx/9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx+3]);
-				raw_z[idx/9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx+6]);
+				raw_x[idx / 9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx]);
+				raw_y[idx / 9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx + 3]);
+				raw_z[idx / 9] = adxl355_accel_array_conv(dev, &dev->comm_buff[idx + 6]);
 			}
 		}
 	}
@@ -785,7 +769,7 @@ int adxl355_get_fifo_data(struct adxl355_dev *dev, uint8_t *fifo_entries,
 		return ret;
 
 	if (*fifo_entries > 0) {
-		for (uint8_t idx = 0; idx < *fifo_entries/3; idx++) {
+		for (uint8_t idx = 0; idx < *fifo_entries / 3; idx++) {
 			x[idx].integer = no_os_div_s64_rem(adxl355_accel_conv(dev, raw_x[idx]),
 							   ADXL355_ACC_SCALE_FACTOR_DIV, &(x[idx].fractional));
 			y[idx].integer = no_os_div_s64_rem(adxl355_accel_conv(dev, raw_y[idx]),
@@ -971,13 +955,13 @@ static int64_t adxl355_accel_conv(struct adxl355_dev *dev,
 *******************************************************************************/
 static int64_t adxl355_temp_conv(struct adxl355_dev *dev, uint16_t raw_temp)
 {
-	switch(dev->dev_type) {
+	switch (dev->dev_type) {
 	case ID_ADXL355:
 	case ID_ADXL357:
-		return ((raw_temp*ADXL355_TEMP_OFFSET_DIV +  ADXL355_TEMP_OFFSET) *
+		return ((raw_temp * ADXL355_TEMP_OFFSET_DIV +  ADXL355_TEMP_OFFSET) *
 			(int64_t)ADXL355_TEMP_SCALE_FACTOR);
 	case ID_ADXL359:
-		return ((raw_temp*ADXL359_TEMP_OFFSET_DIV +  ADXL359_TEMP_OFFSET) *
+		return ((raw_temp * ADXL359_TEMP_OFFSET_DIV +  ADXL359_TEMP_OFFSET) *
 			(int64_t)ADXL359_TEMP_SCALE_FACTOR);
 	default:
 		return 0;

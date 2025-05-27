@@ -6,43 +6,31 @@
 *******************************************************************************
 * Copyright 2021(c) Analog Devices, Inc.
 *
-* All rights reserved.
-*
 * Redistribution and use in source and binary forms, with or without
-* modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* modification, are permitted provided that the following conditions are met:
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL,SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS
-* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-* DAMAGE.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <stdio.h>
 #include "iio_types.h"
@@ -51,10 +39,6 @@
 #include "no_os_error.h"
 #include "no_os_util.h"
 #include "no_os_alloc.h"
-
-/*****************************************************************************/
-/******************** Macros and Constants Definitions ***********************/
-/*****************************************************************************/
 
 #define AD3552R_ATTR(_name, _priv) {\
 	.name = _name,\
@@ -86,11 +70,7 @@ struct iio_ad3552r_desc {
 	uint32_t mask;
 };
 
-/*****************************************************************************/
-/************************* Functions Definitions *****************************/
-/*****************************************************************************/
-
-static int iio_ad3552r_attr_get(void *device, char *buf, size_t len,
+static int iio_ad3552r_attr_get(void *device, char *buf, uint32_t len,
 				const struct iio_ch_info *channel, intptr_t priv)
 {
 	struct iio_ad3552r_desc *iio_dac = device;
@@ -140,7 +120,7 @@ static int iio_ad3552r_attr_get(void *device, char *buf, size_t len,
 	}
 }
 
-static int iio_ad3552r_attr_set(void *device, char *buf, size_t len,
+static int iio_ad3552r_attr_set(void *device, char *buf,  uint32_t len,
 				const struct iio_ch_info *channel, intptr_t priv)
 {
 	struct iio_ad3552r_desc *iio_dac = device;
@@ -155,21 +135,19 @@ static int iio_ad3552r_attr_set(void *device, char *buf, size_t len,
 					   channel->ch_num, !val);
 		if (NO_OS_IS_ERR_VALUE(err))
 			return err;
+		break;
 	case AD3552R_IIO_ATTR_RAW:
 		err = ad3552r_set_ch_value(iio_dac->dac, AD3552R_CH_CODE,
 					   channel->ch_num, val);
 		if (NO_OS_IS_ERR_VALUE(err))
 			return err;
+		break;
 	default:
 		return -EINVAL;
 	}
 
 	return len;
 }
-
-/******************************************************************************/
-/************************** IIO Types Declarations *****************************/
-/******************************************************************************/
 
 static struct scan_type ad3552r_dac_scan_type = {
 	.realbits = 16,

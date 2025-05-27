@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /**
  * \file talise_agc.h
  * \brief Contains Talise API AGC function prototypes for talise_agc.c
@@ -148,8 +147,8 @@ uint32_t TALISE_getAgcPowerRegisters(taliseDevice_t *device,
  * \retval TALACT_ERR_RESET_SPI recovery action for SPI reset required
  * \retval TALACT_NO_ACTION function completed successfully, no action required
  */
-uint32_t TALISE_setupDualBandRxAgc( taliseDevice_t *device,
-				    taliseRxChannels_t rxChannel, taliseAgcDualBandCfg_t *rxAgcCtrlDualBand);
+uint32_t TALISE_setupDualBandRxAgc(taliseDevice_t *device,
+				   taliseRxChannels_t rxChannel, taliseAgcDualBandCfg_t *rxAgcCtrlDualBand);
 
 /**
  * \brief This function returns the current values of the LNA controls for the
@@ -174,9 +173,9 @@ uint32_t TALISE_setupDualBandRxAgc( taliseDevice_t *device,
  * \retval TALACT_ERR_RESET_SPI recovery action for SPI reset required
  * \retval TALACT_NO_ACTION function completed successfully, no action required
  */
-uint32_t TALISE_getDualBandLnaControls (taliseDevice_t *device,
-					taliseRxChannels_t rxChannel,
-					taliseDualBandLnaControls_t *rxDualBandLnaControls);
+uint32_t TALISE_getDualBandLnaControls(taliseDevice_t *device,
+				       taliseRxChannels_t rxChannel,
+				       taliseDualBandLnaControls_t *rxDualBandLnaControls);
 
 /**
  * \brief This function sets the min/max gain indexes for AGC in the MAIN RX channel.

@@ -5,41 +5,31 @@
  *******************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include "adis.h"
 #include "adis_internals.h"
@@ -47,18 +37,10 @@
 #include "no_os_units.h"
 #include <string.h>
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
-
 #define ADIS1657X_MSG_SIZE_16_BIT_BURST_FIFO	20 /* in bytes */
 #define ADIS1657X_MSG_SIZE_32_BIT_BURST_FIFO	34 /* in bytes */
 #define ADIS1657X_READ_BURST_DATA_NO_POP	0x00
 #define ADIS1657X_CHECKSUM_BUF_IDX_FIFO		2
-
-/******************************************************************************/
-/************************** Variable Definitions ******************************/
-/******************************************************************************/
 
 static const struct adis_data_field_map_def adis1657x_def = {
 	.x_gyro 		 = {.reg_addr = 0x04, .reg_size = 0x04, .field_mask = 0xFFFFFFFF},
@@ -224,7 +206,7 @@ static int adis1657x_get_scale(struct adis_dev *adis,
 			       uint32_t *scale_m1, uint32_t *scale_m2,
 			       enum adis_chan_type chan_type)
 {
-	switch(chan_type) {
+	switch (chan_type) {
 	case ADIS_ACCL_CHAN:
 		*scale_m1 = adis1657x_accl_scale[ADIS1657X_ID_NO_OFFSET(adis->dev_id)].scale_m1;
 		*scale_m2 = adis1657x_accl_scale[ADIS1657X_ID_NO_OFFSET(adis->dev_id)].scale_m2;
@@ -267,13 +249,14 @@ static int adis1657x_get_scale(struct adis_dev *adis,
  *		      if delta angle and delta velocity is requested.
  * @param fifo_pop  - In case FIFO is present, will pop the fifo if
  * 		      true. Unused if FIFO is not present.
+ * @param crc_check - If true CRC will be checked, if false check will be skipped.
  * @return 0 in case of success, error code otherwise.
  * -EAGAIN in case the request has to be sent again due to data being unavailable
  * at the time of the request.
  */
 int adis1657x_read_burst_data(struct adis_dev *adis,
 			      struct adis_burst_data *data,
-			      bool burst32, uint8_t burst_sel, bool fifo_pop)
+			      bool burst32, uint8_t burst_sel, bool fifo_pop, bool crc_check)
 {
 	int ret = 0;
 	uint8_t msg_size = ADIS1657X_MSG_SIZE_16_BIT_BURST_FIFO;
@@ -324,11 +307,13 @@ int adis1657x_read_burst_data(struct adis_dev *adis,
 	if (idx == msg_size)
 		return -EAGAIN;
 
-	/* Diag data not calculated in the checksum for this device. */
-	if (!adis_validate_checksum(&buffer[ADIS_READ_BURST_DATA_CMD_SIZE], msg_size,
-				    ADIS1657X_CHECKSUM_BUF_IDX_FIFO)) {
-		adis->diag_flags.checksum_err = true;
-		return -EINVAL;
+	if (crc_check) {
+		/* Diag data not calculated in the checksum for this device. */
+		if (!adis_validate_checksum(&buffer[ADIS_READ_BURST_DATA_CMD_SIZE], msg_size,
+					    ADIS1657X_CHECKSUM_BUF_IDX_FIFO)) {
+			adis->diag_flags.checksum_err = true;
+			return -EINVAL;
+		}
 	}
 
 	adis->diag_flags.checksum_err = false;

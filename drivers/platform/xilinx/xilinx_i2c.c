@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <stdlib.h>
 
@@ -56,10 +46,6 @@
 #include "xilinx_i2c.h"
 #include "no_os_list.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 static struct no_os_list_desc *pl_list = NULL;
 static struct no_os_iterator  *pl_it = NULL;
@@ -96,10 +82,6 @@ const struct no_os_i2c_platform_ops xil_i2c_ops = {
 	.i2c_ops_read = &xil_i2c_read,
 	.i2c_ops_remove = &xil_i2c_remove
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * @brief Compare two I2C cores by ID.
@@ -169,7 +151,7 @@ int32_t xil_i2c_init(struct no_os_i2c_desc **desc,
 	idesc = (struct no_os_i2c_desc *)no_os_malloc(sizeof(*idesc));
 	xdesc = (struct xil_i2c_desc *)no_os_malloc(sizeof(*xdesc));
 
-	if(!idesc || !xdesc)
+	if (!idesc || !xdesc)
 		goto error;
 
 	idesc->max_speed_hz = param->max_speed_hz;
@@ -201,36 +183,36 @@ int32_t xil_i2c_init(struct no_os_i2c_desc **desc,
 		}
 
 		xdesc->instance = (XIic *)no_os_malloc(sizeof(XIic));
-		if(!xdesc->instance)
+		if (!xdesc->instance)
 			goto pl_error;
 
 		xdesc->config = XIic_LookupConfig(xinit->device_id);
-		if(xdesc->config == NULL)
+		if (xdesc->config == NULL)
 			goto pl_error;
 
 		ret = XIic_CfgInitialize(xdesc->instance,
 					 xdesc->config,
 					 ((XIic_Config*)xdesc->config)
 					 ->BaseAddress);
-		if(ret != 0)
+		if (ret != 0)
 			goto pl_error;
 
 		ret = XIic_Start(xdesc->instance);
-		if(ret != 0)
+		if (ret != 0)
 			goto pl_error;
 
 		ret = XIic_SetAddress(xdesc->instance,
 				      XII_ADDR_TO_SEND_TYPE,
 				      param->slave_address);
-		if(ret != 0)
+		if (ret != 0)
 			goto pl_error;
 
 		ret = XIic_SelfTest(xdesc->instance);
-		if(ret < 0)
+		if (ret < 0)
 			goto pl_error;
 
 		ret = XIic_SetGpOutput(xdesc->instance, 1);
-		if(ret < 0)
+		if (ret < 0)
 			goto pl_error;
 
 		temp_el_pl = (struct inst_table_item*)no_os_calloc(1, sizeof(*temp_el_pl));
@@ -266,18 +248,18 @@ pl_error:
 		}
 
 		xdesc->instance = (XIicPs *)no_os_malloc(sizeof(XIicPs));
-		if(!xdesc->instance)
+		if (!xdesc->instance)
 			goto ps_error;
 
 		xdesc->config = XIicPs_LookupConfig(xinit->device_id);
-		if(xdesc->config == NULL)
+		if (xdesc->config == NULL)
 			goto ps_error;
 
 		ret = XIicPs_CfgInitialize(xdesc->instance,
 					   xdesc->config,
 					   ((XIicPs_Config*)xdesc->config)
 					   ->BaseAddress);
-		if(ret != 0)
+		if (ret != 0)
 			goto ps_error;
 
 		XIicPs_SetSClk(xdesc->instance, param->max_speed_hz);
@@ -339,7 +321,7 @@ int32_t xil_i2c_remove(struct no_os_i2c_desc *desc)
 
 		ret = XIic_Stop(((XIic *)xdesc->instance));
 
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 
 		/** Remove list element */
@@ -423,14 +405,14 @@ int32_t xil_i2c_write(struct no_os_i2c_desc *desc,
 
 		ret = XIicPs_SetOptions(xdesc->instance,
 					stop_bit ? 0 : XIICPS_REP_START_OPTION);
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 
 		XIicPs_MasterSend(xdesc->instance,
 				  data,
 				  bytes_number,
 				  desc->slave_address);
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 
 		break;
@@ -477,7 +459,7 @@ int32_t xil_i2c_read(struct no_os_i2c_desc *desc,
 				data,
 				bytes_number,
 				stop_bit ? XIIC_STOP : XIIC_REPEATED_START);
-		if(ret != bytes_number)
+		if (ret != bytes_number)
 			goto error;
 
 		break;
@@ -491,14 +473,14 @@ int32_t xil_i2c_read(struct no_os_i2c_desc *desc,
 
 		ret = XIicPs_SetOptions(xdesc->instance,
 					stop_bit ? 0 : XIICPS_REP_START_OPTION);
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 
 		XIicPs_MasterRecv(xdesc->instance,
 				  data,
 				  bytes_number,
 				  desc->slave_address);
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 
 		break;

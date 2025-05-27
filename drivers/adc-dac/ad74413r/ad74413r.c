@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "ad74413r.h"
 #include "no_os_crc8.h"
 #include "no_os_delay.h"
@@ -47,16 +38,10 @@
 #include "no_os_util.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define AD74413R_FRAME_SIZE 		4
 #define AD74413R_CRC_POLYNOMIAL 	0x7
 #define AD74413R_DIN_DEBOUNCE_LEN 	NO_OS_BIT(5)
 
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 NO_OS_DECLARE_CRC8_TABLE(_crc_table);
 
 static const unsigned int ad74413r_debounce_map[AD74413R_DIN_DEBOUNCE_LEN] = {
@@ -70,9 +55,6 @@ static const unsigned int ad74413r_debounce_map[AD74413R_DIN_DEBOUNCE_LEN] = {
 static const uint32_t conv_times_ad74413r[] = { 50000, 208, 100000, 833 };
 static const uint32_t conv_times_ad74412r[] = { 50000, 208};
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 /******************************************************************************/
 
 /**
@@ -788,7 +770,7 @@ int ad74413r_adc_get_value(struct ad74413r_desc *desc, uint32_t ch,
 	case AD74413R_HIGH_Z:
 		val->integer = no_os_div_u64_rem(adc_code * AD74413R_RANGE_10V_SCALE,
 						 AD74413R_RANGE_10V_SCALE_DIV,
-						 &val->decimal);
+						 (uint32_t *)&val->decimal);
 		break;
 	case AD74413R_VOLTAGE_OUT:
 		/**
@@ -797,13 +779,13 @@ int ad74413r_adc_get_value(struct ad74413r_desc *desc, uint32_t ch,
 		val->integer = no_os_div_s64_rem((adc_code + AD74413R_RANGE_5V_OFFSET) *
 						 AD74413R_RANGE_5V_SCALE,
 						 AD74413R_RSENSE * AD74413R_RANGE_5V_SCALE_DIV,
-						 (int32_t *)&val->decimal);
+						 &val->decimal);
 		break;
 	case AD74413R_CURRENT_OUT:
 	case AD74413R_VOLTAGE_IN:
 		val->integer = no_os_div_u64_rem(adc_code * AD74413R_RANGE_10V_SCALE,
 						 AD74413R_RANGE_10V_SCALE_DIV,
-						 &val->decimal);
+						 (uint32_t *)&val->decimal);
 		break;
 	case AD74413R_CURRENT_IN_EXT_HART:
 		if (desc->chip_id == AD74412R)
@@ -817,18 +799,18 @@ int ad74413r_adc_get_value(struct ad74413r_desc *desc, uint32_t ch,
 	case AD74413R_CURRENT_IN_LOOP:
 		val->integer = no_os_div_u64_rem(adc_code * AD74413R_RANGE_2V5_SCALE,
 						 AD74413R_RANGE_2V5_SCALE_DIV * AD74413R_RSENSE,
-						 &val->decimal);
+						 (uint32_t *)&val->decimal);
 		break;
 	case AD74413R_RESISTANCE:
 		val->integer = no_os_div_u64_rem(adc_code * AD74413R_RTD_PULL_UP,
 						 AD74413R_ADC_MAX_VALUE - adc_code,
-						 &val->decimal);
+						 (uint32_t *)&val->decimal);
 		break;
 	case AD74413R_DIGITAL_INPUT:
 	case AD74413R_DIGITAL_INPUT_LOOP:
 		val->integer = no_os_div_u64_rem(adc_code * AD74413R_RANGE_10V_SCALE,
 						 AD74413R_RANGE_10V_SCALE_DIV,
-						 &val->decimal);
+						 (uint32_t *)&val->decimal);
 		break;
 	default:
 		return -EINVAL;
@@ -1011,8 +993,8 @@ int ad74413r_set_threshold(struct ad74413r_desc *desc, uint32_t ch,
 	if (ret)
 		return ret;
 
-	dac_threshold= AD74413R_THRESHOLD_DAC_RANGE * threshold /
-		       AD74413R_THRESHOLD_RANGE;
+	dac_threshold = AD74413R_THRESHOLD_DAC_RANGE * threshold /
+			AD74413R_THRESHOLD_RANGE;
 
 	return ad74413r_reg_update(desc, AD74413R_DIN_THRESH,
 				   AD74413R_COMP_THRESH_MASK, dac_threshold);

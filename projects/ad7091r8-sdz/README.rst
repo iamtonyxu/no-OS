@@ -1,11 +1,9 @@
-Evaluating AD7091R-2/-4/-8 Devices
-==================================
+AD7091R-2/-4/-8 no-OS Example Project
+=====================================
 
+.. no-os-doxygen::
 
-Contents
---------
-
-.. contents:: Table of Contents
+.. contents::
     :depth: 3
 
 Supported Devices

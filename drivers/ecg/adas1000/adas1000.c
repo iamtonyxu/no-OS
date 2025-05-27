@@ -6,51 +6,38 @@
 ********************************************************************************
  * Copyright 2012-2021(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 *******************************************************************************/
 
-/*****************************************************************************/
-/***************************** Include Files *********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "no_os_error.h"
 #include "adas1000.h"
 #include "no_os_crc.h"
 #include "no_os_alloc.h"
-
-/*****************************************************************************/
-/************************ Function Definitions *******************************/
-/*****************************************************************************/
 
 /**
  * @brief Preliminary function which computes the spi frequency based on the
@@ -63,7 +50,7 @@ int32_t adas1000_compute_spi_freq(struct adas1000_init_param *init_param,
 				  uint32_t *spi_freq)
 {
 	/** Compute the SPI clock frequency. */
-	switch(init_param->frame_rate) {
+	switch (init_param->frame_rate) {
 	case ADAS1000_16KHZ_FRAME_RATE:
 		*spi_freq = ADAS1000_16KHZ_FRAME_RATE *
 			    ADAS1000_16KHZ_WORD_SIZE *
@@ -157,10 +144,10 @@ int32_t adas1000_read(struct adas1000_dev *device, uint8_t reg_addr,
 	buff[0] = reg_addr;
 
 	ret = no_os_spi_write_and_read(device->spi_desc, buff, buff_size);
-	if(ret)
+	if (ret)
 		return -1;
 
-	for(i = 1; i < buff_size; i++)
+	for (i = 1; i < buff_size; i++)
 		*reg_data = (*reg_data << 8) | buff[i];
 
 	return ret;
@@ -211,7 +198,7 @@ int32_t adas1000_soft_reset(struct adas1000_dev *device)
  */
 int32_t adas1000_compute_frame_size(struct adas1000_dev *device)
 {
-	switch(device->frame_rate) {
+	switch (device->frame_rate) {
 	case ADAS1000_16KHZ_FRAME_RATE:
 		device->frame_size = (ADAS1000_16KHZ_WORD_SIZE / 8) *
 				     (ADAS1000_16KHZ_FRAME_SIZE - device->inactive_words_no);
@@ -263,8 +250,8 @@ int32_t adas1000_set_inactive_framewords(struct adas1000_dev *device,
 		return ret;
 	/** compute the number of inactive words */
 	device->inactive_words_no = 0;
-	for(i = 0; i < 32; i++) {
-		if(words_mask & ADAS1000_WD_CNT_MASK)
+	for (i = 0; i < 32; i++) {
+		if (words_mask & ADAS1000_WD_CNT_MASK)
 			device->inactive_words_no++;
 
 		words_mask >>= 1;
@@ -300,7 +287,7 @@ int32_t adas1000_set_frame_rate(struct adas1000_dev *device, uint32_t rate)
 	if (ret != 0)
 		return ret;
 
-	switch(device->frame_rate) {
+	switch (device->frame_rate) {
 	case ADAS1000_16KHZ_FRAME_RATE:
 		frm_ctrl_regval |= ADAS1000_FRMCTL_FRMRATE_16KHZ;
 		break;
@@ -344,22 +331,22 @@ int32_t adas1000_read_data(struct adas1000_dev *device, uint8_t *data_buff,
 	}
 
 	/** Read the number of requested frames. */
-	while(frame_cnt) {
+	while (frame_cnt) {
 		/** If waiting for the READY bit to be set read the header
 		until the bit is set, otherwise just read the entire frame. */
-		if(read_data_param->wait_for_ready) {
+		if (read_data_param->wait_for_ready) {
 			ready = 1;
-			while(ready == 1) {
+			while (ready == 1) {
 				/** if the header is repeated until the READY bit is set
 				read only the header, otherwise read the entire frame. */
-				if(read_data_param->ready_repeat) {
+				if (read_data_param->ready_repeat) {
 					ret = no_os_spi_write_and_read(device->spi_desc,
 								       data_buff, buff_size);
 					if (ret != 0)
 						return ret;
 
 					ready = *data_buff & ADAS1000_RDY_MASK;
-					if(ready == 0) {
+					if (ready == 0) {
 						ret = no_os_spi_write_and_read(device->spi_desc,
 									       data_buff + 4,
 									       device->frame_size - 4);
@@ -376,7 +363,7 @@ int32_t adas1000_read_data(struct adas1000_dev *device, uint8_t *data_buff,
 						return ret;
 
 					ready = *data_buff & ADAS1000_RDY_MASK;
-					if(ready == 0) {
+					if (ready == 0) {
 						data_buff += device->frame_size;
 						frame_cnt--;
 					}
@@ -393,7 +380,7 @@ int32_t adas1000_read_data(struct adas1000_dev *device, uint8_t *data_buff,
 	}
 
 	/** If the frames read sequence must be stopped read a register to stop the frames read. */
-	if(read_data_param->stop_read)
+	if (read_data_param->stop_read)
 		return adas1000_read(device, ADAS1000_FRMCTL, &ready);
 
 	return ret;
@@ -410,7 +397,7 @@ uint32_t adas1000_compute_frame_crc(struct adas1000_dev * device, uint8_t *buff)
 	uint32_t crc = 0xFFFFFFFFul;
 
 	/** Select the CRC poly and word size based on the frame rate. */
-	if(device->frame_rate == ADAS1000_128KHZ_FRAME_RATE) {
+	if (device->frame_rate == ADAS1000_128KHZ_FRAME_RATE) {
 		NO_OS_DECLARE_CRC16_TABLE(adas1000_crc16);
 		no_os_crc16_populate_msb(adas1000_crc16, CRC_POLY_128KHZ);
 		return no_os_crc16(adas1000_crc16, buff, device->frame_size, (uint16_t)crc);

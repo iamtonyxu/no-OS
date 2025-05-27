@@ -5,44 +5,35 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 *******************************************************************************/
 #ifndef __AD5791_H__
 #define __AD5791_H__
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include "no_os_delay.h"
 #include "no_os_gpio.h"
@@ -50,9 +41,6 @@
 #include "no_os_util.h"
 #include "no_os_error.h"
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 /* Supported devices */
 enum ad5791_type {
 	ID_AD5760,
@@ -85,6 +73,7 @@ struct ad5791_dev {
 	struct no_os_gpio_desc	*gpio_ldac;
 	/* Device Settings */
 	enum ad5791_type act_device;
+	bool rbuf_gain2;
 };
 
 struct ad5791_init_param {
@@ -96,11 +85,9 @@ struct ad5791_init_param {
 	struct no_os_gpio_init_param		gpio_ldac;
 	/* Device Settings */
 	enum ad5791_type act_device;
+	bool					rbuf_gain2;
 };
 
-/******************************************************************************/
-/*********************************** GPIO *************************************/
-/******************************************************************************/
 #define AD5791_RESET_OUT       no_os_gpio_direction_output(dev->gpio_reset, \
 			       NO_OS_GPIO_HIGH);
 #define AD5791_RESET_LOW       no_os_gpio_set_value(dev->gpio_reset,        \
@@ -121,10 +108,6 @@ struct ad5791_init_param {
 			       NO_OS_GPIO_LOW)
 #define AD5791_LDAC_HIGH       no_os_gpio_set_value(dev->gpio_ldac,        \
 			       NO_OS_GPIO_HIGH)
-
-/******************************************************************************/
-/********************************** AD5791 ************************************/
-/******************************************************************************/
 
 /* Maximum resolution */
 #define MAX_RESOLUTION          20
@@ -162,10 +145,6 @@ struct ad5791_init_param {
 #define AD5791_OUT_NORMAL            0x0
 #define AD5791_OUT_CLAMPED_6K        0x1
 #define AD5791_OUT_TRISTATE          0x2
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /*! Initializes the communication with the device. */
 int32_t ad5791_init(struct ad5791_dev **device,

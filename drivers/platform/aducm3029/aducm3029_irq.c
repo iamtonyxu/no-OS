@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/************************* Include Files **************************************/
-/******************************************************************************/
 
 #include "no_os_irq.h"
 #include "aducm3029_irq.h"
@@ -57,10 +47,6 @@
 #include "no_os_util.h"
 #include "no_os_list.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 /** The number of the first external interrupt, used by NVIC */
 #define BASE_XINT_NB			(XINT_EVT0_IRQn)
@@ -113,7 +99,7 @@ static void aducm_uart_callback(void *ctx, uint32_t event, void *buff)
 	uint32_t		len;
 	struct irq_action *action;
 
-	switch(event) {
+	switch (event) {
 	/* Read done */
 	case ADI_UART_EVENT_RX_BUFFER_PROCESSED:
 		if (extra->read_desc.pending) {
@@ -197,10 +183,6 @@ static void aducm_timer_callback(void *ctx, uint32_t event, void *buff)
 	}
 }
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
-
 /**
  * @brief Initialized the controller for the ADuCM3029 external interrupts
  *
@@ -208,8 +190,8 @@ static void aducm_timer_callback(void *ctx, uint32_t event, void *buff)
  * @param param - Configuration information for the instance
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_ctrl_init(struct no_os_irq_ctrl_desc **desc,
-				const struct no_os_irq_init_param *param)
+int aducm3029_irq_ctrl_init(struct no_os_irq_ctrl_desc **desc,
+			    const struct no_os_irq_init_param *param)
 {
 	struct aducm_irq_ctrl_desc *aducm_desc;
 
@@ -238,7 +220,7 @@ int32_t aducm3029_irq_ctrl_init(struct no_os_irq_ctrl_desc **desc,
  * @param desc - Interrupt controller descriptor.
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_ctrl_remove(struct no_os_irq_ctrl_desc *desc)
+int aducm3029_irq_ctrl_remove(struct no_os_irq_ctrl_desc *desc)
 {
 	if (!desc || !desc->extra)
 		return -1;
@@ -260,9 +242,9 @@ int32_t aducm3029_irq_ctrl_remove(struct no_os_irq_ctrl_desc *desc)
  * callback will be unregistered
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_register_callback(struct no_os_irq_ctrl_desc *desc,
-					uint32_t irq_id,
-					struct no_os_callback_desc *callback_desc)
+int aducm3029_irq_register_callback(struct no_os_irq_ctrl_desc *desc,
+				    uint32_t irq_id,
+				    struct no_os_callback_desc *callback_desc)
 {
 	struct no_os_aducm_uart_desc	*aducm_uart;
 	struct no_os_rtc_desc			*rtc_desc;
@@ -374,8 +356,8 @@ free_action:
  * @param cb - Callback descriptor.
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_unregister_callback(struct no_os_irq_ctrl_desc *desc,
-		uint32_t irq_id, struct no_os_callback_desc *cb)
+int aducm3029_irq_unregister_callback(struct no_os_irq_ctrl_desc *desc,
+				      uint32_t irq_id, struct no_os_callback_desc *cb)
 {
 	struct irq_action			*action;
 	uint32_t					ret;
@@ -411,7 +393,7 @@ int32_t aducm3029_irq_unregister_callback(struct no_os_irq_ctrl_desc *desc,
  * @param desc - Interrupt controller descriptor.
  * @return 0
  */
-int32_t aducm3029_irq_global_enable(struct no_os_irq_ctrl_desc *desc)
+int aducm3029_irq_global_enable(struct no_os_irq_ctrl_desc *desc)
 {
 	if (!desc || !desc->extra)
 		return -1;
@@ -428,7 +410,7 @@ int32_t aducm3029_irq_global_enable(struct no_os_irq_ctrl_desc *desc)
  * @param desc - Interrupt controller descriptor.
  * @return 0
  */
-int32_t aducm3029_irq_global_disable(struct no_os_irq_ctrl_desc *desc)
+int aducm3029_irq_global_disable(struct no_os_irq_ctrl_desc *desc)
 {
 	if (!desc || !desc->extra)
 		return -1;
@@ -455,8 +437,8 @@ int32_t aducm3029_irq_global_disable(struct no_os_irq_ctrl_desc *desc)
  * @param irq_id - Id of the interrupt
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_enable(struct no_os_irq_ctrl_desc *desc,
-			     uint32_t irq_id)
+int aducm3029_irq_enable(struct no_os_irq_ctrl_desc *desc,
+			 uint32_t irq_id)
 {
 	struct no_os_rtc_desc		*rtc_desc;
 	struct aducm_rtc_desc		*aducm_rtc;
@@ -497,8 +479,8 @@ int32_t aducm3029_irq_enable(struct no_os_irq_ctrl_desc *desc,
  * @param irq_id - Id of the interrupt
  * @return 0 in case of success, -1 otherwise.
  */
-int32_t aducm3029_irq_disable(struct no_os_irq_ctrl_desc *desc,
-			      uint32_t irq_id)
+int aducm3029_irq_disable(struct no_os_irq_ctrl_desc *desc,
+			  uint32_t irq_id)
 {
 	struct no_os_rtc_desc		*rtc_desc;
 	struct aducm_rtc_desc		*aducm_rtc;
@@ -539,9 +521,9 @@ int32_t aducm3029_irq_disable(struct no_os_irq_ctrl_desc *desc,
  * @param priority_level - The interrupt priority level
  * @return 0 in case of success, -EINVAL otherwise.
  */
-static int32_t aducm3029_irq_set_priority(struct no_os_irq_ctrl_desc *desc,
-		uint32_t irq_id,
-		uint32_t priority_level)
+static int aducm3029_irq_set_priority(struct no_os_irq_ctrl_desc *desc,
+				      uint32_t irq_id,
+				      uint32_t priority_level)
 {
 	if (irq_id >= NVIC_INTS)
 		return -EINVAL;

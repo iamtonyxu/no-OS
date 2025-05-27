@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright (c) 2023 Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "no_os_print_log.h"
 #include "interface.h"
 #include "adc_reva.h"
@@ -49,13 +40,6 @@
 #include "tmr.h"
 #include "adc.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
-
-/******************************************************************************/
-/********************************** Variables *********************************/
-/******************************************************************************/
 // Flag indicating PWM values have been acquired
 static volatile int flag_pwm_low;
 // Milliseconds count
@@ -70,14 +54,9 @@ static uint32_t pwm_high[10] = { 0 }, pwm_low[10] = { 0 };
 
 extern struct no_os_irq_ctrl_desc *stout_nvic_desc;
 
-/******************************************************************************/
-/*************************** Functions Definitions ****************************/
-/******************************************************************************/
-
 /**
  * @brief TMR0 ISR
  *
- * @return none
  */
 void TMR0_IRQHandler_CP()
 {
@@ -100,7 +79,6 @@ void TMR0_IRQHandler_CP()
 /**
  * @brief TMR1 ISR
  *
- * @return none
  */
 void TMR1_IRQHandler_CP()
 {
@@ -157,7 +135,6 @@ uint32_t get_pwm_high_val(void)
 /**
  * @brief Reset PWM low flag value
  *
- * @return none
  */
 void reset_pwm_low_flag_state(void)
 {
@@ -200,7 +177,6 @@ int pilot_init(struct stout *stout)
 /**
  * @brief Set PMW parameters
  * @param duty_cycle - duty cycle of output PWM
- * @return none
  */
 void pilot_pwm_timer_setup(unsigned int duty_cycle)
 {
@@ -209,7 +185,7 @@ void pilot_pwm_timer_setup(unsigned int duty_cycle)
 	// measuring input PWM Low voltage value
 	// period and initial duty cycle of output PWM
 	unsigned int periodTicks = PeripheralClock / FREQ;
-	unsigned int dutyTicks = periodTicks * duty_cycle / 100;
+	unsigned int dutyTicks = periodTicks * duty_cycle / 1000;
 
 	/* Output PWM settings */
 	/*
@@ -272,7 +248,6 @@ int pilot_interrupts_setup(struct no_os_irq_ctrl_desc *desc,
  * @brief Set PMW duty cycle
  * @param stout - state  machine descriptor
  * @param duty_cycle - duty cycle of output PWM times 10
- * @return none
  */
 void pilot_pwm_timer_set_duty_cycle(struct stout *stout,
 				    unsigned int duty_cycle)
@@ -318,6 +293,8 @@ int pilot_setup_adc(void)
 
 	MXC_GPIO_Config(&gpio_cfg_adc_ain0);
 
+	MXC_ADC_StartConversion(ADC_CHANNEL);
+
 	return 0;
 }
 
@@ -328,7 +305,13 @@ int pilot_setup_adc(void)
  */
 unsigned int pilot_read_val(void)
 {
-	return MXC_ADC_StartConversion(ADC_CHANNEL);
+	//clear ADC done interrupt flag
+	MXC_ADC_RevA_ClearFlags(MXC_ADC, MXC_F_ADC_REVA_INTR_DONE_IF);
+
+	//set start bit
+	MXC_ADC->ctrl |= MXC_F_ADC_REVA_CTRL_START;
+
+	return E_NO_ERROR;
 }
 
 /**
@@ -381,17 +364,16 @@ int pilot_write_new_values(struct stout *stout)
 /**
  * @brief Update PWM values
  *
- * @return none
  */
 void pilot_update_vals(void)
 {
 	for (unsigned int i = 9; i > 0; i--) {
-		pwm_high[i] = pwm_high[i-1];
+		pwm_high[i] = pwm_high[i - 1];
 	}
 	pwm_high[0] = pwm_high_val;
 
 	for (unsigned int i = 9; i > 0; i--) {
-		pwm_low[i] = pwm_low[i-1];
+		pwm_low[i] = pwm_low[i - 1];
 	}
 	pwm_low[0] = pwm_low_val;
 }

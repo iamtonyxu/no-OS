@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #include <stdlib.h>
 #include <errno.h>
@@ -45,6 +39,10 @@
 #include "stm32_spi.h"
 #include "no_os_delay.h"
 #include "no_os_alloc.h"
+#include "stm32_dma.h"
+#ifdef HAL_TIM_MODULE_ENABLED
+#include "no_os_pwm.h"
+#endif
 
 static int stm32_spi_config(struct no_os_spi_desc *desc)
 {
@@ -172,10 +170,8 @@ int32_t stm32_spi_init(struct no_os_spi_desc **desc,
 
 	struct stm32_spi_desc *sdesc;
 	struct stm32_spi_init_param *sinit;
-	struct no_os_gpio_init_param csip;
-	struct stm32_gpio_init_param csip_extra;
 
-	sdesc = (struct stm32_spi_desc*)no_os_calloc(1,sizeof(struct stm32_spi_desc));
+	sdesc = (struct stm32_spi_desc*)no_os_calloc(1, sizeof(struct stm32_spi_desc));
 	if (!sdesc) {
 		ret = -ENOMEM;
 		goto error;
@@ -183,21 +179,6 @@ int32_t stm32_spi_init(struct no_os_spi_desc **desc,
 
 	spi_desc->extra = sdesc;
 	sinit = param->extra;
-
-	csip_extra.mode = GPIO_MODE_OUTPUT_PP;
-	csip_extra.speed = GPIO_SPEED_FREQ_LOW;
-	csip.port = sinit->chip_select_port;
-	csip.number = param->chip_select;
-	csip.pull = NO_OS_PULL_NONE;
-	csip.extra = &csip_extra;
-	csip.platform_ops = &stm32_gpio_ops;
-	ret = no_os_gpio_get(&sdesc->chip_select, &csip);
-	if (ret)
-		goto error;
-
-	ret = no_os_gpio_direction_output(sdesc->chip_select, NO_OS_GPIO_HIGH);
-	if (ret)
-		goto error;
 
 	/* copy settings to device descriptor */
 	spi_desc->device_id = param->device_id;
@@ -212,10 +193,70 @@ int32_t stm32_spi_init(struct no_os_spi_desc **desc,
 	if (ret)
 		goto error;
 
+	if (sinit->dma_init) {
+		ret = no_os_dma_init(&sdesc->dma_desc, sinit->dma_init);
+		if (ret)
+			goto error;
+
+		if (sinit->rxdma_ch) {
+			sdesc->rxdma_ch = &sdesc->dma_desc->channels[0];
+			sdesc->rxdma_ch->id = sinit->rxdma_ch->hdma;
+			sdesc->rxdma_ch->extra = sinit->rxdma_ch;
+			sdesc->rxdma_ch->irq_num = sinit->irq_num;
+		}
+		if (sinit->txdma_ch) {
+			sdesc->txdma_ch = &sdesc->dma_desc->channels[1];
+			sdesc->txdma_ch->id = sinit->txdma_ch->hdma;
+			sdesc->txdma_ch->extra = sinit->txdma_ch;
+		}
+	}
+
+#ifdef HAL_TIM_MODULE_ENABLED
+	if (sinit->pwm_init) {
+		ret = no_os_pwm_init(&sdesc->pwm_desc, sinit->pwm_init);
+		if (ret)
+			goto error;
+
+		ret = no_os_pwm_disable(sdesc->pwm_desc);
+		if (ret)
+			goto error_pwm;
+	}
+	if (sinit->tx_pwm_init) {
+		ret = no_os_pwm_init(&sdesc->tx_pwm_desc, sinit->tx_pwm_init);
+		if (ret)
+			goto error;
+
+		ret = no_os_pwm_disable(sdesc->tx_pwm_desc);
+		if (ret)
+			goto error_pwm;
+	}
+#endif
+	sdesc->csip_extra.mode = GPIO_MODE_OUTPUT_PP;
+	sdesc->csip_extra.speed = GPIO_SPEED_FREQ_LOW;
+	sdesc->csip.port = sinit->chip_select_port;
+	sdesc->csip.number = param->chip_select;
+	sdesc->csip.pull = NO_OS_PULL_NONE;
+	sdesc->csip.extra = &sdesc->csip_extra;
+	sdesc->csip.platform_ops = &stm32_gpio_ops;
+	sdesc->alternate =  sinit->alternate;
+	ret = no_os_gpio_get(&sdesc->chip_select, &sdesc->csip);
+	if (ret)
+		goto error;
+
+	ret = no_os_gpio_direction_output(sdesc->chip_select, NO_OS_GPIO_HIGH);
+	if (ret)
+		goto error;
 	*desc = spi_desc;
 
 	return 0;
+
+error_pwm:
+#ifdef HAL_TIM_MODULE_ENABLED
+	no_os_pwm_remove(sdesc->pwm_desc);
+	no_os_pwm_remove(sdesc->tx_pwm_desc);
+#endif
 error:
+	no_os_dma_remove(sdesc->dma_desc);
 	no_os_free(spi_desc);
 	no_os_free(sdesc);
 	return ret;
@@ -234,6 +275,13 @@ int32_t stm32_spi_remove(struct no_os_spi_desc *desc)
 		return -EINVAL;
 
 	sdesc = desc->extra;
+#ifdef HAL_TIM_MODULE_ENABLED
+	no_os_pwm_remove(sdesc->pwm_desc);
+	no_os_pwm_remove(sdesc->tx_pwm_desc);
+#endif
+
+	no_os_dma_remove(sdesc->dma_desc);
+
 #ifdef SPI_SR_TXE
 	__HAL_SPI_DISABLE(&sdesc->hspi);
 #endif
@@ -241,6 +289,40 @@ int32_t stm32_spi_remove(struct no_os_spi_desc *desc)
 	no_os_gpio_remove(sdesc->chip_select);
 	no_os_free(desc->extra);
 	no_os_free(desc);
+	return 0;
+}
+
+/**
+ * @brief enable CS gpio alternate function
+ * @param desc - The SPI descriptor
+ * @param enable - enable = alternate function active, disable = gpio mode
+ * @return 0 in case of success, errno codes otherwise.
+ */
+int32_t stm32_spi_altrnate_cs_enable(struct no_os_spi_desc *desc, bool enable)
+{
+	struct stm32_spi_desc *sdesc = desc->extra;
+	int ret;
+
+	no_os_gpio_remove(sdesc->chip_select);
+	sdesc->chip_select = NULL;
+
+	if (enable) {
+		sdesc->csip_extra.mode = GPIO_MODE_AF_PP;
+		sdesc->csip_extra.alternate = sdesc->alternate;
+	} else {
+		sdesc->csip_extra.mode = GPIO_MODE_OUTPUT_PP;
+	}
+
+	ret = no_os_gpio_get(&sdesc->chip_select, &sdesc->csip);
+	if (ret)
+		return ret;
+
+	ret = no_os_gpio_direction_output(sdesc->chip_select, NO_OS_GPIO_HIGH);
+	if (ret) {
+		no_os_gpio_remove(sdesc->chip_select);
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -272,7 +354,6 @@ int32_t stm32_spi_transfer(struct no_os_spi_desc *desc,
 	SPI_TypeDef * SPIx = sdesc->hspi.Instance;
 #endif
 
-
 	// Compute a slave ID based on SPI instance and chip select.
 	// If it did not change since last call to stm32_spi_write_and_read,
 	// no need to reconfigure SPI. Otherwise, reconfigure it.
@@ -293,7 +374,7 @@ int32_t stm32_spi_transfer(struct no_os_spi_desc *desc,
 		/* Assert CS */
 		gdesc->port->BSRR = NO_OS_BIT(sdesc->chip_select->number) << 16;
 
-		if(msgs[i].cs_delay_first)
+		if (msgs[i].cs_delay_first)
 			no_os_udelay(msgs[i].cs_delay_first);
 
 #ifndef SPI_SR_TXE
@@ -325,14 +406,14 @@ int32_t stm32_spi_transfer(struct no_os_spi_desc *desc,
 
 		while ((msgs[i].rx_buff && rx_cnt < msgs[i].bytes_number) ||
 		       (msgs[i].tx_buff && tx_cnt < msgs[i].bytes_number)) {
-			while(!(SPIx->SR & SPI_SR_TXE))
+			while (!(SPIx->SR & SPI_SR_TXE))
 				;
 			if (msgs[i].tx_buff)
 				*(volatile uint8_t *)&SPIx->DR = msgs[i].tx_buff[tx_cnt++];
 			else
 				*(volatile uint8_t *)&SPIx->DR = 0;
 
-			while(!(SPIx->SR & SPI_SR_RXNE))
+			while (!(SPIx->SR & SPI_SR_RXNE))
 				;
 			if (msgs[i].rx_buff)
 				msgs[i].rx_buff[rx_cnt++] = *(volatile uint8_t *)&SPIx->DR;
@@ -342,14 +423,14 @@ int32_t stm32_spi_transfer(struct no_os_spi_desc *desc,
 
 #endif
 
-		if(msgs[i].cs_delay_last)
+		if (msgs[i].cs_delay_last)
 			no_os_udelay(msgs[i].cs_delay_last);
 
 		if (msgs[i].cs_change)
 			/* De-assert CS */
 			gdesc->port->BSRR = NO_OS_BIT(sdesc->chip_select->number);
 
-		if(msgs[i].cs_change_delay)
+		if (msgs[i].cs_change_delay)
 			no_os_udelay(msgs[i].cs_change_delay);
 
 		if (ret)
@@ -387,11 +468,285 @@ int32_t stm32_spi_write_and_read(struct no_os_spi_desc *desc,
 }
 
 /**
+ * @brief Configure and start a series of transfers using DMA.
+ * @param desc - The SPI descriptor.
+ * @param msgs - The messages array.
+ * @param len - Number of messages.
+ * @param callback - Function to be invoked after transfers
+ * @param ctx - User defined parameter for the callback function.
+ * @return 0 in case of success, errno codes otherwise.
+ */
+int32_t stm32_config_dma_and_start(struct no_os_spi_desc* desc,
+				   struct no_os_spi_msg* msgs,
+				   uint32_t len,
+				   void (*callback)(
+						   struct no_os_dma_xfer_desc *old_xfer,
+						   struct no_os_dma_xfer_desc *next_xfer,
+						   void *ctx),
+				   void* ctx)
+{
+	struct stm32_spi_desc* sdesc = desc->extra;
+	struct no_os_dma_xfer_desc* rx_ch_xfer;
+	struct no_os_dma_xfer_desc* tx_ch_xfer;
+	SPI_TypeDef* SPIx = sdesc->hspi.Instance;
+	int ret;
+	uint8_t i;
+
+	if (!desc || !msgs)
+		return -EINVAL;
+
+	rx_ch_xfer = no_os_calloc(len, sizeof(*rx_ch_xfer));
+	if (!rx_ch_xfer)
+		return -ENOMEM;
+
+	tx_ch_xfer = no_os_calloc(len, sizeof(*tx_ch_xfer));
+	if (!tx_ch_xfer) {
+		goto free_rx_ch_xfer;
+	}
+
+	for (i = 0; i < len; i++) {
+		tx_ch_xfer[i].src = msgs[i].tx_buff;
+#ifndef SPI_SR_TXE
+		tx_ch_xfer[i].dst = &(SPIx->TXDR);
+#else
+		tx_ch_xfer[i].dst = &(SPIx->DR);
+#endif
+		tx_ch_xfer[i].xfer_type = MEM_TO_DEV;
+		tx_ch_xfer[i].periph = NO_OS_DMA_IRQ;
+		tx_ch_xfer[i].length = msgs[i].bytes_number;
+
+		rx_ch_xfer[i].dst = msgs[i].rx_buff;
+#ifndef SPI_SR_RXNE
+		rx_ch_xfer[i].src = &(SPIx->RXDR);
+#else
+		rx_ch_xfer[i].src = &(SPIx->DR);
+#endif
+		rx_ch_xfer[i].periph = NO_OS_DMA_IRQ;
+		rx_ch_xfer[i].xfer_type = DEV_TO_MEM;
+		rx_ch_xfer[i].length = msgs[i].bytes_number;
+		if (callback) {
+			rx_ch_xfer[i].xfer_complete_cb = callback;
+			rx_ch_xfer[i].xfer_complete_ctx = ctx;
+
+			tx_ch_xfer[i].xfer_complete_cb = NULL;
+			tx_ch_xfer[i].xfer_complete_ctx = NULL;
+		}
+	}
+
+	sdesc->tx_ch_xfer = tx_ch_xfer;
+	sdesc->rx_ch_xfer = rx_ch_xfer;
+
+	ret = no_os_dma_config_xfer(sdesc->dma_desc, rx_ch_xfer, len, sdesc->rxdma_ch);
+	if (ret)
+		goto remove_dma;
+
+	ret = no_os_dma_config_xfer(sdesc->dma_desc, tx_ch_xfer, len, sdesc->txdma_ch);
+	if (ret)
+		goto remove_dma;
+
+	ret = no_os_dma_xfer_start(sdesc->dma_desc, sdesc->txdma_ch);
+	if (ret)
+		goto abort_transfer;
+
+	ret = no_os_dma_xfer_start(sdesc->dma_desc, sdesc->rxdma_ch);
+	if (ret)
+		goto abort_transfer;
+
+	if (sdesc->txdma_ch)
+#if defined (STM32H5)
+		SET_BIT(sdesc->hspi.Instance->CFG1, SPI_CFG1_TXDMAEN);
+#else
+		SET_BIT(sdesc->hspi.Instance->CR2, SPI_CR2_TXDMAEN);
+#endif
+
+	if (sdesc->rxdma_ch)
+#if defined (STM32H5)
+		SET_BIT(sdesc->hspi.Instance->CFG1, SPI_CFG1_RXDMAEN);
+#else
+		SET_BIT(sdesc->hspi.Instance->CR2, SPI_CR2_RXDMAEN);
+#endif
+
+#ifdef HAL_TIM_MODULE_ENABLED
+	if (sdesc->pwm_desc) {
+		stm32_spi_altrnate_cs_enable(desc, true);
+		ret = no_os_pwm_enable(sdesc->pwm_desc);
+		if (ret)
+			goto abort_transfer;
+	}
+	if (sdesc->tx_pwm_desc) {
+		ret = no_os_pwm_enable(sdesc->tx_pwm_desc);
+		if (ret)
+			goto abort_transfer;
+	}
+#endif
+
+	return 0;
+
+abort_transfer:
+	no_os_dma_xfer_abort(sdesc->dma_desc, sdesc->txdma_ch);
+	no_os_dma_xfer_abort(sdesc->dma_desc, sdesc->rxdma_ch);
+remove_dma:
+	no_os_dma_remove(sdesc->dma_desc);
+free_tx_ch_xfer:
+	no_os_free(tx_ch_xfer);
+free_rx_ch_xfer:
+	no_os_free(rx_ch_xfer);
+
+	return ret;
+}
+
+void stm32_spi_dma_callback(struct no_os_dma_xfer_desc *old_xfer,
+			    struct no_os_dma_xfer_desc *next_xfer,
+			    void *ctx)
+{
+	struct no_os_spi_desc* desc = ctx;
+	struct stm32_spi_desc* sdesc = desc->extra;
+	SPI_TypeDef * SPIx = sdesc->hspi.Instance;
+
+	/* if more xfers pending dont do anything */
+	if (next_xfer)
+		return;
+
+#ifdef HAL_TIM_MODULE_ENABLED
+	if (sdesc->pwm_desc)
+		no_os_pwm_disable(sdesc->pwm_desc);
+
+	if (sdesc->tx_pwm_desc)
+		no_os_pwm_disable(sdesc->tx_pwm_desc);
+#endif
+
+	/* Perform abort SPI transfers */
+	no_os_spi_transfer_abort(desc);
+
+	/* Free the allocated memory for tx and rx transfers */
+	no_os_free(sdesc->tx_ch_xfer);
+	no_os_free(sdesc->rx_ch_xfer);
+
+	/* put CS pin back into gpio mode */
+	stm32_spi_altrnate_cs_enable(desc, false);
+
+	sdesc->stm32_spi_dma_done = true;
+
+	if (sdesc->stm32_spi_dma_user_cb)
+		sdesc->stm32_spi_dma_user_cb(sdesc->stm32_spi_dma_user_ctx);
+}
+
+/**
+ * @brief Configure and start a series of transfers using DMA. Don't Wait for the
+ * 	  completion before returning.
+ * @param desc - The SPI descriptor.
+ * @param msgs - The messages array.
+ * @param len - Number of messages.
+ * @param callback - Function to be invoked once the transfers are done.
+ * @param ctx - User defined parameter for the callback function.
+ * @return 0 in case of success, errno codes otherwise.
+ */
+int32_t stm32_spi_transfer_dma_async(struct no_os_spi_desc* desc,
+				     struct no_os_spi_msg* msgs,
+				     uint32_t len,
+				     void (*callback)(void*),
+				     void* ctx)
+{
+	struct stm32_spi_desc* sdesc = desc->extra;
+
+	sdesc->stm32_spi_dma_user_cb = callback;
+	sdesc->stm32_spi_dma_user_ctx = ctx;
+	return stm32_config_dma_and_start(desc, msgs, len, stm32_spi_dma_callback,
+					  desc);
+}
+
+/**
+ * @brief Configure and start a series of transfers using DMA. Wait for the
+ * 	  completion before returning.
+ * @param desc - The SPI descriptor.
+ * @param msgs - The messages array.
+ * @param len - Number of messages.
+ * @return 0 in case of success, errno codes otherwise.
+ */
+int32_t stm32_spi_transfer_dma(struct no_os_spi_desc* desc,
+			       struct no_os_spi_msg* msgs,
+			       uint32_t len)
+{
+	uint32_t timeout;
+	struct stm32_spi_desc* sdesc = desc->extra;
+
+	sdesc->stm32_spi_dma_done = false;
+	stm32_config_dma_and_start(desc, msgs, len, stm32_spi_dma_callback, desc);
+	timeout = msgs->bytes_number;
+	while (timeout--) {
+		no_os_mdelay(1);
+		if (sdesc->stm32_spi_dma_done)
+			break;
+	};
+
+	/* need some cleanup here? */
+	if (timeout == 0)
+		return -ETIME;
+
+	return 0;
+}
+
+/**
+ * @brief Abort SPI transfers.
+ * @param desc - The SPI descriptor.
+ * @return 0 in case of success, errno codes otherwise.
+ */
+int32_t stm32_spi_transfer_abort(struct no_os_spi_desc* desc)
+{
+	int32_t ret;
+	struct stm32_spi_desc* sdesc;
+
+	if (!desc->extra)
+		return -EINVAL;
+
+	sdesc = desc->extra;
+	SPI_TypeDef *SPIx = sdesc->hspi.Instance;
+
+	if (sdesc->rxdma_ch) {
+		ret = no_os_dma_xfer_abort(sdesc->dma_desc, sdesc->rxdma_ch);
+		if (ret) {
+			return ret;
+		}
+
+#if defined (STM32H5)
+		CLEAR_BIT(SPIx->CFG1, SPI_CFG1_RXDMAEN);
+#else
+		CLEAR_BIT(SPIx->CR2, SPI_CR2_RXDMAEN);
+#endif
+	}
+
+	if (sdesc->txdma_ch) {
+		ret = no_os_dma_xfer_abort(sdesc->dma_desc, sdesc->txdma_ch);
+		if (ret) {
+			return ret;
+		}
+
+#if defined (STM32H5)
+		CLEAR_BIT(SPIx->CFG1, SPI_CFG1_TXDMAEN);
+#else
+		CLEAR_BIT(SPIx->CR2, SPI_CR2_TXDMAEN);
+#endif
+	}
+
+	/* Dummy read to clear any pending read on SPI */
+#ifndef SPI_SR_RXNE
+	*(volatile uint8_t *)&SPIx->RXDR;
+#else
+	*(volatile uint8_t *)&SPIx->DR;
+#endif
+
+	return 0;
+}
+
+/**
  * @brief stm32 platform specific SPI platform ops structure
  */
 const struct no_os_spi_platform_ops stm32_spi_ops = {
 	.init = &stm32_spi_init,
 	.write_and_read = &stm32_spi_write_and_read,
 	.remove = &stm32_spi_remove,
-	.transfer = &stm32_spi_transfer
+	.transfer = &stm32_spi_transfer,
+	.transfer_dma_async = &stm32_spi_transfer_dma_async,
+	.transfer_dma = &stm32_spi_transfer_dma,
+	.transfer_abort = &stm32_spi_transfer_abort
 };

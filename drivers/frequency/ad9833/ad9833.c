@@ -6,49 +6,36 @@
 *******************************************************************************
 * Copyright 2013(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*****************************************************************************/
 
-/******************************************************************************/
-/******************************* Include Files ********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad9833.h"
 #include "no_os_error.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************** Constants Definitions *****************************/
-/******************************************************************************/
 float phase_const = 651.8986469f;
 
 static const struct ad9833_chip_info chip_info[] = {
@@ -69,10 +56,6 @@ static const struct ad9833_chip_info chip_info[] = {
 		.freq_const = 16.777216f,
 	}
 };
-
-/******************************************************************************/
-/************************** Functions Definitions *****************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Initialize the SPI communication with the device.
@@ -171,7 +154,6 @@ int32_t ad9833_remove(struct ad9833_dev *dev)
  * @param dev   - The device structure.
  * @param value - Data which will be transmitted.
  *
- * @return none.
 ******************************************************************************/
 void ad9833_tx_spi(struct ad9833_dev *dev,
 		   int16_t value)
@@ -179,15 +161,15 @@ void ad9833_tx_spi(struct ad9833_dev *dev,
 	uint16_t spi_data = 0;
 	uint8_t tx_buffer[4]  = {0, 0, 0, 0};// Tx SPI Buffer.
 
-	tx_buffer[0] = (uint8_t) ((value & 0x00ff00) >> 8); // data to be sent
-	tx_buffer[1] = (uint8_t) (value & 0x0000ff);        // in 8 bit packets
+	tx_buffer[0] = (uint8_t)((value & 0x00ff00) >> 8);  // data to be sent
+	tx_buffer[1] = (uint8_t)(value & 0x0000ff);         // in 8 bit packets
 	if (no_os_spi_write_and_read(dev->spi_desc, tx_buffer, 2) != 0) {
 		/* Initialize board. */
 		spi_data |= AD9833_CTRLRESET;
 		ad9833_tx_spi(dev,
 			      spi_data);
 		no_os_mdelay(10);
-		spi_data &=~ AD9833_CTRLRESET;
+		spi_data &= ~ AD9833_CTRLRESET;
 		ad9833_tx_spi(dev,
 			      spi_data);
 	}
@@ -220,7 +202,7 @@ int8_t ad9833_out_mode(struct ad9833_dev *dev,
 		spi_data = (dev->ctrl_reg_value & ~(AD9833_CTRLMODE    |
 						    AD9833_CTRLOPBITEN |
 						    AD9833_CTRLDIV2));
-		switch(out_mode) {
+		switch (out_mode) {
 		case 1:     // Triangle
 			spi_data += AD9833_CTRLMODE;
 			break;
@@ -241,7 +223,7 @@ int8_t ad9833_out_mode(struct ad9833_dev *dev,
 			spi_data = (dev->ctrl_reg_value & ~AD9833_CTRLMODE);
 			dev->test_opbiten = dev->ctrl_reg_value & AD9833_CTRLOPBITEN;
 
-			switch(out_mode) {
+			switch (out_mode) {
 			case 1:     // Triangle
 				if (dev->test_opbiten == 0) {
 					spi_data += AD9833_CTRLMODE;
@@ -276,7 +258,6 @@ int8_t ad9833_out_mode(struct ad9833_dev *dev,
  *                              0 - No power-down.
  *                              1 - DAC powered down.
  *
- * @return None.
 ******************************************************************************/
 void ad9833_sleep_mode(struct ad9833_dev *dev,
 		       uint8_t sleep_mode)
@@ -285,7 +266,7 @@ void ad9833_sleep_mode(struct ad9833_dev *dev,
 
 	if (dev->prog_method == 0) {
 		spi_data = (dev->ctrl_reg_value & ~(AD9833_CTRLSLEEP12 | AD9833_CTRLSLEEP1));
-		switch(sleep_mode) {
+		switch (sleep_mode) {
 		case 1:     // DAC powered down
 			spi_data += AD9833_CTRLSLEEP12;
 			break;
@@ -303,7 +284,7 @@ void ad9833_sleep_mode(struct ad9833_dev *dev,
 		dev->ctrl_reg_value = spi_data;
 	} else {
 		if (dev->prog_method == 1) {
-			switch(sleep_mode) {
+			switch (sleep_mode) {
 			case 0:     // No power-down
 				AD9834_SLEEP_LOW;
 				break;
@@ -325,7 +306,6 @@ void ad9833_sleep_mode(struct ad9833_dev *dev,
  * @param register_number - Number of the register (0 / 1).
  * @param frequency_value - Frequency value.
  *
- * @return None.
 ******************************************************************************/
 void ad9833_set_freq(struct ad9833_dev *dev,
 		     uint8_t register_number,
@@ -341,7 +321,7 @@ void ad9833_set_freq(struct ad9833_dev *dev,
 	dev->ctrl_reg_value |= AD9833_CTRLB28;
 	ad9833_tx_spi(dev,
 		      dev->ctrl_reg_value);
-	if(register_number == 0) {
+	if (register_number == 0) {
 		ad9833_tx_spi(dev,
 			      BIT_F0ADDRESS + i_freq_lsb);
 		ad9833_tx_spi(dev,
@@ -361,7 +341,6 @@ void ad9833_set_freq(struct ad9833_dev *dev,
  * @param register_number - Number of the register (0 / 1).
  * @param phase_value     - Phase value.
  *
- * @return none
 ******************************************************************************/
 void ad9833_set_phase(struct ad9833_dev *dev,
 		      uint8_t register_number,
@@ -370,7 +349,7 @@ void ad9833_set_phase(struct ad9833_dev *dev,
 	uint16_t phase_calc;
 
 	phase_calc = (uint16_t)(phase_value * phase_const);
-	if(register_number == 0) {
+	if (register_number == 0) {
 		ad9833_tx_spi(dev,
 			      BIT_P0ADDRESS + phase_calc);
 	} else {
@@ -385,7 +364,6 @@ void ad9833_set_phase(struct ad9833_dev *dev,
  * @param dev      - The device structure.
  * @param freq_reg - Number of frequency register. (0 / 1)
  *
- * @return None.
 ******************************************************************************/
 void ad9833_select_freq_reg(struct ad9833_dev *dev,
 			    uint8_t freq_reg)
@@ -395,7 +373,7 @@ void ad9833_select_freq_reg(struct ad9833_dev *dev,
 	if (dev->prog_method == 0) {
 		spi_data = (dev->ctrl_reg_value & ~AD9833_CTRLFSEL);
 		// Select soft the working frequency register according to parameter
-		if(freq_reg == 1) {
+		if (freq_reg == 1) {
 			spi_data += AD9833_CTRLFSEL;
 		}
 		ad9833_tx_spi(dev,
@@ -421,7 +399,6 @@ void ad9833_select_freq_reg(struct ad9833_dev *dev,
  * @param dev       - The device structure.
  * @param phase_reg - Number of phase register. (0 / 1)
  *
- * @return None.
 ******************************************************************************/
 void ad9833_select_phase_reg(struct ad9833_dev *dev,
 			     uint8_t phase_reg)
@@ -431,7 +408,7 @@ void ad9833_select_phase_reg(struct ad9833_dev *dev,
 	if (dev->prog_method == 0) {
 		spi_data = (dev->ctrl_reg_value & ~AD9833_CTRLPSEL);
 		// Select soft the working phase register according to parameter
-		if(phase_reg == 1) {
+		if (phase_reg == 1) {
 			spi_data += AD9833_CTRLPSEL;
 		}
 		ad9833_tx_spi(dev,
@@ -457,7 +434,6 @@ void ad9833_select_phase_reg(struct ad9833_dev *dev,
  * @param dev   - The device structure.
  * @param value - soft or hard method. (0 / 1)
  *
- * @return None.
 ******************************************************************************/
 void ad9834_select_prog_method(struct ad9833_dev *dev,
 			       uint8_t value)
@@ -483,7 +459,6 @@ void ad9834_select_prog_method(struct ad9833_dev *dev,
  * @param signpib - Connects comparator / MSB to the SIGN BIT OUT pin.
  * @param div2    - MSB / MSB/2
  *
- * @return None.
 ******************************************************************************/
 void ad9834_logic_output(struct ad9833_dev *dev,
 			 uint8_t opbiten,
@@ -498,7 +473,7 @@ void ad9834_logic_output(struct ad9833_dev *dev,
 					    AD9833_CTRLDIV2));
 
 
-	if(opbiten == 1) {
+	if (opbiten == 1) {
 		spi_data |= AD9833_CTRLOPBITEN;
 
 		if (signpib == 1) {

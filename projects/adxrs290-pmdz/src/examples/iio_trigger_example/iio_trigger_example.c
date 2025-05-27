@@ -5,45 +5,40 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 /******************************************************************************/
 /***************************** Include Files **********************************/
 /******************************************************************************/
-#include "iio_trigger_example.h"
+#include "parameters.h"
 #include "iio_adxrs290.h"
 #include "iio_trigger.h"
 #include "common_data.h"
+#include "iio_app.h"
 
 /******************************************************************************/
 /********************** Macros and Constants Definitions **********************/
@@ -51,6 +46,23 @@
 #define MAX_SIZE_BASE_ADDR		3000
 static uint8_t in_buff[MAX_SIZE_BASE_ADDR];
 #define GYRO_DDR_BASEADDR		((uint32_t)in_buff)
+
+struct no_os_irq_init_param adxrs290_gpio_irq_ip = {
+	.irq_ctrl_id = GPIO_IRQ_ID,
+	.platform_ops = GPIO_IRQ_OPS,
+	.extra = GPIO_IRQ_EXTRA,
+};
+
+struct iio_hw_trig_init_param adxrs290_gpio_trig_ip = {
+	.irq_id = ADXRS290_GPIO_TRIG_IRQ_ID,
+	.irq_trig_lvl = NO_OS_IRQ_LEVEL_HIGH,
+	.cb_info = {
+		.event = NO_OS_EVT_GPIO,
+		.peripheral = NO_OS_GPIO_IRQ,
+		.handle = ADXRS290_GPIO_CB_HANDLE,
+	},
+	.name = ADXRS290_GPIO_TRIG_NAME,
+};
 
 /******************************************************************************/
 /************************ Functions Definitions *******************************/
@@ -62,7 +74,7 @@ static uint8_t in_buff[MAX_SIZE_BASE_ADDR];
  *               execute continuously function iio_app_run_with_trigs and will
  * 				 not return.
 *******************************************************************************/
-int iio_trigger_example_main()
+int example_main()
 {
 	int ret;
 	struct adxrs290_dev *adxrs290_desc;
@@ -74,6 +86,21 @@ int iio_trigger_example_main()
 	};
 	struct iio_hw_trig *adxrs290_trig_desc;
 	struct no_os_irq_ctrl_desc *adxrs290_irq_desc;
+
+	/* To be moved in the example when all platforms support GPIO IRQ controller */
+	struct no_os_irq_ctrl_desc *nvic_desc;
+	struct no_os_irq_init_param nvic_ip = {
+		.platform_ops = &max_irq_ops,
+	};
+
+	/* Initialize GPIO IRQ controller */
+	ret = no_os_irq_ctrl_init(&nvic_desc, &nvic_ip);
+	if (ret)
+		goto error;
+
+	ret = no_os_irq_enable(nvic_desc, NVIC_GPIO_IRQ);
+	if (ret)
+		goto error;
 
 	ret = adxrs290_init(&adxrs290_desc, &adxrs290_ip);
 	if (ret)

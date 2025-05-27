@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <inttypes.h>
 #include "app_config.h"
 #include "ad9361_api.h"
@@ -95,15 +86,11 @@ static uint8_t out_buff[MAX_SIZE_BASE_ADDR];
 #include <string.h>
 #endif
 
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
-
 #if defined(DMA_EXAMPLE) || defined(IIO_SUPPORT)
-uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
+uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__((aligned(1024)));
 #endif
-uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((
-			aligned));
+uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((
+			aligned(1024)));
 
 #define AD9361_ADC_DAC_BYTES_PER_SAMPLE 2
 
@@ -562,6 +549,13 @@ int main(void)
 		tx_dac_init.rate = 1;
 		rx_adc_init.num_channels = 2;
 		rx_adc_init.num_slave_channels = 0;
+	} else {
+		if (!default_init_param.two_rx_two_tx_mode_enable) {
+			tx_dac_init.num_channels = 2;
+			tx_dac_init.rate = 1;
+			rx_adc_init.num_channels = 2;
+			rx_adc_init.num_slave_channels = 0;
+		}
 	}
 	if (AD9363A_DEVICE)
 		default_init_param.dev_sel = ID_AD9363A;
@@ -681,7 +675,7 @@ int main(void)
 	struct no_os_irq_ctrl_desc *irq_desc;
 
 	status = no_os_irq_ctrl_init(&irq_desc, &irq_init_param);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_global_enable(irq_desc);
@@ -695,16 +689,16 @@ int main(void)
 
 	status = no_os_irq_register_callback(irq_desc,
 					     AD9361_ADC_DMA_IRQ_INTR, &rx_dmac_callback);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_trigger_level_set(irq_desc,
 					     AD9361_ADC_DMA_IRQ_INTR, NO_OS_IRQ_LEVEL_HIGH);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_enable(irq_desc, AD9361_ADC_DMA_IRQ_INTR);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	samples = 2048;
@@ -723,11 +717,11 @@ int main(void)
 
 	status = no_os_irq_register_callback(irq_desc,
 					     AD9361_DAC_DMA_IRQ_INTR, &tx_dmac_callback);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_enable(irq_desc, AD9361_DAC_DMA_IRQ_INTR);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #endif
 
@@ -772,7 +766,7 @@ int main(void)
 
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #else
 	struct axi_dma_transfer read_transfer = {
@@ -793,7 +787,7 @@ int main(void)
 
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #endif
 #ifdef XILINX_PLATFORM
@@ -922,7 +916,7 @@ int main(void)
 #endif
 
 	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
@@ -935,7 +929,7 @@ int main(void)
 	};
 
 	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
 
@@ -950,7 +944,7 @@ int main(void)
 	};
 
 	status = iio_axi_adc_init(&iio_axi_adc_b_desc, &iio_axi_adc_b_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 	iio_axi_adc_get_dev_descriptor(iio_axi_adc_b_desc, &adc_b_dev_desc);
 #endif
@@ -1060,7 +1054,7 @@ int main(void)
 			no_os_mdelay(1000);
 
 			if (ad9361_phy->pdata->ensm_pin_pulse_mode) {
-				while(1) {
+				while (1) {
 					no_os_gpio_set_value(gpio_txnrx_pin, 0);
 					no_os_udelay(10);
 					no_os_gpio_set_value(gpio_enable_pin, 1);
@@ -1098,7 +1092,7 @@ int main(void)
 					no_os_mdelay(1000);
 				}
 			} else {
-				while(1) {
+				while (1) {
 					no_os_gpio_set_value(gpio_txnrx_pin, 0);
 					no_os_udelay(10);
 					no_os_gpio_set_value(gpio_enable_pin, 1);
@@ -1133,7 +1127,7 @@ int main(void)
 				}
 			}
 		} else {
-			while(1) {
+			while (1) {
 				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_RX);
 				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
 				printf("SPI control - RX: %s\n",

@@ -6,52 +6,39 @@
 ********************************************************************************
 * Copyright 2015-2019, 2023(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.******************************************************************************/
 #ifndef __AD7124_H__
 #define __AD7124_H__
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
 #include "no_os_spi.h"
 #include "no_os_delay.h"
 #include "no_os_util.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define	AD7124_RW 1   /* Read and Write */
 #define	AD7124_R  2   /* Read only */
 #define AD7124_W  3   /* Write only */
@@ -60,11 +47,20 @@
 #define AD7124_MAX_SETUPS	8
 /* Maximum number of channels */
 #define AD7124_MAX_CHANNELS	16
-/* Device IDs
- * The Device IDs for REV-B of boards need to be updated as 0x07 for ad7124-4
- * and 0x17 for ad7124-8 */
-#define AD7124_4_ID         0x14
-#define AD7124_8_ID	        0x16
+
+/* AD7124-4 Standard Device ID */
+#define AD7124_4_STD_ID  0x04
+/* AD7124-4 B Grade Device ID */
+#define AD7124_4_B_GRADE_ID  0x06
+/* Device ID for the re-designed die in the AD7124-4 standard part and B-grade */
+#define AD7124_4_NEW_ID  0x07
+
+/* AD7124-8 Standard Device ID */
+#define AD7124_8_STD_ID  0x14
+/* AD7124-8 B and W Grade Device ID */
+#define AD7124_8_B_W_GRADE_ID  0x16
+/* Device ID for the re-designed die in the AD7124-8 standard part, B-grade and W-grade */
+#define AD7124_8_NEW_ID  0x17
 
 /* AD7124 Register Map */
 #define AD7124_COMM_REG      0x00
@@ -274,14 +270,13 @@
 #define AD7124_CHMAP_REG_AINPOS_MSK    		NO_OS_GENMASK(9,5)
 #define AD7124_CHMAP_REG_AINNEG_MSK    		NO_OS_GENMASK(4,0)
 #define AD7124_ADC_CTRL_REG_MODE_MSK   		NO_OS_GENMASK(5,2)
+#define AD7124_SETUP_CONF_REG_BURNOUT_MSK	NO_OS_GENMASK(10,9)
 #define AD7124_SETUP_CONF_REG_REF_SEL_MSK	NO_OS_GENMASK(4,3)
+#define AD7124_SETUP_CONF_REG_PGA_MSK       NO_OS_GENMASK(2,0)
 #define AD7124_REF_BUF_MSK                  NO_OS_GENMASK(8,7)
 #define AD7124_AIN_BUF_MSK                  NO_OS_GENMASK(6,5)
 #define AD7124_POWER_MODE_MSK			    NO_OS_GENMASK(7,6)
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 /**
  * @enum	ad7124_device_type
  * @details AD7124 Device definitions
@@ -329,8 +324,8 @@ enum ad7124_analog_input {
 	AD7124_AIN13,
 	AD7124_AIN14,
 	AD7124_AIN15,
-	AD7124_AVSS,
 	AD7124_TEMP_SENSOR,
+	AD7124_AVSS,
 	AD7124_IN_REF,
 	AD7124_DGND,
 	AD7124_AVDD_AVSS_P,
@@ -365,6 +360,21 @@ struct ad7124_channel_map {
 };
 
 /**
+ * @enum ad7124_burnout
+ * @brief Burnout current values
+ */
+enum ad7124_burnout {
+	/* Off */
+	AD7124_BURNOUT_OFF,
+	/* 500nA */
+	AD7124_BURNOUT_500N,
+	/* 2 uA */
+	AD7124_BURNOUT_2U,
+	/* 4 uA */
+	AD7124_BURNOUT_4U,
+};
+
+/**
  * @enum ad7124_reference_source
  * @brief Type of ADC Reference
 **/
@@ -382,14 +392,31 @@ enum ad7124_reference_source {
 };
 
 /**
+ * @enum ad7124_pga
+ * @brief PGA gains
+ */
+enum ad7124_pga {
+	AD7124_PGA_1,
+	AD7124_PGA_2,
+	AD7124_PGA_4,
+	AD7124_PGA_8,
+	AD7124_PGA_16,
+	AD7124_PGA_32,
+	AD7124_PGA_64,
+	AD7124_PGA_128
+};
+
+/**
   * @struct ad7124_channel_setup
   * @brief Channel setup
 **/
 struct ad7124_channel_setup {
 	bool bi_unipolar;
+	enum ad7124_burnout burnout;
 	bool ref_buff;
 	bool  ain_buff;
 	enum ad7124_reference_source ref_source;
+	enum ad7124_pga pga;
 };
 
 /**
@@ -518,9 +545,6 @@ struct ad7124_init_param {
 	struct ad7124_channel_map chan_map[AD7124_MAX_CHANNELS];
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /* Reads the value of the specified register without a device state check. */
 int32_t ad7124_no_check_read_register(struct ad7124_dev *dev,
 				      struct ad7124_st_reg* p_reg);
@@ -628,6 +652,11 @@ int ad7124_set_polarity(struct ad7124_dev* device,
 			bool bipolar,
 			uint8_t setup_id);
 
+/* Assign magnitude of burnout current source to setup */
+int ad7124_set_burnout(struct ad7124_dev* device,
+		       enum ad7124_burnout burnout,
+		       uint8_t setup_id);
+
 /* Assign reference source to setup */
 int ad7124_set_reference_source(struct ad7124_dev* device,
 				enum ad7124_reference_source ref_source,
@@ -639,6 +668,11 @@ int ad7124_enable_buffers(struct ad7124_dev* device,
 			  bool ain_buff,
 			  bool ref_buff,
 			  uint8_t setup_id);
+
+/* Assign PGA gain to setup */
+int ad7124_set_pga(struct ad7124_dev* device,
+		   enum ad7124_pga pga,
+		   uint8_t setup_id);
 
 /* Select the power mode */
 int ad7124_set_power_mode(struct ad7124_dev *device,

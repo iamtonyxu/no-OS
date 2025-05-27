@@ -25,12 +25,27 @@ repository, each commit should respect a few rules:
   of the commit log message - it certifies that the committer has the rights to
   submit the work under the project's license.
 
+- The commit message should follow the **50/72 rule** :
+
+  - The first line (the subject) should be **at most 50 characters** long.
+  - The body of the commit message should wrap at **72 characters** per line.
+
+- The commit subject should start with a **prefix** indicating the relative
+  path to the file that was added or changed. This improves clarity and makes
+  it easier to identify affected areas in the repository.
+
+  Example:
+
+  - ``dac: ad5460: add driver support``
+  - ``projects: eval-adis1655x: add implementation``
+
 - If built using **gcc**, options such as **-Wall** and **-Wextra** don't
   detect any issues with the commit. When the pull request is created, drivers
   and project build are automatically triggered.
 
-- **astyle --style=linux --indent=force-tab=8 --max-code-length=80** doesn't
-  detect any issue with the commit.
+- **astyle --style=linux --indent=force-tab=8 --max-code-length=80 --suffix=none
+  --pad-oper --pad-header --unpad-paren --pad-comma** doesn't detect any issue
+  with the commit.
 
 - A detailed description of how the new changes were tested is provided. This
   information can be written in the pull request description. If the driver

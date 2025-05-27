@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /**
 * \file adrv9025_cpu.c
 *
@@ -41,9 +40,6 @@
 
 #define ADRV9025_PROFILE_CHUNK_MAX 256u
 
-/*****************************************************************************/
-/***** Local data types ******************************************************/
-/*****************************************************************************/
 enum adrv9025_CpuErrorFlag
 {
     ADRV9025_CPU_ERROR_FLAG_INVALID = 0,
@@ -56,9 +52,6 @@ enum adrv9025_CpuErrorFlag
     ADRV9025_CPU_ERROR_FLAG_7
 };
 
-/*****************************************************************************/
-/***** Helper functions' prototypes ******************************************/
-/*****************************************************************************/
 static uint8_t adrv9025_cpuTypeIsValid(
     adi_adrv9025_CpuType_e type);
 
@@ -185,10 +178,6 @@ static int32_t adrv9025_SpiCfgSet(
 static uint8_t adrv9025_DesCfgHasData(
     adi_adrv9025_Device_t*      device,
     adi_adrv9025_DesCfg_t*      config);
-
-/*****************************************************************************/
-/***** Helper functions' definition ******************************************/
-/*****************************************************************************/
 
 int32_t adrv9025_SpiCfgSet(adi_adrv9025_Device_t*      device,
                            adi_adrv9025_SpiSettings_t* spi)
@@ -1925,9 +1914,6 @@ uint8_t adrv9025_cpuTypeIsValid(adi_adrv9025_CpuType_e type)
     return result;
 }
 
-/*****************************************************************************/
-/***** Public functions' definition ******************************************/
-/*****************************************************************************/
 adi_adrv9025_CpuAddr_t* adrv9025_CpuAddrGet(
     adi_adrv9025_Cpu_t*    cpu,
     adi_adrv9025_CpuType_e cpuType)

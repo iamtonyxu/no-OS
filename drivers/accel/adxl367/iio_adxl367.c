@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include "no_os_error.h"
@@ -49,9 +40,6 @@
 #include "adxl367.h"
 #include <string.h>
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 static const int adxl367_iio_odr_table[6][2] = {
 	{12, 500000},
 	{25,      0},
@@ -68,10 +56,6 @@ static const int adxl367_iio_scale_table[3][2] = {
 };
 
 static struct iio_device adxl367_iio_dev;
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Wrapper for reading ADXL367 register.
@@ -138,13 +122,13 @@ static int adxl367_iio_read_calibbias(void *dev, char *buf, uint32_t len,
 	case IIO_ACCEL:
 		switch (channel->ch_num) {
 		case 0:
-			val = no_os_sign_extend32(adxl367->x_offset,15);
+			val = no_os_sign_extend32(adxl367->x_offset, 15);
 			return iio_format_value(buf, len, IIO_VAL_INT, 1, &val);
 		case 1:
-			val = no_os_sign_extend32(adxl367->y_offset,15);
+			val = no_os_sign_extend32(adxl367->y_offset, 15);
 			return iio_format_value(buf, len, IIO_VAL_INT, 1, &val);
 		case 2:
-			val = no_os_sign_extend32(adxl367->z_offset,15);
+			val = no_os_sign_extend32(adxl367->z_offset, 15);
 			return iio_format_value(buf, len, IIO_VAL_INT, 1, &val);
 
 		default:
@@ -190,7 +174,7 @@ static int adxl367_iio_write_calibbias(void *dev, char *buf, uint32_t len,
 	case IIO_ACCEL:
 		iio_parse_value(buf, IIO_VAL_INT, &val, NULL);
 		// Change this value to two's complement with sign bit = BIT15
-		if(val < 0)
+		if (val < 0)
 			calibbias = NO_OS_BIT(15) | (~abs(val) + 1);
 		else
 			calibbias = val;
@@ -690,7 +674,7 @@ static int adxl367_iio_read_samples(void* dev, int* buff, uint32_t samples)
 
 	adxl367 = iio_adxl367->adxl367_dev;
 
-	for(uint32_t i = 0; i < samples*iio_adxl367->no_of_active_channels;) {
+	for (uint32_t i = 0; i < samples * iio_adxl367->no_of_active_channels;) {
 		adxl367_get_raw_xyz(adxl367, &data_x, &data_y, &data_z);
 
 		if (iio_adxl367->active_channels & NO_OS_BIT(0)) {
@@ -788,10 +772,6 @@ int adxl367_iio_remove(struct adxl367_iio_dev *desc)
 
 	return 0;
 }
-
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 
 static struct iio_attribute adxl367_iio_global_attributes[] = {
 	{

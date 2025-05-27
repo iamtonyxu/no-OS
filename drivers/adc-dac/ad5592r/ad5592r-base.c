@@ -3,38 +3,32 @@
  *   @brief  Implementation of AD5592R Base Driver.
  *   @author Mircea Caprioru (mircea.caprioru@analog.com)
 ********************************************************************************
- * Copyright 2018, 2020(c) Analog Devices, Inc.
- *
- * All rights reserved.
+ * Copyright 2018, 2020, 2025(c) Analog Devices, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #include "no_os_error.h"
 #include "ad5592r-base.h"
@@ -325,4 +319,175 @@ int32_t ad5592r_reset_channel_modes(struct ad5592r_dev *dev)
 		dev->channel_modes[i] = CH_MODE_UNUSED;
 
 	return ad5592r_set_channel_modes(dev);
+}
+
+/**
+ * Register update
+ *
+ * @param dev - The device structure.
+ * @param reg_addr - The Register address
+ * @param data - The data to be written
+ * @param mask - The mask
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_base_reg_update(struct ad5592r_dev *dev, uint16_t reg_addr,
+				uint16_t data, uint16_t mask)
+{
+
+	uint16_t temp_reg_val;
+	int32_t ret;
+
+	if (!dev)
+		return -1;
+
+	ret = ad5592r_base_reg_read(dev, reg_addr, &temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	temp_reg_val &= ~mask;
+	temp_reg_val |= data;
+
+	ret = ad5592r_base_reg_write(dev, reg_addr, temp_reg_val);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+
+/**
+ * Set ADC Range of the device
+ *
+ * @param dev - The device structure.
+ * @param adc_range - ADC Range
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_adc_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range adc_range)
+{
+	int32_t ret;
+	uint16_t status = 0;
+
+	if (!dev)
+		return -1;
+
+	status = adc_range ? AD5592R_REG_CTRL_ADC_RANGE : 0;
+
+	ret = ad5592r_base_reg_update(dev, AD5592R_REG_CTRL, status,
+				      AD5592R_REG_CTRL_ADC_RANGE);
+	if (ret < 0)
+		return ret;
+
+	dev->adc_range = adc_range;
+
+	return 0;
+}
+
+/**
+ * Set DAC Range of the device
+ *
+ * @param dev - The device structure.
+ * @param dac_range - DAC Range
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_dac_range(struct ad5592r_dev *dev,
+			      enum ad559xr_range dac_range)
+{
+	int32_t ret;
+	uint16_t status = 0;
+
+	if (!dev)
+		return -1;
+
+	status = dac_range ? AD5592R_REG_CTRL_DAC_RANGE : 0;
+
+	ret = ad5592r_base_reg_update(dev, AD5592R_REG_CTRL, status,
+				      AD5592R_REG_CTRL_DAC_RANGE);
+	if (ret < 0)
+		return ret;
+
+	dev->dac_range = dac_range;
+
+	return 0;
+}
+
+/**
+ * Set Power Down DAC Channel of the device
+ *
+ * @param dev - The device structure.
+ * @param chan - The channel number.
+ * @param enable - Status to enable/disable power down.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_power_down(struct ad5592r_dev *dev, uint8_t chan, bool enable)
+{
+	int ret;
+	uint16_t temp_reg_val = 0;
+
+	if (!dev)
+		return -1;
+
+	temp_reg_val = enable ? NO_OS_BIT(chan) : 0;
+
+	ret = ad5592r_base_reg_update(dev, AD5592R_REG_PD, temp_reg_val,
+				      NO_OS_BIT(chan));
+	if (ret < 0)
+		return ret;
+
+	dev->power_down[chan] = enable;
+
+	return 0;
+}
+
+/**
+ * Set Reference Select option for the device
+ *
+ * @param dev - The device structure.
+ * @param enable - Status to enable/disable internal reference.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_int_ref(struct ad5592r_dev *dev, bool enable)
+{
+	uint16_t temp_reg_val = 0;
+	int ret;
+
+	if (!dev)
+		return -1;
+
+	temp_reg_val = enable ? AD5592R_REG_PD_EN_REF : 0;
+
+	ret = ad5592r_base_reg_update(dev, AD5592R_REG_PD, temp_reg_val,
+				      AD5592R_REG_PD_EN_REF);
+	if (ret < 0)
+		return ret;
+
+	dev->int_ref = enable;
+
+	return 0;
+}
+
+/**
+ * Set ADC Buffer for the device
+ *
+ * @param dev - The device structure.
+ * @param enable - Status to enable/disable adc buffer.
+ * @return 0 in case of success, negative error code otherwise
+ */
+int32_t ad5592r_set_adc_buffer(struct ad5592r_dev *dev, bool enable)
+{
+	uint16_t temp_reg_val = 0;
+	int ret;
+
+	if (!dev)
+		return -1;
+
+	temp_reg_val = enable ? AD5592R_REG_CTRL_ADC_BUFF_EN : 0;
+
+	ret = ad5592r_base_reg_update(dev, AD5592R_REG_CTRL, temp_reg_val,
+				      AD5592R_REG_CTRL_ADC_BUFF_EN);
+	if (ret < 0)
+		return ret;
+
+	dev->adc_buf = enable;
+
+	return 0;
 }

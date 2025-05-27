@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
@@ -49,15 +40,9 @@
 #include "no_os_delay.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 static int64_t adxl313_accel_conv(struct adxl313_dev *dev, int16_t raw_accel);
 static void adxl313_compute_multiplier(struct adxl313_dev *dev);
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 /*******************************************************************************
  * @brief Read data from the device.
  *
@@ -81,7 +66,7 @@ int adxl313_read(struct adxl313_dev *dev, uint8_t base_address,
 		ret = no_os_spi_write_and_read(dev->com_desc.spi_desc, dev->comm_buff,
 					       1 + size);
 		for (uint16_t idx = 0; idx < size; idx++)
-			read_data[idx] = dev->comm_buff[idx+1];
+			read_data[idx] = dev->comm_buff[idx + 1];
 	} else {
 		ret = no_os_i2c_write(dev->com_desc.i2c_desc, &base_address, 1, 0);
 		if (ret)
@@ -110,7 +95,7 @@ int adxl313_write(struct adxl313_dev *dev, uint8_t base_address,
 	int ret;
 
 	for (uint16_t idx = 0; idx < size; idx++)
-		dev->comm_buff[1+idx] = write_data[idx];
+		dev->comm_buff[1 + idx] = write_data[idx];
 
 	if (dev->comm_type == ADXL313_SPI_COMM) {
 		dev->comm_buff[0] = ADXL313_SPI_WRITE | base_address;
@@ -429,7 +414,7 @@ int adxl313_set_op_mode(struct adxl313_dev *dev, enum adxl313_op_mode op_mode)
 	uint8_t data = ENABLE_E;
 
 	/* Set operation mode. */
-	switch(op_mode) {
+	switch (op_mode) {
 	case ADXL313_STDBY:
 		data = DISABLE_E;
 		break;
@@ -925,9 +910,11 @@ int adxl313_get_raw_fifo_data(struct adxl313_dev *dev, uint8_t *entries,
 
 		for (uint8_t idx = 0; idx < (*entries); idx++) {
 			buff_idx = idx * ADXL313_REGS_PER_ENTRY;
-			x_raw[idx] = ((int16_t)xyz_values[buff_idx+1] << 8) + (xyz_values[buff_idx]);
-			y_raw[idx] = ((int16_t)xyz_values[buff_idx+3] << 8) + (xyz_values[buff_idx+2]);
-			z_raw[idx] = ((int16_t)xyz_values[buff_idx+5] << 8) + (xyz_values[buff_idx+4]);
+			x_raw[idx] = ((int16_t)xyz_values[buff_idx + 1] << 8) + (xyz_values[buff_idx]);
+			y_raw[idx] = ((int16_t)xyz_values[buff_idx + 3] << 8) +
+				     (xyz_values[buff_idx + 2]);
+			z_raw[idx] = ((int16_t)xyz_values[buff_idx + 5] << 8) +
+				     (xyz_values[buff_idx + 4]);
 		}
 	}
 
@@ -1247,8 +1234,6 @@ int adxl313_get_conf_act_inact_ctl(struct adxl313_dev *dev,
  * @param int_pin       - Interrupts pin.
  *                        Example: 0x00 - activity interrupts on INT1 pin.
  *                                 0x01 - activity interrupts on INT2 pin.
- *
- * @return None.
 *******************************************************************************/
 int adxl313_set_activity_detection(struct adxl313_dev *dev,
 				   uint8_t act_axes,
@@ -1311,8 +1296,6 @@ int adxl313_set_activity_detection(struct adxl313_dev *dev,
  * @param int_pin         - Interrupts pin.
  *                          Example: 0x00 - activity interrupts on INT1 pin.
  *                                   0x01 - activity interrupts on INT2 pin.
- *
- * @return None.
 *******************************************************************************/
 int adxl313_set_inactivity_detection(struct adxl313_dev *dev,
 				     uint8_t inact_axes,
@@ -1328,15 +1311,15 @@ int adxl313_set_inactivity_detection(struct adxl313_dev *dev,
 	if (ret)
 		return ret;
 
-	if(inact_axes & ADXL313_X_EN)
+	if (inact_axes & ADXL313_X_EN)
 		inact_flags.fields.INACT_X_EN = ENABLE_E;
 	else
 		inact_flags.fields.INACT_X_EN = DISABLE_E;
-	if(inact_axes & ADXL313_Y_EN)
+	if (inact_axes & ADXL313_Y_EN)
 		inact_flags.fields.INACT_Y_EN = ENABLE_E;
 	else
 		inact_flags.fields.INACT_Y_EN = DISABLE_E;
-	if(inact_axes & ADXL313_Z_EN)
+	if (inact_axes & ADXL313_Z_EN)
 		inact_flags.fields.INACT_Z_EN = ENABLE_E;
 	else
 		inact_flags.fields.INACT_Z_EN = DISABLE_E;
