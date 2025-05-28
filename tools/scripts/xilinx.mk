@@ -235,7 +235,7 @@ $(PLATFORM)_sdkclean:
 
 $(PLATFORM)_project: $(TEMP_DIR)/arch.txt
 	$(call print,Creating and configuring the IDE project)
-	$(call tcl_util, create_project)
+	$(call tcl_util, create_project)  $(HIDE)
 ifeq (y,$(strip $(NETWORKING)))
 	$(call remove_file,$(BUILD_DIR)/app/src/main.c $(BUILD_DIR)/app/src/echo.c) $(HIDE)
 endif
