@@ -1,0 +1,1 @@
+C:/repo/no-os/projects/adrv902x/src/common/firmware/ActiveUseCase_profile.h

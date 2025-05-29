@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdx:platform sdx:vendor="xilinx.com"
+              sdx:library="sdx"
+              sdx:name="system_top"
+              sdx:version="1.0"
+              sdx:schemaVersion="1.0"
+              xmlns:sdx="http://www.xilinx.com/sdx">
+    <sdx:description>
+system_top
+    </sdx:description>
+    <sdx:systemConfigurations sdx:defaultConfiguration="system_top">
+        <sdx:configuration sdx:name="system_top"
+                           sdx:displayName="system_top"
+                           sdx:defaultProcessorGroup="standalone_domain"
+                           sdx:runtimes="cpp">
+            <sdx:description>system_top</sdx:description>
+            <sdx:bootImages sdx:default="standard">
+                <sdx:image sdx:name="standard"
+                            sdx:bif=""
+                            sdx:imageData=""
+                            sdx:readme="system_top/boot/generic.readme"
+                            sdx:qemuArguments="system_top/qemu/pmu_args.txt:system_top/qemu/qemu_args.txt"
+                            />
+                <sdx:image sdx:name="standalone_domain"
+                            sdx:bif="system_top/boot/system_top.bif"
+                            sdx:readme="system_top/boot/generic.readme"
+                            sdx:qemuArguments="system_top/standalone_domain/qemu/pmu_args.txt:system_top/standalone_domain/qemu/qemu_args.txt"
+                            />
+            </sdx:bootImages>
+            <sdx:processorGroup sdx:name="standalone_domain"
+                                sdx:displayName="standalone on psu_cortexa53_0"
+                                sdx:cpuType="cortex-a53"
+                                sdx:cpuInstance="psu_cortexa53_0">
+                <sdx:os sdx:name="standalone"
+                        sdx:displayName="standalone"
+                        sdx:bspLibraryPaths="system_top/standalone_domain/bsplib/lib"
+                        sdx:bspIncludePaths="system_top/standalone_domain/bspinclude/include"
+                        sdx:bspConfig="system_top/standalone_domain/system.mss"
+                />
+            </sdx:processorGroup>
+        </sdx:configuration>
+    </sdx:systemConfigurations>
+</sdx:platform>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sdkproject:SdkProject xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sdkproject="http://www.xilinx.com/sdkproject" name="app" location="C:/repo/no-OS/projects/adrv902x/build/app" platform="C:/repo/no-OS/projects/adrv902x/build/system_top/export/system_top/system_top.xpfm" platformUID="xilinx:zcu102::0.0(custom)" systemProject="app_system" sysConfig="system_top" runtime="cpp" cpu="standalone_domain" cpuInstance="psu_cortexa53_0" os="standalone" mssSignature="00fc72556f2c42655301387c3218d64d">
+  <configuration name="Debug" id="xilinx.gnu.arm.a53.exe.debug.1615889893">
+    <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
+  </configuration>
+  <configuration name="Release" id="xilinx.gnu.arm.a53.exe.release.368433897">
+    <configBuildOptions xsi:type="sdkproject:SdkOptions"/>
+  </configuration>
+  <template appTemplateName="empty_application"/>
+</sdkproject:SdkProject>

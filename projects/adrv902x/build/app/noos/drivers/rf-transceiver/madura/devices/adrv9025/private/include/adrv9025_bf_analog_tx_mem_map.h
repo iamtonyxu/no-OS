@@ -1,0 +1,1 @@
+C:/repo/no-os/drivers/rf-transceiver/madura/devices/adrv9025/private/include/adrv9025_bf_analog_tx_mem_map.h

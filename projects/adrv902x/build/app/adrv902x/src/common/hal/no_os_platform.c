@@ -1,0 +1,1 @@
+C:/repo/no-os/projects/adrv902x/src/common/hal/no_os_platform.c
