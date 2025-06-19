@@ -1,1 +1,0 @@
-C:/repo/no-os/drivers/rf-transceiver/madura/platforms/adi_platform.h

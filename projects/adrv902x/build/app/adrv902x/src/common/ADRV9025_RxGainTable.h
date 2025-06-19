@@ -1,1 +1,0 @@
-C:/repo/no-os/projects/adrv902x/src/common/ADRV9025_RxGainTable.h

@@ -1,1 +1,0 @@
-C:/repo/no-os/drivers/rf-transceiver/madura/common/adi_hal/adi_common_hal.h

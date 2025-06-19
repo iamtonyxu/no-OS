@@ -1,1 +1,0 @@
-psu_cortexa53_0

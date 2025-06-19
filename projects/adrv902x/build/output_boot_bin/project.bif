@@ -1,6 +1,0 @@
-the_ROM_image:
-{
-[bootloader,destination_cpu = a53-0] C:/repo/no-os/projects/adrv902x/build/tmp/output/hw0/export/hw0/sw/hw0/boot/fsbl.elf
-[destination_device = pl] C:/repo/no-os/projects/adrv902x/build/tmp/system_top.bit
-[destination_cpu = a53-0] C:/repo/no-os/projects/adrv902x/build/adrv902x.elf
-}

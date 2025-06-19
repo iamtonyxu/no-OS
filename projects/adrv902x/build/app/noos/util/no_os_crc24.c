@@ -1,1 +1,0 @@
-C:/repo/no-os/util/no_os_crc24.c
