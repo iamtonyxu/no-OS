@@ -38,6 +38,7 @@ SRCS += $(PROJECT)/src/app/headless_arm.c \
 	$(DRIVERS)/rf-transceiver/talise/api/talise_rx.c \
 	$(DRIVERS)/rf-transceiver/talise/api/talise_tx.c \
 	$(DRIVERS)/rf-transceiver/talise/api/talise_user.c \
+	$(DRIVERS)/rf-transceiver/talise/api/talise_txqec_hw.c \
 	$(PROJECT)/profiles/$(PROFILE)/talise_config.c
 SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
 	$(DRIVERS)/axi_core/axi_dac_core/axi_dac_core.c \

@@ -19,7 +19,7 @@
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. 鈥淎S IS鈥� AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -46,10 +46,10 @@
 
 /* To build ADRV9008-1/ADRV9008-2, uncomment one (only one) of the lines below: */
 //#define ADRV9008_1
-//#define ADRV9008_2
+#define ADRV9008_2
 
 /* To build a specific example, uncomment one (only one) of the lines below: */
-// #define DMA_EXAMPLE
+#define DMA_EXAMPLE
 // #define IIO_SUPPORT
 
 #define FIRMWARE	"TaliseTDDArmFirmware.bin"

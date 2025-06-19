@@ -30,6 +30,8 @@
 #endif
 #include "talise.h"
 #include "talise_config.h"
+#include "talise_txqec_hw.h"
+
 #include "app_config.h"
 #include "app_clocking.h"
 #include "app_jesd.h"
@@ -147,6 +149,8 @@ int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
 }
 
 #endif // IIO_SUPPORT
+
+txqec_outputs_t txqecOut;
 
 /**********************************************************/
 /**********************************************************/

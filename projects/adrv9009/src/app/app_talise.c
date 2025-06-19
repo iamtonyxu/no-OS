@@ -19,7 +19,7 @@
  *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. 鈥淎S IS鈥� AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
  * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
@@ -52,6 +52,7 @@
 #include "talise_arm_binary.h"
 #include "talise_stream_binary.h"
 #include "talise_reg_addr_macros.h"
+#include "talise_txqec_hw.h"
 
 // jesd
 #include "axi_jesd204_rx.h"
@@ -66,6 +67,7 @@
 #include "app_talise.h"
 #include "app_jesd.h"
 
+extern txqec_outputs_t txqecOut;
 
 bool adrv9009_check_sysref_rate(uint32_t lmfc, uint32_t sysref)
 {
@@ -260,6 +262,34 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 		goto error_11;
 	}
 
+	// read txqec correction parametes before init cal
+	TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+	printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d after init cal.\n",
+			txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+	// save uninitialized value
+	txqec_outputs_t txqecOutOrigin = txqecOut;
+
+	// write random value to rxqec correction hw
+	txqecOut.gain = 0xa5;
+	txqecOut.phase = 0xa6;
+	txqecOut.gd[0] = 0x5b;
+	txqecOut.gd[1] = 0x5c;
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_PHASE, txqecOut.phase);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GAIN, txqecOut.gain);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY, txqecOut.gd[0]);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY_2ND, txqecOut.gd[1]);
+
+	// read txqec correction parametes before init cal
+	TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+	printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d before init cal.\n",
+			txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+
+	// recover original value
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_PHASE, txqecOutOrigin.phase);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GAIN, txqecOutOrigin.gain);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY, txqecOutOrigin.gd[0]);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY_2ND, txqecOutOrigin.gd[1]);
+
 	/****************************************************/
 	/**** Run Talise ARM Initialization Calibrations ***/
 	/****************************************************/
@@ -284,6 +314,12 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 	} else {
 		/*< user code - Calibrations completed successfully > */
 		printf("talise: Calibrations completed successfully\n");
+
+		// read txqec correction parametes after init cal
+		TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+		printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d after init cal.\n",
+				txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+
 	}
 
 #ifndef ADRV9008_2
