@@ -23,6 +23,11 @@ SRCS += $(PROJECT)/src/app/headless_arm.c \
 	$(PROJECT)/src/app/app_jesd.c \
 	$(PROJECT)/src/app/app_transceiver.c \
 	$(PROJECT)/src/app/app_talise.c \
+	$(PROJECT)/src/app/txqec_cal/spi.c \
+	$(PROJECT)/src/app/txqec_cal/txqec.c \
+	$(PROJECT)/src/app/txqec_cal/txqec_corr.c \
+	$(PROJECT)/src/app/txqec_cal/txqec_hw.c \
+	$(PROJECT)/src/app/txqec_cal/txqec_init_cal.c \
 	$(DRIVERS)/frequency/ad9528/ad9528.c \
 	$(PROJECT)/src/devices/adi_hal/no_os_hal.c \
 	$(DRIVERS)/frequency/hmc7044/hmc7044.c \
@@ -48,6 +53,8 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
 	$(DRIVERS)/axi_core/jesd204/jesd204_clk.c \
 	$(DRIVERS)/api/no_os_spi.c \
 	$(DRIVERS)/api/no_os_gpio.c \
+    $(DRIVERS)/api/no_os_uart.c \
+	$(DRIVERS)/api/no_os_irq.c \
 	$(NO-OS)/jesd204/jesd204-core.c \
 	$(NO-OS)/jesd204/jesd204-fsm.c
 ifeq (y,$(strip $(IIOD)))
@@ -64,6 +71,7 @@ SRCS += $(NO-OS)/util/no_os_fifo.c \
 	$(PLATFORM_DRIVERS)/$(PLATFORM)_irq.c
 endif
 SRCS +=	$(NO-OS)/util/no_os_util.c \
+    $(NO-OS)/util/no_os_fifo.c \
 	$(NO-OS)/util/no_os_alloc.c \
 	$(NO-OS)/util/no_os_mutex.c \
 	$(NO-OS)/util/no_os_clk.c
@@ -74,7 +82,9 @@ SRCS += $(DRIVERS)/axi_core/jesd204/xilinx_transceiver.c \
 	$(PLATFORM_DRIVERS)/xilinx_axi_io.c \
 	$(PLATFORM_DRIVERS)/xilinx_delay.c \
 	$(PLATFORM_DRIVERS)/xilinx_spi.c \
-	$(PLATFORM_DRIVERS)/xilinx_gpio.c
+	$(PLATFORM_DRIVERS)/xilinx_gpio.c \
+	$(PLATFORM_DRIVERS)/xilinx_uart.c \
+	$(PLATFORM_DRIVERS)/xilinx_irq.c
 else
 SRCS += $(DRIVERS)/axi_core/clk_altera_a10_fpll/clk_altera_a10_fpll.c \
 	$(DRIVERS)/axi_core/jesd204/altera_a10_atx_pll.c \
