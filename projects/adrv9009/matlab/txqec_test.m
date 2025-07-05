@@ -3,7 +3,7 @@ clear all;
 clc;
 
 %% Test Configuration
-offline_sim = 0;
+offline_sim = 1;
 enable_pathdelay_est = 1;
 debug_info = 1;
 serial_port = "COM3";

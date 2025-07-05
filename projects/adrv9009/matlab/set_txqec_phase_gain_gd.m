@@ -1,5 +1,5 @@
-function [] = set_txqec_phase_gain_gd(serialCOM, phase, gain, gd)
-HEAD = 0x61;
+function [] = set_txqec_phase_gain_gd(serialCOM, gain, phase, gd)
+HEAD = 0x73;
 baudRate = 115200;
 
 %* enableMask[bit]  |  Bit description
@@ -32,13 +32,15 @@ end
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-maskBytes = typecast(swapbytes(uint32(enable_mask)), 'uint8');% big-endian
-dataBytes = typecast(swapbytes(uint32(0)), 'uint8'); % big-endian
+gainBytes = typecast(swapbytes(uint16(gain)), 'uint8');% big-endian
+phaseBytes = typecast(swapbytes(uint16(phase)), 'uint8');% big-endian
+gdBytes = typecast(swapbytes(uint32(gd)), 'uint8');% big-endian
 
-message = [HEAD, uint8(0), maskBytes, dataBytes];
+message = [HEAD, uint8(0), gainBytes, phaseBytes, gdBytes];
 
 write(device, message, "uint8");
 
-fprintf("set_tracking_cal_mask 0x%04X \n", enable_mask);
+fprintf("set_txqec gain = 0x%04X, phase = 0x%04X, gd = 0x%04X\n", ...
+    gain, phase, gd);
 
 end

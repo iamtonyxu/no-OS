@@ -1,5 +1,5 @@
 function [] = set_tracking_cal_mask(serialCOM, enable_mask)
-HEAD = 0x61;
+HEAD = 0x71;
 baudRate = 115200;
 
 %* enableMask[bit]  |  Bit description

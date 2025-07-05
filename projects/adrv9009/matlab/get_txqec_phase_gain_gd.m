@@ -1,5 +1,5 @@
 function [phase, gain, gd] = get_txqec_phase_gain_gd(serialCOM)
-HEAD = 0x62;
+HEAD = 0x72;
 baudRate = 115200;
 
 %* enableMask[bit]  |  Bit description
@@ -38,13 +38,20 @@ write(device, message, "uint8");
 pause(1); % wait for response
 response = read(device, 10, 'uint8');
 
-%response = [0x60, (uint32)enable_mask,  0, 0, 0, 0];
-if response(1) == 0x60
-    enable_mask = uint32(response(6)) + uint32(response(5))*2^8 + uint32(response(4))*2^16 + uint32(response(3))*2^24;
+%response = [HEAD, 0u, (int16)gain, (int16)phase, (int16)gd[0], (int16)gd[1]];
+if response(1) == HEAD
+    gd = zeros(1,2);
+    gain = int16(uint32(response(4)) + uint32(response(3))*2^8);
+    phase = int16(uint32(response(6)) + uint32(response(5))*2^8);
+    gd(1) = int16(uint32(response(8)) + uint32(response(7))*2^8);
+    gd(2) = int16(uint32(response(10)) + uint32(response(9))*2^8);
+    fprintf("get txqec gain = 0x%04X, phase = 0x%04X, gd(0) = 0x%04X, gd(1) = 0x%04X\n",...
+        gain, phase, gd(1), gd(2));
 else
-   enable_mask = [];
+   phase = [];
+   gain = [];
+   gd = zeros(1,2);
+   disp("failed to get txqec phase_gain_gd.");
 end
-
-fprintf("set_tracking_cal_mask 0x%04X \n", enable_mask);
 
 end
