@@ -35,6 +35,7 @@
 #endif
 #include "talise.h"
 #include "talise_config.h"
+#include "talise_cals.h"
 #include "app_config.h"
 #include "app_clocking.h"
 #include "app_jesd.h"
@@ -46,6 +47,10 @@
 #include "dpd_act_p.h"
 #include "dpd_err_codes_t.h"
 #include "sdcard_access.h"
+#include "txqec.h"
+#include "txqec_hw.h"
+#include "txqec_init_cal.h"
+
 char file_name[32] = "TEST0.BIN";
 
 //#define CAP_DEBUG
@@ -71,6 +76,8 @@ uint8_t tx_is_transfering = 0u;
 
 static dpd_TrackData_t dpdData;
 dpd_ErrCode_e dpdErr = DPD_ERR_CODE_NO_ERROR;
+
+txqec_outputs_t txqecOut;
 
 extern uint32_t sine_lut_i[16384];
 extern uint32_t sine_lut_q[16384];
@@ -197,7 +204,12 @@ int32_t start_iiod(struct axi_dmac *rx_dmac, struct axi_dmac *tx_dmac,
 
 #endif // IIO_SUPPORT
 
+// external/static functions Definition
 void parse_spi_command(void *devHalInfo);
+
+// global variables definition
+struct adi_hal hal[TALISE_DEVICE_ID_MAX];
+taliseDevice_t tal[TALISE_DEVICE_ID_MAX];
 
 	struct axi_adc_init rx_adc_init = {
 		"rx_adc",
@@ -349,10 +361,7 @@ int main(void)
 	uint32_t lmfc_rate = no_os_min(rx_lmfc_rate, rx_os_lmfc_rate);
 	lmfc_rate = no_os_min(tx_lmfc_rate, lmfc_rate);
 
-	int t;
-	struct adi_hal hal[TALISE_DEVICE_ID_MAX];
-	taliseDevice_t tal[TALISE_DEVICE_ID_MAX];
-	for (t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
+	for (int t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
 		hal[t].extra_gpio= &hal_gpio_param;
 		hal[t].extra_spi = &hal_spi_param;
 		tal[t].devHalInfo = (void *) &hal[t];
@@ -400,7 +409,7 @@ int main(void)
 	if (err != ADIHAL_OK)
 		goto error_2;
 
-	for (t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
+	for (int t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
 		err = talise_setup(&tal[t], &talInit);
 		if (err != ADIHAL_OK)
 			goto error_3;
@@ -608,7 +617,7 @@ int main(void)
 		printf("iiod error: %d\n", status);
 #endif // IIO_SUPPORT
 
-	for (t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
+	for (int t = TALISE_A; t < TALISE_DEVICE_ID_MAX; t++) {
 		talise_shutdown(&tal[t]);
 	}
 error_3:
@@ -661,6 +670,11 @@ void parse_spi_command(void *devHalInfo)
 	uint32_t spi_data = 0;
     uint8_t dpd_lutId = 0;
 
+    //for txqec test
+	uint32_t chan = 0u;
+	uint32_t enableMask = 0u;
+	uint32_t txqec_param_mask = 0x0Fu;
+
 	error = no_os_uart_init(&uart_desc, &uart_param);
 
 	if(error == 0)
@@ -699,7 +713,7 @@ void parse_spi_command(void *devHalInfo)
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					break;
 #if 0
-				case 0x5C:
+				case 0x5C: //dpd_actuator_v1
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
 					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
@@ -737,7 +751,7 @@ void parse_spi_command(void *devHalInfo)
 					no_os_mdelay(10);
 					break;
 #endif
-				case 0x5C:
+				case 0x5C: //dpd_actuator_v2
 					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
 					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
 					if(bytes_number/8 <= DAC_BUFFER_SAMPLES)
@@ -1093,6 +1107,44 @@ void parse_spi_command(void *devHalInfo)
                         no_os_mdelay(100);
                     }
                 	break;
+				case 0x70: // get EnabledTrackingCals
+					TALISE_getEnabledTrackingCals(&tal[TALISE_A], &enableMask);
+					for(int i = 1; i < 5; i++) {
+						wr_data[i + 1] = (enableMask >> (8 * (4 - i))) & 0xff;
+					}
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+				case 0x71: // set EnabledTrackingCals
+					enableMask = 0u;
+					for(int i = 1; i < 5; i++) {
+						enableMask |= (wr_data[i + 1] << (8 * (4 - i)));
+					}
+					TALISE_enableTrackingCals(&tal[TALISE_A], enableMask);
+					break;
+				case 0x72: // read qec correction gain and phase adj
+					txqec_param_mask = 0x0Fu;
+					txqec_get_phase_gain_gd(devHalInfo, chan, &txqecOut, txqec_param_mask);
+					wr_data[2] = (txqecOut.gain >> 8) & 0xff;
+					wr_data[3] = (txqecOut.gain >> 0) & 0xff;
+
+					wr_data[4] = (txqecOut.phase >> 8) & 0xff;
+					wr_data[5] = (txqecOut.phase >> 0) & 0xff;
+
+					wr_data[6] = (txqecOut.gd[0] >> 8) & 0xff;
+					wr_data[7] = (txqecOut.gd[0] >> 0) & 0xff;
+
+					wr_data[8] = (txqecOut.gd[1] >> 8) & 0xff;
+					wr_data[9] = (txqecOut.gd[1] >> 0) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+				case 0x73: // write qec correction gain and phase adj
+					int16_t wr_gain = wr_data[2] << 8 +  wr_data[3];
+					int16_t wr_phase = wr_data[4] << 8 +  wr_data[5];
+
+					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_PHASE, wr_gain);
+					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_GAIN, wr_phase);
+					break;
+
 				default:
 					/* do nothing */
 					printf("Invalid command.\n");
