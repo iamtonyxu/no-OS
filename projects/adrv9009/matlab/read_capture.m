@@ -1,4 +1,4 @@
-function [capData] = read_capture(serialCOM, capSize, waitSecond)
+function [capData, capTu] = read_capture(serialCOM, capSize, waitSecond)
 HEAD = 0x5D;
 baudRate = 115200;
 
@@ -36,27 +36,65 @@ pause(uint8(waitSecond)); % wait for response
 %data = randi(16,1);
 data = read(device, capSize * 2 * 2, 'uint8');
 
-data_i = zeros(1, capSize);
-data_q = zeros(1, capSize);
-for ii = 1:capSize-1
-    data_i(ii) = data(4*(ii-1)+2)*2^8 + data(4*(ii-1)+1);
-    data_q(ii) = data(4*(ii-1)+4)*2^8 + data(4*(ii-1)+3);
+data_i = [];
+data_q = [];
+
+for ii = 0:length(data)/8-1
+    data_i(end+1:end+4) = data(ii*8+(1:4));
+    data_q(end+1:end+4) = data(ii*8+(5:8));
 end
 
-for i = 1:length(data_i)
-    if data_i(i) > 2^15
-        data_i(i) = data_i(i) - 2^16;
+signal_i = [];
+signal_q = [];
+for ii = 0:length(data_i)/2-1
+    signal_i(end+1) = data_i(2*ii+2)*2^8 + data_i(2*ii+1);
+    signal_q(end+1) = data_q(2*ii+2)*2^8 + data_q(2*ii+1);
+end
+
+for i = 1:length(signal_i)
+    if signal_i(i) > 2^15
+        signal_i(i) = signal_i(i) - 2^16;
     end
-    if data_q(i) > 2^15
-        data_q(i) = data_q(i) - 2^16;
+    if signal_q(i) > 2^15
+        signal_q(i) = signal_q(i) - 2^16;
     end
 end
 
-capData = (data_i + 1j*data_q)./2^15;
-%capData = (data_i + 1j*data_q);
+capData = (signal_i + 1j*signal_q)./2^15;
+
+%% Debug: read capBuf
+if  1
+data = read(device, capSize * 2 * 2, 'uint8');
+
+data_i = [];
+data_q = [];
+
+for ii = 0:length(data)/8-1
+    data_i(end+1:end+4) = data(ii*8+(1:4));
+    data_q(end+1:end+4) = data(ii*8+(5:8));
+end
+
+signal_i = [];
+signal_q = [];
+for ii = 0:length(data_i)/2-1
+    signal_i(end+1) = data_i(2*ii+2)*2^8 + data_i(2*ii+1);
+    signal_q(end+1) = data_q(2*ii+2)*2^8 + data_q(2*ii+1);
+end
+
+for i = 1:length(signal_i)
+    if signal_i(i) > 2^15
+        signal_i(i) = signal_i(i) - 2^16;
+    end
+    if signal_q(i) > 2^15
+        signal_q(i) = signal_q(i) - 2^16;
+    end
+end
+
+capTu = (signal_i + 1j*signal_q)./2^15;
+end
 
 %%
-Fs = 122.88e6;
+Fs = 245.76e6*2;
 FFT_Length = capSize;
 f = Fs*(0:(FFT_Length/2))/FFT_Length;
 
