@@ -7,7 +7,7 @@ r = (capPos:capLen + capPos - 1);
 fRange = r;
 
 if ~exist('osRate', 'var')
-    osRate = 16;
+    osRate = 64;
 end
 
 b = intfilt(osRate, 8, .5);

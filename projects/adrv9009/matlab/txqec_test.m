@@ -19,18 +19,19 @@ cap_size = L;
 % txqec stuff
 INITIAL_PHASE_VALUE = 512;
 INITIAL_GAIN_VALUE = 0x4000;
+PARAM_ADJ_SCALE = 0.5;
 
 %% generate single tone waveform
 if offline_sim
     phi = 2/180*pi; % phase error
     gain = 0.80; % gain error
 
-    tx = Amp * exp(1i*2*pi*Fc*t); 
-    %rxAligned = tx; % no qec error
-    rxAligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi));
+    tx_aligned = Amp * exp(1i*2*pi*Fc*t); 
+    %rx_aligned = tx; % no qec error
+    rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi));
 else
     tx = Amp * exp(1i*2*pi*Fc*t);
-    plot_signal_in_freq_domain(tx, Fs, L);
+    plot_signal_in_freq_domain(tx, Fs, L, "generated tone");
 end
 
 %% online test: download waveform and read capture
@@ -42,15 +43,15 @@ if offline_sim == 0
         % download wideband signal
         tx_wb = load('LTE20_122P88_N11BackOff.txt');
         tx_wb = (tx_wb(1:L, 1) + 1j*tx_wb(1:L,2))./2^15; tx_wb = tx_wb.';
-        plot_signal_in_freq_domain(tx_wb, Fs, L);
+        plot_signal_in_freq_domain(tx_wb, Fs, L, "generate wideband signal");
         download_waveform(serial_port, tx_wb);
         pause(1);
     
         % capture data to calculate path delay between tx and orx
-        rx_wb = read_capture(serial_port, cap_size, 8);
+        [cap_rx_wb, cap_tu_wb] = read_capture(serial_port, cap_size, 8);
     
         % path delay estimation
-        [intDelay, fracDelay, rx_wb_aligned, m] = CalDelayPhase(tx_wb, rx_wb);
+        [intDelay, fracDelay, rx_wb_aligned, m] = CalDelayPhase(cap_tu_wb, cap_rx_wb);
     end
 
     % disable txqec tracking cal
@@ -66,18 +67,23 @@ if offline_sim == 0
     pause(1);
  
     % read orx capture (bench mark)
-    %rx_good = read_capture(serial_port, cap_size, 8);
+    %[cap_rx_good, cap_tu_good] = read_capture(serial_port, cap_size, 8);
     
     % reset phase/gain
-    
+    set_txqec_phase_gain_gd(serial_port, INITIAL_GAIN_VALUE, INITIAL_PHASE_VALUE, [0,0]);
+
     % read orx capture (without txqec)
-    rx = read_capture(serial_port, cap_size, 8);
-    plot_signal_in_freq_domain(rx, Fs, cap_size);
+    [cap_rx, cap_tu] = read_capture(serial_port, cap_size, 8);
+    plot_signal_in_freq_domain(cap_rx, Fs, cap_size, "captures without txqec");
 
 end
 
 %% channel estimation and compute phase/gain adjustment
-update = 0;
+updates = 0;
+txqec.gain = INITIAL_GAIN_VALUE;
+txqec.phase = INITIAL_PHASE_VALUE;
+txqec.gd = zeros(1,2);
+
 for batch_cnt = 1:10
     fprintf("batch = %d\n", batch_cnt);
     %sync tx and orx
@@ -85,17 +91,18 @@ for batch_cnt = 1:10
         % do nothing
         % assume tx and rx are aligned while offline simulation
     else
-        [intDelay, fracDelay, rxAligned, m] = CalDelayPhase(tx, rx);
+        cap_rx = std(cap_tu) / std(cap_rx) * cap_rx;
+        [tx_aligned, rx_aligned] = adjust_delay(cap_tu, cap_rx, int_delay, frac_delay);
         if debug_info
             figure;
-            plot(abs(tx)); hold on
-            plot(abs(rxAligned), '-.');
+            plot(abs(tx_aligned)); hold on
+            plot(abs(rx_aligned), '-.');
         end
     end
 
     % read and accumulate data from correlator
-    u = real(tx); v = imag(tx);
-    z = real(rxAligned); y = imag(rxAligned);
+    u = real(tx_aligned); v = imag(tx_aligned);
+    z = real(rx_aligned); y = imag(rx_aligned);
     
     out.uu = u * u';
     out.vv = v * v';
@@ -133,20 +140,31 @@ for batch_cnt = 1:10
         % Scale to code words
         TXQEC_GAIN_SCALE = 15400;
         txqec_adj_phase_scale_factor = 1;
-        lo_ghz = 2.4; % GHz
+        lo_ghz = 3.5; % GHz
         adj.gain  = gain_correction * TXQEC_GAIN_SCALE;
         adj.phase = (phase_correction * txqec_adj_phase_scale_factor) / lo_ghz;
-        update = 1;
-        disp("compute qec adjustment - done!");
-        break;
+
+        % Only adjust by a fraction of the correction to avoid overshooting
+        gain_adjust  = adj.gain * PARAM_ADJ_SCALE;
+        phase_adjust = adj.phase * PARAM_ADJ_SCALE;
+  
+        txqec.gain = txqec.gain + gain_adjust;
+        txqec.phase = txqec.phase + phase_adjust;
+
+        % program txqec hw
+        if offline_sim == 0
+            set_txqec_phase_gain_gd(serial_port, txqec.gain, txqec.phase, txqec.gd);
+        end
+        updates = updates + 1;
+        fprintf("txqec updates = %d\n", updates);
     else
-        adj.gain = INITIAL_PHASE_VALUE;
-        adj.phase = INITIAL_GAIN_VALUE;
+        adj.gain = 0;
+        adj.phase = 0;
     end
 end
 
 %% program qec correction hw if update is true
-if update
+if updates > 0
     % write qec phase and gain
     % set_txqec_phase_gain_gd(serial_port, phase, gain, gd);
 end
@@ -158,7 +176,7 @@ if offline_sim
 end
 
 if debug_info
-    plot_signal_in_freq_domain([rxAligned; rr], Fs, cap_size);
+    plot_signal_in_freq_domain([rx_aligned; rr], Fs, cap_size, "before vs after txqec");
 end
 
 %% helper functions
