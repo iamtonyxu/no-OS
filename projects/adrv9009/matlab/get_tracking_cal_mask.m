@@ -38,13 +38,13 @@ write(device, message, "uint8");
 pause(1); % wait for response
 response = read(device, 10, 'uint8');
 
-%response = [0x60, (uint32)enable_mask,  0, 0, 0, 0];
-if response(1) == 0x60
+%response = [HEAD, (uint32)enable_mask,  0, 0, 0, 0];
+if response(1) == HEAD
     enable_mask = uint32(response(6)) + uint32(response(5))*2^8 + uint32(response(4))*2^16 + uint32(response(3))*2^24;
 else
    enable_mask = [];
 end
 
-fprintf("set_tracking_cal_mask 0x%04X \n", enable_mask);
+fprintf("get_tracking_cal_mask 0x%04X \n", enable_mask);
 
 end

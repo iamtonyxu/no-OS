@@ -29,16 +29,35 @@ data_q = imag(signal);
 data_i = int16(data_i * 32767);
 data_q = int16(data_q * 32767);
 
+% NOTE: It's aimed to skip a bug inside FPGA module axi_dpd_actuator.v
+if 0
+data_i_1 = data_i(1:2:end);
+data_i_2 = data_i(2:2:end);
+data_i(1:2:end) = data_i_2;
+data_i(2:2:end) = data_i_1;
+
+data_q_1 = data_q(1:2:end);
+data_q_2 = data_q(2:2:end);
+data_q(1:2:end) = data_q_2;
+data_q(2:2:end) = data_q_1;
+end
+
 %data_i = typecast((int16(data_i)), 'int8'); % little-endian
 %data_q = typecast((int16(data_q)), 'int8'); % little-endian
 
 data_i = typecast(swapbytes(int16(data_i)), 'int8'); % big-endian
 data_q = typecast(swapbytes(int16(data_q)), 'int8'); % big-endian
 
+
+
 message = [];
 for ii = 0:length(data_i)/2-1
     message(end+1:end+2) = data_i(2*ii+(1:2));
     message(end+1:end+2) = data_q(2*ii+(1:2));
+%      data_i = 0x1100 + rem(ii,256);
+%      data_q = 0x2200 + rem(ii+10, 256);
+%      message(end+1:end+2) = typecast(swapbytes(int16(data_i)), 'int8');
+%      message(end+1:end+2) = typecast(swapbytes(int16(data_q)), 'int8');
 end
 
 write(device, message, 'int8');

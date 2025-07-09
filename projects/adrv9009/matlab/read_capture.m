@@ -94,6 +94,7 @@ capTu = (signal_i + 1j*signal_q)./2^15;
 end
 
 %%
+if 0
 Fs = 245.76e6*2;
 FFT_Length = capSize;
 f = Fs*(0:(FFT_Length/2))/FFT_Length;
@@ -103,6 +104,7 @@ P2 = abs(Y/FFT_Length);
 P1 = P2(1:FFT_Length/2+1);
 figure;
 plot(f,P1); title('signal in freq domain');
+end
 
 disp("read capture data done.");
 end

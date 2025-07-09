@@ -2,19 +2,6 @@ function [] = set_txqec_phase_gain_gd(serialCOM, gain, phase, gd)
 HEAD = 0x73;
 baudRate = 115200;
 
-%* enableMask[bit]  |  Bit description
-%* -----------------|----------------------
-%*             [0]  | TRACK_RX1_QEC
-%*             [1]  | TRACK_RX2_QEC
-%*             [2]  | TRACK_ORX1_QEC
-%*             [3]  | TRACK_ORX2_QEC
-%*             [4]  | TRACK_TX1_LOL
-%*             [5]  | TRACK_TX2_LOL
-%*             [6]  | TRACK_TX1_QEC
-%*             [7]  | TRACK_TX2_QEC
-%*             [8]  | TRACK_RX1_HD2
-%*             [9]  | TRACK_RX2_HD2
-
 serialCOM = upper(serialCOM);
 freeports = serialportlist("available");
 if find(freeports == serialCOM)
@@ -34,13 +21,13 @@ device = serialport(serialCOM, baudRate, "Timeout", 3);
 
 gainBytes = typecast(swapbytes(uint16(gain)), 'uint8');% big-endian
 phaseBytes = typecast(swapbytes(uint16(phase)), 'uint8');% big-endian
-gdBytes = typecast(swapbytes(uint32(gd)), 'uint8');% big-endian
+gdBytes = typecast(swapbytes(uint32(0)), 'uint8');% big-endian
 
 message = [HEAD, uint8(0), gainBytes, phaseBytes, gdBytes];
 
 write(device, message, "uint8");
 
-fprintf("set_txqec gain = 0x%04X, phase = 0x%04X, gd = 0x%04X\n", ...
-    gain, phase, gd);
+fprintf("set_txqec gain = 0x%04X, phase = 0x%04X, gd(1) = 0x%04X, gd(2) = 0x%04X\n", ...
+    gain, phase, gd(1), gd(2));
 
 end

@@ -36,6 +36,7 @@
 #include "talise.h"
 #include "talise_config.h"
 #include "talise_cals.h"
+#include "talise_error.h"
 #include "app_config.h"
 #include "app_clocking.h"
 #include "app_jesd.h"
@@ -1138,13 +1139,22 @@ void parse_spi_command(void *devHalInfo)
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					break;
 				case 0x73: // write qec correction gain and phase adj
-					int16_t wr_gain = wr_data[2] << 8 +  wr_data[3];
-					int16_t wr_phase = wr_data[4] << 8 +  wr_data[5];
+					int16_t wr_gain = (wr_data[2] << 8) +  wr_data[3];
+					int16_t wr_phase = (wr_data[4] << 8) +  wr_data[5];
 
-					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_PHASE, wr_gain);
-					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_GAIN, wr_phase);
+					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_GAIN, wr_gain);
+					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_PHASE, wr_phase);
 					break;
-
+				case 0x74: // get arm error code
+					uint32_t errSrc = 0u, errCode = 0u;
+					TALISE_getErrCode(&tal[0], &errSrc, &errCode);
+					for(int i = 1; i < 5; i++) {
+						wr_data[i + 1] = (errSrc >> (8 * (4 - i))) & 0xff;
+					}
+					for(int i = 1; i < 5; i++) {
+						wr_data[i + 5] = (errCode >> (8 * (4 - i))) & 0xff;
+					}
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
 				default:
 					/* do nothing */
 					printf("Invalid command.\n");
