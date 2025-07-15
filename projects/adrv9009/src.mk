@@ -46,7 +46,6 @@ SRCS += $(PROJECT)/src/app/headless.c \
 	$(PROJECT)/src/txqec_cal/txqec_corr.c \
 	$(PROJECT)/src/txqec_cal/txqec_hw.c \
 	$(PROJECT)/src/txqec_cal/txqec_init_cal.c \
-
 	$(DRIVERS)/frequency/ad9528/ad9528.c \
 	$(PROJECT)/src/devices/adi_hal/no_os_hal.c \
 	$(DRIVERS)/frequency/hmc7044/hmc7044.c \
@@ -141,6 +140,13 @@ INCS +=	$(PROJECT)/src/app/app_config.h \
 	$(PROJECT)/src/dpd/dpd_utils.h \
 	$(PROJECT)/src/dpd/math_utils.h \
 	$(PROJECT)/src/dpd/math_utils_t.h \
+	$(PROJECT)/src/txqec_cal/error_code_t.h \
+	$(PROJECT)/src/txqec_cal/spi.h \
+	$(PROJECT)/src/txqec_cal/spi_addr_def.h \
+	$(PROJECT)/src/txqec_cal/txqec.h \
+	$(PROJECT)/src/txqec_cal/txqec_corr.h \
+	$(PROJECT)/src/txqec_cal/txqec_hw.h \
+	$(PROJECT)/src/txqec_cal/txqec_init_cal.h \
 	$(DRIVERS)/frequency/ad9528/ad9528.h \
 	$(PROJECT)/src/devices/adi_hal/adi_hal.h \
 	$(PROJECT)/src/devices/adi_hal/common.h \
