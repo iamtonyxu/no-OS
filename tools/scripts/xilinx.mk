@@ -160,7 +160,7 @@ LDFLAGS += -Xlinker --defsym=_HEAP_SIZE=0x100000 			\
 endif
 
 # Common xilinx libs
-LIB_FLAGS += -Wl,--start-group,-lxil,-lgcc,-lc,--end-group
+LIB_FLAGS += -Wl,--start-group,-lxil,-lgcc,-lc,-lm,--end-group
 
 # Add the common include paths
 CFLAGS += -I$(BUILD_DIR)/app/src
