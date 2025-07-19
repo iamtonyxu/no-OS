@@ -47,8 +47,8 @@ const char *json_profile_active_util_init = "{ \n\
     \"auxPllFreq_Hz\": 0 \n\
   }, \n\
   \"initCals\": { \n\
-    \"calMask\": 669687, \n\
-    \"channelMask\": 15, \n\
+    \"calMask\": 866303, \n\
+    \"channelMask\": 12, \n\
     \"warmBoot\": 0 \n\
   }, \n\
   \"calRsltsFile\": null, \n\
