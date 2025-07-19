@@ -1230,8 +1230,8 @@ int32_t axi_dac_data_setup(struct axi_dac *dac)
 			axi_dac_dds_set_frequency(dac, ((i * 2) + 1), 3 * 1000 * 1000);
 			axi_dac_dds_set_phase(dac, ((i * 2) + 0), (i % 2) ? 0 : 90000);
 			axi_dac_dds_set_phase(dac, ((i * 2) + 1), (i % 2) ? 0 : 90000);
-			axi_dac_dds_set_scale(dac, ((i * 2) + 0), 50 * 1000);
-			axi_dac_dds_set_scale(dac, ((i * 2) + 1), 50 * 1000);
+			axi_dac_dds_set_scale(dac, ((i * 2) + 0), 500 * 1000);
+			axi_dac_dds_set_scale(dac, ((i * 2) + 1), 500 * 1000);
 			axi_dac_write(dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 0), 0);
 			axi_dac_write(dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 1), 0);
 		}
