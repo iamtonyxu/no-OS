@@ -7,7 +7,7 @@ option = 0; % 0: tone; 1: nb signal
 offline_sim = 0;
 enable_pathdelay_est = 1;
 skip_download_waveform = 0;
-debug_info = 1;
+debug_info = 0;
 serial_port = "COM7";
 
 % signal generate
@@ -17,7 +17,7 @@ L = 8192;
 t = 1/Fs*(0:L-1);
 Amp = 0.5; % amplitude of single tone
 phi = 30; % degree
-cap_size = 8192;
+cap_size = 4096;
 
 % txqec initial config
 INITIAL_PHASE_VALUE = 512;
@@ -37,7 +37,7 @@ if offline_sim
 else
     if option == 0 % tone as train signal
         tu = Amp * exp(1i*2*pi*Fc*t+phi/180*pi);
-        plot_signal_in_freq_domain(tu, Fs, L, "generated tone");
+        %plot_signal_in_freq_domain(tu, Fs, L, "generated tone");
     elseif option == 1 % nb signal
         tu = load('UMTS_3P84_UL_245P76_20M_32k.txt');
         tu = (tu(1:L, 1) + 1j*tu(1:L,2))./2^15;
@@ -54,9 +54,60 @@ else
     end
 end
 
-download_waveform(serial_port, tu);
+%download_waveform(serial_port, tu);
 
-%[capData, capTu] = read_capture(serial_port, cap_size, 5);
+%% select DDS
+datasel = 0; % 0: DDS, 1: PN15
+tone_freq = 60; % MHz
+tone_scale = 500; % max is 1000
+set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
+
+%% set path delay
+int_delay = 0;
+frac_delay = 1;
+set_capture_delay(serial_port, int_delay, frac_delay);
+
+%% read capture
+for ii = 1:10
+    [capORx] = read_capture(serial_port, 0, 5);
+    if debug_info
+        plot_signal_in_freq_domain(capORx, Fs*4, 4096, "capORx");
+    end
+    
+    [capTx] = read_capture(serial_port, 1, 5);
+    if debug_info
+        plot_signal_in_freq_domain(capTx, Fs*4, 4096, "capTx");
+    end
+    
+    %[capTu] = read_capture(serial_port, 2, 5);
+    %plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
+    
+    if 0
+        tx_aligned = capTx;
+        [intDelay, fracDelay, orx_aligned, m] = CalDelayPhase(capTx, capORx);
+        orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
+        fprintf("intDelay = %d, fracDelay = %d\n", intDelay, fracDelay);
+        figure;
+        plot(abs(xcorr(capTx, capORx)));
+    else
+        intDelay = -293-3; %-293: wb signal, -290: tone
+        fracDelay = 1;
+        [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
+        orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
+    end
+
+    figure;
+    rr = 300+(1:3500);
+    plot(real(tx_aligned(rr)), '.b--'); hold on
+    plot(real(orx_aligned(rr)), '.r--');
+
+    ratio = sum(abs(tx_aligned(rr)))/sum(abs(orx_aligned(rr)));
+    diff_ratio = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
+    fprintf("ratio = %f\n", ratio);
+    fprintf("diff_ratio = %f\n", diff_ratio);
+
+end
+
 
 %% todo
 if 0

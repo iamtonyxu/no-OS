@@ -60,13 +60,53 @@
 
 #include "adrv9025.h"
 #include "ad9528.h"
+#include "adi_adrv9025_external_dpd_types.h"
+#include "adi_adrv9025_external_dpd.h"
+
+//redefine in axi_dac_core.c
+#define AXI_DAC_REG_DATA_SELECT(c)		(0x0418 + (c) * 0x40)
 
 /*******************************************************************************
  * global and static variables
 *******************************************************************************/
 #define DAC_DDR_ENABLE 1
-#define BASIC_EXAMPLE 0
+#define BASIC_EXAMPLE 1
 #define ORX_CAPTURE 1
+
+uint8_t captureCompleteFlag = 0u;
+adi_adrv9025_ExtDpdCaptureConfig_t dpdCaptureConfig = {
+	.extDpdCaptureTriggerPin = ADI_ADRV9025_GPIO_INVALID,
+	.extDpdCaptureDoneStatusPin = ADI_ADRV9025_GPIO_INVALID,
+	{
+			.extDpdCaptureFifoDelay = 0u,
+			.extDpdCaptureInterpolationIndex = 0u,
+	},
+	{
+			.extDpdCapturetxChannelSel = ADI_ADRV9025_TX3,
+			.dpdCaptureTypeSel = ADI_ADRV9025_EXT_DPD_CAPTURE_IMMEDIATE_TRIGGER,
+			#if 1
+			.dpdCaptureTxObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_OBS_POST_DPD_ACTUATOR,
+			.dpdCaptureTxAltObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_ALT_OBS_DPD_ACTUATOR,
+			#else
+			.dpdCaptureTxObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_OBS_POST_DPD_ACTUATOR,
+			.dpdCaptureTxAltObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_ALT_OBS_PRE_CFR,		
+			#endif	
+			.dpdCaptureSize = ADI_ADRV9025_EXT_DPD_CAPTURE_SIZE_4096_SAMPLES,
+			{
+					.extDpdPeakCaptureInputSel = ADI_ADRV9025_EXT_DPD_CAPTURE_PEAK_DET_DPD_INPUT,
+					.extDpdPeakWinCnt = 491520,
+					.extDpdPeakDetectIIREnable = 0,
+					.extDpdPeakDetectIIRBypass = 1,
+					.extDpdPeakDecay = 1,
+					.extDpdPeakExtendedWindowUs = 0,
+			},
+			.extDpdCaptureAlignDelay = 0u,
+			.extDpdCaptureDelay = 0
+	},
+
+};
+adi_adrv9025_ExtDpdCaptureDetailedStatus_t extDpdCaptureDetailedStatus;
+adi_adrv9025_ExtDpdCaptureData_t extDpdCaptureData;
 
 uint32_t dac_buffer_dma[DAC_BUFFER_SAMPLES] __attribute__((aligned(16)));
 //uint16_t adc_buffer_dma[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((aligned(16)));
@@ -314,12 +354,10 @@ int dma_example_main(void)
 		goto error_5;
 	}
 
-	//status = axi_dac_init(&phy->tx_dac, &tx_dac_init);
 	status = axi_dac_init_begin(&phy->tx_dac, &tx_dac_init);
 	if (status)
 		goto error_6;
 
-	//status = axi_adc_init(&phy->rx_os_adc, &rx_os_adc_init);
 	status = axi_adc_init_begin(&phy->rx_adc, &rx_adc_init);
 	if (status)
 		goto error_7;
@@ -349,7 +387,7 @@ int dma_example_main(void)
 	axi_dac_data_setup(phy->tx_dac);
 #else
 	// Set PN
-	axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_ZERO);
+	axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_PN7);
 #endif
 #endif //BASIC_EXAMPLE
 
@@ -454,7 +492,7 @@ struct axi_dma_transfer read_transfer = {
 	axi_jesd204_tx_status_read(tx_jesd);
 	axi_jesd204_rx_status_read(rx_jesd);
 
-#if 1
+#if 0
 	// Note: run adrv9025 init cals
 	status = adrv9025_jesd204_link_setup(phy->jdev, JESD204_STATE_OP_REASON_INIT);
 	if(status != JESD204_STATE_CHANGE_DONE){
@@ -477,7 +515,6 @@ struct axi_dma_transfer read_transfer = {
 #if BASIC_EXAMPLE == 0
 	/* Transfer the data. */
 	axi_dmac_transfer_start(tx_dmac, &transfer);
-	axi_dmac_transfer_wait_completion(tx_dmac, 500);
 
 	/* Flush cache data. */
 #if DAC_DDR_ENABLE
@@ -517,6 +554,79 @@ struct axi_dma_transfer read_transfer = {
 		rx_adc_init.num_channels,
 		8 * sizeof(adc_buffer_dma[0]));
 #endif
+
+	/* ext dpd capture init */
+	// Enable Tx3 and ORx3
+	adi_adrv9025_RxTxEnableSet(phy->madDevice, 0x40, 0x04);
+
+	// ENABLE:  trackcal_orx3_qec, trackcal_tx3_lol
+	// DISABLE: trackcal_tx3_qec
+    uint64_t enableMaskSet = 0x0444u, enableMaskGet = 0u;
+	status = adi_adrv9025_TrackingCalsEnableSet(phy->madDevice, enableMaskSet, 1);
+	adi_adrv9025_TrackingCalsEnableGet(phy->madDevice, &enableMaskGet);
+
+	if(enableMaskGet != enableMaskSet)
+	{
+		pr_info("Failed on adi_adrv9025_TrackingCalsEnableSet.\n");
+	}
+
+	// enable dpd actuator
+	adi_adrv9025_ExtDpdActuatorEnableSet(phy->madDevice, 0x04, 1);
+
+	// bypass dpd actuator
+	adi_adrv9025_ExtDpdActutatorPassthruSet(phy->madDevice, 0x04, 1);
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureConfigSet(phy->madDevice, &dpdCaptureConfig);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureConfigSet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureConfigSet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureConfigGet(phy->madDevice, &dpdCaptureConfig);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureConfigGet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureConfigGet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureStartTriggerSet(phy->madDevice);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureStartTriggerSet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureStartTriggerSet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureDoneStatusGet(phy->madDevice, &captureCompleteFlag);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureDoneStatusGet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureDoneStatusGet.\n");
+
+		if(captureCompleteFlag == 1)
+		{
+			pr_info("a capture completes!\n");
+
+			adi_adrv9025_ExtDpdCaptureDetailedStatusGet(phy->madDevice,
+					dpdCaptureConfig.extDpdCaptureCtrl.extDpdCapturetxChannelSel,
+					&extDpdCaptureDetailedStatus);
+
+			adi_adrv9025_ExtDpdCaptureDataGet(phy->madDevice,
+					&extDpdCaptureData);
+		}
+		else
+		{
+			pr_info("a capture in progress/not started!\n");
+		}
+	}
 
 	/* no-ending loop to handle commands from PC */
 	parse_spi_command((void *)phy->madDevice);
@@ -721,44 +831,148 @@ static void parse_spi_command(void *devHalInfo)
 					break;
 
 				case 0x5D:
-					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
-					if(bytes_number > ADC_BUFFER_SAMPLES * 2)
+					// NOTE: ignore bytes_number from PC
+					//bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					uint8_t act_enable = 1;
+					uint8_t act_passthru_enable = 1;
+					uint16_t CAP_SIZE = ADRV9025_MAX_EXT_DPD_CAPTURE_SAMPLE_SIZE; // 4096u
+					bytes_number = CAP_SIZE * 2;
+					uint8_t cap_point = wr_data[4];
+					if(cap_point > 3)
+						cap_point = 3;
+
+					if(cap_point == 0) // only trigger when cap_point == 0
 					{
-						// todo: sanity check later
-						bytes_number = ADC_BUFFER_SAMPLES * 2;
-					}
+#if 0
+						// Enable Tx3 and ORx3
+						adi_adrv9025_RxTxEnableSet(phy->madDevice, 0x40, 0x04);
 
-#if ORX_CAPTURE == 0
-					/* Read the data from the ADC DMA. */
-					axi_dmac_transfer_start(rx_dmac, &read_transfer);
-
-					/* Wait until transfer finishes */
-					status = axi_dmac_transfer_wait_completion(rx_dmac, 1000);
-#else
-					/* Read the data from the ADC DMA. */
-					axi_dmac_transfer_start(rx_os_dmac, &read_transfer);
-
-					/* Wait until transfer finishes */
-					status = axi_dmac_transfer_wait_completion(rx_os_dmac, 1000);
-
+						// enable dpd actuator
+						adi_adrv9025_ExtDpdActuatorEnableSet(phy->madDevice, 0x04, 1);
+						adi_adrv9025_ExtDpdActuatorEnableGet(phy->madDevice, 0x04, &act_enable);
+						if(act_enable == 1){
+							// bypass dpd actuator
+							adi_adrv9025_ExtDpdActutatorPassthruSet(phy->madDevice, 0x04, 1);
+							adi_adrv9025_ExtDpdActutatorPassthruGet(phy->madDevice, 0x04, &act_passthru_enable);
+						}
 #endif
+						if(act_passthru_enable == 1)
+						{
+							// trigger a capture
+							status = adi_adrv9025_ExtDpdCaptureStartTriggerSet(phy->madDevice);
 
-					Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR, ADC_BUFFER_SAMPLES*2);
+							// get capture status
+							adi_adrv9025_ExtDpdCaptureDoneStatusGet(phy->madDevice, &captureCompleteFlag);
 
-					// send ORx via uart
-					memcpy(wr_data, (uint8_t*)ADC_DDR_BASEADDR, bytes_number);
-					bytes_send = 0u;
-					while(bytes_send + bytes_chunk < bytes_number)
-					{
-						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
-						bytes_send += bytes_chunk;
+							// get capture detailed status
+							adi_adrv9025_ExtDpdCaptureDetailedStatusGet(phy->madDevice,
+									dpdCaptureConfig.extDpdCaptureCtrl.extDpdCapturetxChannelSel,
+									&extDpdCaptureDetailedStatus);
+						}
+
+						// get capture data
+						if(captureCompleteFlag)
+						{
+							adi_adrv9025_ExtDpdCaptureDataGet(phy->madDevice, &extDpdCaptureData);
+						}
 					}
-					if(bytes_send < bytes_number)
+
+					// send capture data via uart
+					//for(int ii=0; ii<3*2; ii++)
+					for(int ii = cap_point*2; ii < (cap_point+1)*2; ii++)
 					{
-						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+						uint8_t *pbuf;
+						switch(ii){
+						case 0:
+							pbuf = (uint8_t*)extDpdCaptureData.orxCaptureData.extDpdCaptureDataI;
+							break;
+						case 1:
+							pbuf = (uint8_t*)extDpdCaptureData.orxCaptureData.extDpdCaptureDataQ;
+							break;
+						case 2:
+							pbuf = (uint8_t*)extDpdCaptureData.txCaptureData.extDpdCaptureDataI;
+							break;
+						case 3:
+							pbuf = (uint8_t*)extDpdCaptureData.txCaptureData.extDpdCaptureDataQ;
+							break;
+						case 4:
+							pbuf = (uint8_t*)extDpdCaptureData.txAlternateCaptureData.extDpdCaptureDataI;
+							break;
+						case 5:
+							pbuf = (uint8_t*)extDpdCaptureData.txAlternateCaptureData.extDpdCaptureDataQ;
+							break;
+						default:
+							pbuf = NULL;
+							break;
+						}
+
+						if(captureCompleteFlag)
+						{
+							memcpy(wr_data, pbuf, CAP_SIZE*2);
+						}
+						else
+						{
+							memset(wr_data, 0x5A, CAP_SIZE*2);
+						}
+
+						bytes_send = 0u;
+						while(bytes_send + bytes_chunk < bytes_number)
+						{
+							no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+							bytes_send += bytes_chunk;
+						}
+						if(bytes_send < bytes_number)
+						{
+							no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+						}
+						no_os_mdelay(10);
 					}
-					no_os_mdelay(10);
 					break;
+
+				case 0x5E:
+					uint8_t source_sel = wr_data[1];
+					switch(source_sel)
+					{
+					case 0:
+							uint32_t tone_freq = wr_data[2]; // MHz
+							uint32_t dds_phase = 0;
+							uint16_t dds_scale = (wr_data[3] << 1*8) | (wr_data[4] << 0*8); // max 1000
+							if(dds_scale > 1000u)
+								dds_scale = 1000u;
+
+							for (int i = 0; i < phy->tx_dac->num_channels; i++)
+							{
+								axi_dac_dds_set_frequency(phy->tx_dac, ((i * 2) + 0), tone_freq * 1000 * 1000);
+								axi_dac_dds_set_frequency(phy->tx_dac, ((i * 2) + 1), tone_freq * 1000 * 1000);
+								axi_dac_dds_set_phase(phy->tx_dac, ((i * 2) + 0), (i % 2) ? 0 : 90000);
+								axi_dac_dds_set_phase(phy->tx_dac, ((i * 2) + 1), (i % 2) ? 0 : 90000);
+								axi_dac_dds_set_scale(phy->tx_dac, ((i * 2) + 0), dds_scale * 1000);
+								axi_dac_dds_set_scale(phy->tx_dac, ((i * 2) + 1), dds_scale * 1000);
+								axi_dac_write(phy->tx_dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 0), 0);
+								axi_dac_write(phy->tx_dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 1), 0);
+							}
+
+						break;
+					case 1:
+							// Set PN
+							axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_PN15);
+						break;
+					default:
+							// Set DDS data
+							axi_dac_data_setup(phy->tx_dac);
+						break;
+					}
+					break;
+
+				case 0x5F:
+					uint8_t int_delay = wr_data[1];
+					uint8_t frac_delay = wr_data[2] & 0xF;
+					dpdCaptureConfig.pathDelay.extDpdCaptureFifoDelay = int_delay;
+					dpdCaptureConfig.pathDelay.extDpdCaptureInterpolationIndex = frac_delay;
+
+					adi_adrv9025_ExtDpdCaptureConfigSet(phy->madDevice, &dpdCaptureConfig);
+					break;
+
 #if 0
 				case 0x70: // get EnabledTrackingCals
 					TALISE_getEnabledTrackingCals(&tal[TALISE_A], &enableMask);

@@ -3,6 +3,8 @@ function [] = plot_signal_in_freq_domain(signal, Fs, fft_length, description)
     f = Fs*((-fft_length/2):(fft_length/2-1))/fft_length;
     Y = fftshift(fft(signal(1,:), fft_length));
     P2 = 20*log10(abs(Y/fft_length));;
+    %P2 = (abs(Y/fft_length));;
+
     %P1 = P2(1:fft_length/2+1);
 
     figure;
@@ -13,6 +15,7 @@ function [] = plot_signal_in_freq_domain(signal, Fs, fft_length, description)
         for ii = 2:min(size(signal))
             Y = fftshift(fft(signal(ii, :), fft_length));
             P2 = 20*log10(abs(Y/fft_length));
+            %P2 = (abs(Y/fft_length));
             plot(f, P2, '*-r');
         end
     end

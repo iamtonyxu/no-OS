@@ -1,6 +1,7 @@
-function [capData, capTu] = read_capture(serialCOM, capSize, waitSecond)
+function [capData] = read_capture(serialCOM, cap_point, waitSecond)
 HEAD = 0x5D;
 baudRate = 115200;
+capSize = 4096;
 
 serialCOM = upper(serialCOM);
 freeports = serialportlist("available");
@@ -15,8 +16,8 @@ if nargin < 2
     waitSecond = 5;
 end
 
-if capSize > 16384
-    disp("capture length cannot be larger than 16384");
+if cap_point < 0 || cap_point > 3
+    fprintf("cap_point must be 0,1,2. and it's %d now.\n", cap_point);
     return;
 end
 
@@ -27,6 +28,7 @@ message = [uint8(HEAD), zeros(1, 9, 'uint8')];
 bytesCount = capSize * 2 * 2;
 bytesCount = typecast(swapbytes(uint32(bytesCount)), 'uint8'); % big-endian
 message(2:4)=bytesCount(2:4);
+message(5) = cap_point;
 
 % send read capture cmd
 write(device, message, 'uint8');
@@ -39,63 +41,32 @@ data = read(device, capSize * 2 * 2, 'uint8');
 data_i = [];
 data_q = [];
 
-for ii = 0:length(data)/8-1
-    data_i(end+1:end+4) = data(ii*8+(1:4));
-    data_q(end+1:end+4) = data(ii*8+(5:8));
+offset = capSize * 2;
+for ii = 0:capSize-1
+    data_i(end+1:end+2) = data(ii*2+(1:2));
+    data_q(end+1:end+2) = data(offset + ii*2+(1:2));
 end
 
 signal_i = [];
 signal_q = [];
-for ii = 0:length(data_i)/2-1
+for ii = 0:capSize-1
     signal_i(end+1) = data_i(2*ii+2)*2^8 + data_i(2*ii+1);
     signal_q(end+1) = data_q(2*ii+2)*2^8 + data_q(2*ii+1);
 end
 
 for i = 1:length(signal_i)
-    if signal_i(i) > 2^15
+    if signal_i(i) >= 2^15
         signal_i(i) = signal_i(i) - 2^16;
     end
-    if signal_q(i) > 2^15
+    if signal_q(i) >= 2^15
         signal_q(i) = signal_q(i) - 2^16;
     end
 end
 
 capData = (signal_i + 1j*signal_q)./2^15;
 
-%% Debug: read capBuf
-capTu = 0;
-if  0
-data = read(device, capSize * 2 * 2, 'uint8');
-
-data_i = [];
-data_q = [];
-
-for ii = 0:length(data)/8-1
-    data_i(end+1:end+4) = data(ii*8+(1:4));
-    data_q(end+1:end+4) = data(ii*8+(5:8));
-end
-
-signal_i = [];
-signal_q = [];
-for ii = 0:length(data_i)/2-1
-    signal_i(end+1) = data_i(2*ii+2)*2^8 + data_i(2*ii+1);
-    signal_q(end+1) = data_q(2*ii+2)*2^8 + data_q(2*ii+1);
-end
-
-for i = 1:length(signal_i)
-    if signal_i(i) > 2^15
-        signal_i(i) = signal_i(i) - 2^16;
-    end
-    if signal_q(i) > 2^15
-        signal_q(i) = signal_q(i) - 2^16;
-    end
-end
-
-capTu = (signal_i + 1j*signal_q)./2^15;
-end
-
 %%
-if 1
+if 0
 Fs = 245.76e6;
 FFT_Length = capSize;
 f = Fs*(0:(FFT_Length/2))/FFT_Length;
