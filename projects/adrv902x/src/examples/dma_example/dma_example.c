@@ -73,6 +73,7 @@
 #define BASIC_EXAMPLE 1
 #define ORX_CAPTURE 1
 
+adi_adrv9025_ExternalPathDelay_t externalPathDelay;
 uint8_t captureCompleteFlag = 0u;
 adi_adrv9025_ExtDpdCaptureConfig_t dpdCaptureConfig = {
 	.extDpdCaptureTriggerPin = ADI_ADRV9025_GPIO_INVALID,
@@ -565,7 +566,7 @@ struct axi_dma_transfer read_transfer = {
 	status = adi_adrv9025_TrackingCalsEnableSet(phy->madDevice, enableMaskSet, 1);
 	adi_adrv9025_TrackingCalsEnableGet(phy->madDevice, &enableMaskGet);
 
-	if(enableMaskGet != enableMaskSet)
+	if((enableMaskGet & 0xffffu) != enableMaskSet)
 	{
 		pr_info("Failed on adi_adrv9025_TrackingCalsEnableSet.\n");
 	}
@@ -967,10 +968,14 @@ static void parse_spi_command(void *devHalInfo)
 				case 0x5F:
 					uint8_t int_delay = wr_data[1];
 					uint8_t frac_delay = wr_data[2] & 0xF;
+					/*
 					dpdCaptureConfig.pathDelay.extDpdCaptureFifoDelay = int_delay;
 					dpdCaptureConfig.pathDelay.extDpdCaptureInterpolationIndex = frac_delay;
-
 					adi_adrv9025_ExtDpdCaptureConfigSet(phy->madDevice, &dpdCaptureConfig);
+					*/
+					externalPathDelay.fifoDelay = int_delay;
+					externalPathDelay.interpolationIndex = frac_delay;
+					adi_adrv9025_ExternalPathDelaySet(phy->madDevice, ADI_ADRV9025_TX3, &externalPathDelay);
 					break;
 
 #if 0

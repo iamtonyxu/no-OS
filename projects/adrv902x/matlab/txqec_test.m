@@ -62,10 +62,20 @@ tone_freq = 60; % MHz
 tone_scale = 500; % max is 1000
 set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
 
+if datasel
+    intDelay = -293; %-293: wb signal
+    fracDelay = 1;
+else
+    intDelay = -293-3; %-293-3: tone
+    fracDelay = 9;
+end
+
 %% set path delay
-int_delay = 0;
-frac_delay = 1;
-set_capture_delay(serial_port, int_delay, frac_delay);
+if 0
+    int_delay = 0;
+    frac_delay = 0;
+    set_capture_delay(serial_port, int_delay, frac_delay);
+end
 
 %% read capture
 for ii = 1:10
@@ -73,15 +83,17 @@ for ii = 1:10
     if debug_info
         plot_signal_in_freq_domain(capORx, Fs*4, 4096, "capORx");
     end
-    
+ 
     [capTx] = read_capture(serial_port, 1, 5);
     if debug_info
         plot_signal_in_freq_domain(capTx, Fs*4, 4096, "capTx");
     end
-    
-    %[capTu] = read_capture(serial_port, 2, 5);
-    %plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
-    
+
+%     [capTu] = read_capture(serial_port, 2, 5);
+%     if debug_info
+%         plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
+%     end
+
     if 0
         tx_aligned = capTx;
         [intDelay, fracDelay, orx_aligned, m] = CalDelayPhase(capTx, capORx);
@@ -90,11 +102,12 @@ for ii = 1:10
         figure;
         plot(abs(xcorr(capTx, capORx)));
     else
-        intDelay = -293-3; %-293: wb signal, -290: tone
-        fracDelay = 1;
         [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
         orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
     end
+
+    %tx_aligned = capTx;
+    %orx_aligned = std(tx_aligned)/std(capORx).*capORx;
 
     figure;
     rr = 300+(1:3500);
@@ -108,6 +121,18 @@ for ii = 1:10
 
 end
 
+%% sort the best frac_delay
+if 0
+diff_ratio = [];
+for fracDelay = 1:1:64
+    [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
+    orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
+    rr = 300+(1:3500);
+    diff_ratio(end+1) = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
+end
+min(diff_ratio)
+find(diff_ratio == min(diff_ratio))
+end
 
 %% todo
 if 0
