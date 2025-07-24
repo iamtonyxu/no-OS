@@ -22,10 +22,13 @@ INCS += $(PROJECT)/src/common/common_data.h \
 	$(PROJECT)/src/common/firmware/ADRV9025_FW.h \
 	$(PROJECT)/src/common/firmware/ADRV9025_stream_image.h \
 	$(PROJECT)/src/common/firmware/ActiveUseCase_profile.h \
-	$(PROJECT)/src/common/firmware/ActiveUtilInit_profile.h
+	$(PROJECT)/src/common/firmware/ActiveUtilInit_profile.h \
+	$(PROJECT)/src/common/txqec/adrv9025_txqec_reg_addr_macros.h \
+	$(PROJECT)/src/common/txqec/adrv9025_txqec_hw.h
 
 SRCS += $(PROJECT)/src/common/common_data.c \
-	$(PROJECT)/src/common/hal/no_os_platform.c
+	$(PROJECT)/src/common/hal/no_os_platform.c \
+    $(PROJECT)/src/common/txqec/adrv9025_txqec_hw.c
 
 INCS += $(PROJECT)/src/platform/platform_includes.h \
 	$(PROJECT)/src/platform/$(PLATFORM)/parameters.h

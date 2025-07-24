@@ -62,6 +62,8 @@
 #include "ad9528.h"
 #include "adi_adrv9025_external_dpd_types.h"
 #include "adi_adrv9025_external_dpd.h"
+#include "adrv9025_txqec_reg_addr_macros.h"
+#include "adrv9025_txqec_hw.h"
 
 //redefine in axi_dac_core.c
 #define AXI_DAC_REG_DATA_SELECT(c)		(0x0418 + (c) * 0x40)
@@ -72,6 +74,8 @@
 #define DAC_DDR_ENABLE 1
 #define BASIC_EXAMPLE 1
 #define ORX_CAPTURE 1
+
+txqec_outputs_t txqecOut;
 
 adi_adrv9025_ExternalPathDelay_t externalPathDelay;
 uint8_t captureCompleteFlag = 0u;
@@ -562,7 +566,7 @@ struct axi_dma_transfer read_transfer = {
 
 	// ENABLE:  trackcal_orx3_qec, trackcal_tx3_lol
 	// DISABLE: trackcal_tx3_qec
-    uint64_t enableMaskSet = 0x0444u, enableMaskGet = 0u;
+    uint64_t enableMaskSet = 0x0400u, enableMaskGet = 0u;
 	status = adi_adrv9025_TrackingCalsEnableSet(phy->madDevice, enableMaskSet, 1);
 	adi_adrv9025_TrackingCalsEnableGet(phy->madDevice, &enableMaskGet);
 
@@ -993,9 +997,10 @@ static void parse_spi_command(void *devHalInfo)
 					}
 					TALISE_enableTrackingCals(&tal[TALISE_A], enableMask);
 					break;
+#endif
 				case 0x72: // read qec correction gain and phase adj
 					txqec_param_mask = 0x0Fu;
-					txqec_get_phase_gain_gd(devHalInfo, chan, &txqecOut, txqec_param_mask);
+					ADRV9025_get_phase_gain_gd_tx3(devHalInfo, &txqecOut, txqec_param_mask);
 					wr_data[2] = (txqecOut.gain >> 8) & 0xff;
 					wr_data[3] = (txqecOut.gain >> 0) & 0xff;
 
@@ -1013,10 +1018,10 @@ static void parse_spi_command(void *devHalInfo)
 					int16_t wr_gain = (wr_data[2] << 8) +  wr_data[3];
 					int16_t wr_phase = (wr_data[4] << 8) +  wr_data[5];
 
-					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_GAIN, wr_gain);
-					txqec_set_phase_gain_gd(devHalInfo, chan, PARAM_PHASE, wr_phase);
+					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_GAIN, wr_gain);
+					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_PHASE, wr_phase);
 					break;
-#endif
+
 				default:
 					/* do nothing */
 					printf("Invalid command.\n");
