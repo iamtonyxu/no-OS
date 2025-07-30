@@ -72,7 +72,7 @@
  * global and static variables
 *******************************************************************************/
 #define DAC_DDR_ENABLE 1
-#define BASIC_EXAMPLE 1
+#define BASIC_EXAMPLE 0
 #define ORX_CAPTURE 1
 
 txqec_outputs_t txqecOut;
@@ -115,6 +115,9 @@ adi_adrv9025_ExtDpdCaptureData_t extDpdCaptureData;
 
 uint32_t dac_buffer_dma[DAC_BUFFER_SAMPLES] __attribute__((aligned(16)));
 //uint16_t adc_buffer_dma[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((aligned(16)));
+
+struct no_os_gpio_desc *gpio_plddrbypass;
+struct no_os_gpio_init_param gpio_init_plddrbypass;
 uint8_t tx_is_transfering;
 
 uint32_t zero_lut_iq[DAC_BUFFER_SAMPLES]; // buffer to receive dac waveform
@@ -128,6 +131,11 @@ struct ad9528_init_param ad9528_param;
 struct ad9528_dev* ad9528_device;
 struct adrv9025_rf_phy *phy;
 int status;
+
+struct xil_gpio_init_param hal_gpio_param = {
+	.type = GPIO_PS,
+	.device_id = GPIO_DEVICE_ID
+};
 
 struct axi_dmac_init rx_dmac_init = {
 	"rx_dmac",
@@ -443,6 +451,15 @@ struct axi_dma_transfer read_transfer = {
 };
 
 #if BASIC_EXAMPLE == 0
+	gpio_init_plddrbypass.extra = &hal_gpio_param;
+	gpio_init_plddrbypass.number = DAC_GPIO_PLDDR_BYPASS;
+	status = no_os_gpio_get(&gpio_plddrbypass, &gpio_init_plddrbypass);
+	if (status) {
+		printf("no_os_gpio_get() failed with status %d", status);
+		goto error_3;
+	}
+	no_os_gpio_direction_output(gpio_plddrbypass, 1);
+
 	axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 #if DAC_DDR_ENABLE
 	axi_dac_load_custom_data(phy->tx_dac, sine_lut_iq,
@@ -452,8 +469,8 @@ struct axi_dma_transfer read_transfer = {
 	axi_dac_load_custom_data(phy->tx_dac, sine_lut_iq,
 							NO_OS_ARRAY_SIZE(sine_lut_iq),
 							(uintptr_t)dac_buffer_dma);
-#endif
-#endif
+#endif // DAC_DDR_ENABLE
+#endif // BASIC_EXAMPLE == 0
 
 	Xil_DCacheFlush();
 
