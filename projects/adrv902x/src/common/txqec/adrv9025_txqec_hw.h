@@ -6,6 +6,7 @@
 
 /* ============================================================================================================================
         Tx_LO_Delay_Correction_Registers Register BitMasks, Positions & Enumerations 
+        Note: It applies to all Tx channels.
    ============================================================================================================================ */
 /* -------------------------------------------------------------------------------------------------------------------------
           SPI_TX1_LO_DELAY_CORR_DAC_1          Pos/Masks         Description
@@ -31,32 +32,10 @@
 #define BITM_SPI_TX1_LO_DELAY_CORR_DAC_0_TX1_LO_DELAY_CORR_DAC (0x03U)    /*  Setting this bit powers down the Tx1 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
  Tx1 Lo Delay Corr Dac */
 
-/* -------------------------------------------------------------------------------------------------------------------------
-          SPI_TX2_LO_DELAY_CORR_DAC_1          Pos/Masks         Description
-   ------------------------------------------------------------------------------------------------------------------------- */
-#define BITP_SPI_TX2_LO_DELAY_CORR_DAC_1_TX2_LO_DELAY_CORR_DAC ( 0U)            /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- Tx2 Lo Delay Corr Dac */
-#define BITM_SPI_TX2_LO_DELAY_CORR_DAC_1_TX2_LO_DELAY_CORR_DAC (0xFFU)    /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- Tx2 Lo Delay Corr Dac */
-
-/* -------------------------------------------------------------------------------------------------------------------------
-          SPI_TX2_LO_DELAY_CORR_DAC_0          Pos/Masks         Description
-   ------------------------------------------------------------------------------------------------------------------------- */
-#define BITP_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_LATCH_EN ( 7U)            /*  Toggling this bit latches the Tx2 LO delay correction DAC word.
- latch en */
-#define BITP_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_CORR_DAC_SPARE ( 2U)            /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- spare */
-#define BITP_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_CORR_DAC ( 0U)            /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- Tx2 Lo Delay Corr Dac */
-#define BITM_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_LATCH_EN (0x80U)    /*  Toggling this bit latches the Tx2 LO delay correction DAC word.
- latch en */
-#define BITM_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_CORR_DAC_SPARE (0x7CU)    /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- spare */
-#define BITM_SPI_TX2_LO_DELAY_CORR_DAC_0_TX2_LO_DELAY_CORR_DAC (0x03U)    /*  Setting this bit powers down the Tx2 LO delay correction DAC. Note that this does not disable the LO path, it only disables the I/Q LO delay tuning.
- Tx2 Lo Delay Corr Dac */
-
+/* ============================================================================================================================
+        TxQEC_Filter_Registers Register BitMasks, Positions & Enumerations 
+   ============================================================================================================================ */
  #define BITM_SPI_TXQEC_FILTER_CFG_TXQEC_FILTER_CH1_COEFF_UPDATE (0x04U)    /*  Update all coefficients at once (self clear) */
-
 
 #define TXQEC_GRP_MAX_VAL               (511)      /*!< Group delay corr - max value for signed 10 bit:    0 to 511 (  0x0 - 0x1FF) 10 bits */
 #define TXQEC_GRP_MIN_VAL               (-512)     /*!< Group delay corr - min value for signed 10 bit: -512 to  -1 (0x200 - 0x3FF)         */

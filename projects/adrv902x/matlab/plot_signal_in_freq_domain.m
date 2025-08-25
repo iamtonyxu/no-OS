@@ -2,7 +2,8 @@ function [] = plot_signal_in_freq_domain(signal, Fs, fft_length, description)
     %f = fs*(0:(fft_length/2))/fft_length;
     f = Fs*((-fft_length/2):(fft_length/2-1))/fft_length;
     Y = fftshift(fft(signal(1,:), fft_length));
-    P2 = 20*log10(abs(Y/fft_length));;
+    %P2 = 20*log10(abs(Y/fft_length));
+    P2 = 20*log10(abs(Y/fft_length)+10e-8);
     %P2 = (abs(Y/fft_length));;
 
     %P1 = P2(1:fft_length/2+1);

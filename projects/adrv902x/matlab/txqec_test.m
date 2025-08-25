@@ -12,7 +12,7 @@ serial_port = "COM7";
 
 % signal generate
 Fs = 245.76e6;
-Fc = 50e6;%3e6, 15e6
+Fc = 60e6;%3e6, 15e6
 L = 8192;
 t = 1/Fs*(0:L-1);
 Amp = 0.5; % amplitude of single tone
@@ -20,6 +20,7 @@ phi = 30; % degree
 cap_size = 4096;
 
 % txqec initial config
+chan = 2; % tx3
 INITIAL_PHASE_VALUE = 512;
 INITIAL_GAIN_VALUE = 0x4000;
 TXQEC_GAIN_SCALE = 15400;
@@ -37,9 +38,10 @@ if offline_sim
 else
     if option == 0 % tone as train signal
         tu = Amp * exp(1i*2*pi*Fc*t+phi/180*pi);
-        %plot_signal_in_freq_domain(tu, Fs, L, "generated tone");
+        plot_signal_in_freq_domain(tu, Fs, L, "generated tone");
     elseif option == 1 % nb signal
-        tu = load('UMTS_3P84_UL_245P76_20M_32k.txt');
+        %tu = load('UMTS_3P84_UL_245P76_20M_32k.txt');
+        tu = load('lTE20_245P76_N11BackOff_32k.txt');
         tu = (tu(1:L, 1) + 1j*tu(1:L,2))./2^15;
         plot_signal_in_freq_domain(tu.', Fs, L, "nb signal");
     else % chirp signal
@@ -52,9 +54,12 @@ else
 %         tu = Amp*chirp(t,fo,t(end),f1,'linear',0,'complex').';
 %         plot_signal_in_freq_domain(tu, Fs, L, "generated chirp signal");
     end
-end
 
-%download_waveform(serial_port, tu);
+    download_waveform(serial_port, tu);
+    disp("download waveform ends...");
+    [fw_intDelay, fw_fracDelay] = read_extpath_delay(serial_port);
+    return;
+end
 
 %% select DDS
 datasel = 0; % 0: DDS, 1: PN15
@@ -63,10 +68,10 @@ tone_scale = 500; % max is 1000
 set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
 
 if datasel
-    intDelay = -293; %-293: wb signal
+    intDelay = -292; %-292: wb signal
     fracDelay = 38;
 else
-    intDelay = -293-3; %-293-3: tone
+    intDelay = -292-3; %-293-3: tone
     fracDelay = 9;
 end
 
@@ -78,7 +83,7 @@ if 0
 end
 
 %% read capture
-if 0
+if 1
     for ii = 1:1
         [capORx] = read_capture(serial_port, 0, 5);
         if debug_info
@@ -94,7 +99,7 @@ if 0
     %     if debug_info
     %         plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
     %     end
-    
+    if 1
         if 0
             tx_aligned = capTx;
             [intDelay, fracDelay, orx_aligned, m] = CalDelayPhase(capTx, capORx);
@@ -103,13 +108,14 @@ if 0
             figure;
             plot(abs(xcorr(capTx, capORx)));
         else
-            [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
+            [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay-3, fracDelay);
             orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
         end
-    
-        %tx_aligned = capTx;
-        %orx_aligned = std(tx_aligned)/std(capORx).*capORx;
-    
+    else
+        tx_aligned = capTx;
+        orx_aligned = std(tx_aligned)/std(capORx).*capORx;
+    end
+
         figure;
         rr = 300+(1:3500);
         plot(real(tx_aligned(rr)), '.b--'); hold on
@@ -144,7 +150,7 @@ end
 %intDelay = -296;
 %fracDelay = 9;
 % disable txqec tracking cal via changing initMask in profile
-[good_phase, good_gain, good_gd] = get_txqec_phase_gain_gd(serial_port);
+[good_phase, good_gain, good_gd] = get_txqec_phase_gain_gd(serial_port, chan);
 
 %% read orx capture (bench mark)
 [capORx] = read_capture(serial_port, 0, 5);
@@ -170,7 +176,7 @@ orx_aligned_good = orx_aligned;
 plot_signal_in_freq_domain([tx_aligned_good;orx_aligned_good], Fs*4, length(tx_aligned_good), "capture signals after txqec");
 
 %% program calibrated txqec phase/gain
-set_txqec_phase_gain_gd(serial_port, good_gain, good_phase, good_gd);
+set_txqec_phase_gain_gd(serial_port, chan, good_gain, good_phase, good_gd);
 
 %% program init txqec phase/gain
 updates = 0;
@@ -178,7 +184,7 @@ txqec.gain = INITIAL_GAIN_VALUE;
 txqec.phase = INITIAL_PHASE_VALUE;
 txqec.gd = zeros(1,2);
 if offline_sim == 0
-    set_txqec_phase_gain_gd(serial_port, txqec.gain(end), txqec.phase(end), good_gd);
+    set_txqec_phase_gain_gd(serial_port, chan, txqec.gain(end), txqec.phase(end), good_gd);
 end
 
 %% iterations
@@ -253,7 +259,8 @@ for iter = 1:3
         delta_gain = 0.00;%0.002;
         gain_correction = sqrt((a*a + b*b) / (c*c + d*d)) - (1+delta_gain);
         phase_correction =  -(a*c + b*d) / (a*d - b*c);
-    
+        %phase_correction =  -(a*c + b*d) / (a*a + b*b); % optional
+
         fprintf("gain_est = %.3f, phase_est = %.3f\n", ...
             1/(gain_correction+1), -phase_correction);
     
@@ -274,7 +281,7 @@ for iter = 1:3
     
         % program txqec hw
         if offline_sim == 0
-            set_txqec_phase_gain_gd(serial_port, txqec.gain(end), txqec.phase(end), txqec.gd);
+            set_txqec_phase_gain_gd(serial_port, chan, txqec.gain(end), txqec.phase(end), txqec.gd);
         end
         updates = updates + 1;
         fprintf("txqec updates = %d\n", updates);

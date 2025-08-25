@@ -1,4 +1,4 @@
-function [phase, gain, gd] = get_txqec_phase_gain_gd(serialCOM)
+function [phase, gain, gd] = get_txqec_phase_gain_gd(serialCOM, chan)
 HEAD = 0x72;
 baudRate = 115200;
 
@@ -24,6 +24,11 @@ else
     return;
 end
 
+if (chan > 3) || (chan < 0)
+    fprintf("chan shall be within [0,3]. Exit!\n");
+    return;
+end
+
 % Send a message to request data and receive the data via UART.
 % mode: one byte
 % address: four bytes
@@ -32,13 +37,13 @@ end
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-message = [HEAD, zeros(1,9,'uint8')];
+message = [HEAD, uint8(chan), zeros(1,8,'uint8')];
 write(device, message, "uint8");
 
 pause(1); % wait for response
 response = read(device, 10, 'uint8');
 
-%response = [HEAD, 0u, (int16)gain, (int16)phase, (int16)gd[0], (int16)gd[1]];
+%response = [HEAD, (uint8_t)chan, (int16)gain, (int16)phase, (int16)gd[0], (int16)gd[1]];
 if response(1) == HEAD
     gd = zeros(1,2);
     gain = int16(uint32(response(4)) + uint32(response(3))*2^8);
