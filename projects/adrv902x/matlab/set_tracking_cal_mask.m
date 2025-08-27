@@ -28,14 +28,13 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x61
+% Construct the message, length = 20, starting with 0x71
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
 maskBytes = typecast(swapbytes(uint32(enable_mask)), 'uint8');% big-endian
-dataBytes = typecast(swapbytes(uint32(0)), 'uint8'); % big-endian
 
-message = [HEAD, uint8(0), maskBytes, dataBytes];
+message = [HEAD, uint8(0), maskBytes, zeros(1,14,'uint8')];
 
 write(device, message, "uint8");
 

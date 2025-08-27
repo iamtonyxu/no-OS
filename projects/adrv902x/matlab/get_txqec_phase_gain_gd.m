@@ -33,25 +33,31 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x60
+% Construct the message, length = 20, starting with 0x72
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-message = [HEAD, uint8(chan), zeros(1,8,'uint8')];
+message = [HEAD, uint8(chan), zeros(1,18,'uint8')];
 write(device, message, "uint8");
 
 pause(1); % wait for response
-response = read(device, 10, 'uint8');
+response = read(device, 20, 'uint8');
 
 %response = [HEAD, (uint8_t)chan, (int16)gain, (int16)phase, (int16)gd[0], (int16)gd[1]];
 if response(1) == HEAD
     gd = zeros(1,2);
-    gain = int16(uint32(response(4)) + uint32(response(3))*2^8);
-    phase = int16(uint32(response(6)) + uint32(response(5))*2^8);
-    gd(1) = int16(uint32(response(8)) + uint32(response(7))*2^8);
-    gd(2) = int16(uint32(response(10)) + uint32(response(9))*2^8);
-    fprintf("get txqec gain = 0x%04X, phase = 0x%04X, gd(0) = 0x%04X, gd(1) = 0x%04X\n",...
-        gain, phase, gd(1), gd(2));
+    gain = zeros(1,5);
+    gain(1) = int16(uint32(response(4)) + uint32(response(3))*2^8);
+    gain(2) = int16(uint32(response(6)) + uint32(response(5))*2^8);
+    gain(3) = int16(uint32(response(8)) + uint32(response(7))*2^8);
+    gain(4) = int16(uint32(response(10)) + uint32(response(9))*2^8);
+    gain(5) = int16(uint32(response(12)) + uint32(response(11))*2^8);
+
+    phase = int16(uint32(response(14)) + uint32(response(13))*2^8);
+    gd(1) = int16(uint32(response(16)) + uint32(response(15))*2^8);
+    gd(2) = int16(uint32(response(18)) + uint32(response(17))*2^8);
+    fprintf("get txqec gain[2] = 0x%04X, phase = 0x%04X, gd(0) = 0x%04X, gd(1) = 0x%04X\n",...
+        gain(2), phase, gd(1), gd(2));
 else
    phase = [];
    gain = [];

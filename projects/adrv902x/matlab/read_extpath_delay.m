@@ -1,5 +1,5 @@
-function [] = set_dac_datasel(serialCOM, datasel, tone_freq, tone_scale)
-HEAD = 0x5E;
+function [int_delay, frac_delay] = read_extpath_delay(serialCOM)
+HEAD = 0x60;
 baudRate = 115200;
 
 serialCOM = upper(serialCOM);
@@ -15,20 +15,21 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 20, starting with 0x5E
+% Construct the message, length = 20, starting with 0x60
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
-
-scaleBytes = typecast(swapbytes(uint16(tone_scale)), 'uint8');% big-endian
-
-message = [HEAD, uint8(datasel), uint8(tone_freq), scaleBytes, zeros(1,15,'uint8')];
-
+message = [HEAD, zeros(1,19,'uint8')];
 write(device, message, "uint8");
 
-if datasel == 0
-    fprintf("set_tone freq = %dMHz, scale = %4d.\n", tone_freq, tone_scale);
+pause(1); % wait for response
+response = read(device, 20, 'uint8');
+
+if response(1) == HEAD
+    int_delay = response(2);
+    frac_delay = response(3);
+    fprintf("get int_delay = %d, frac_delay = %d.\n", int_delay, frac_delay);
 else
-    fprintf("set PN data.\n");
+    disp("error to read extpath delay.");
 end
 
 end

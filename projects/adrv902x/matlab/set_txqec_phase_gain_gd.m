@@ -20,19 +20,26 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x61
+% Construct the message, length = 20, starting with 0x73
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-gainBytes = typecast(swapbytes(uint16(gain)), 'uint8');% big-endian
-phaseBytes = typecast(swapbytes(uint16(phase)), 'uint8');% big-endian
-gdBytes = typecast(swapbytes(uint32(0)), 'uint8');% big-endian
+gain1Bytes = typecast(swapbytes(uint16(gain(1))), 'uint8');% big-endian
+gain2Bytes = typecast(swapbytes(uint16(gain(1))), 'uint8');% big-endian
+gain3Bytes = typecast(swapbytes(uint16(gain(1))), 'uint8');% big-endian
+gain4Bytes = typecast(swapbytes(uint16(gain(1))), 'uint8');% big-endian
+gain5Bytes = typecast(swapbytes(uint16(gain(1))), 'uint8');% big-endian
 
-message = [HEAD, uint8(chan), gainBytes, phaseBytes, gdBytes];
+phaseBytes = typecast(swapbytes(uint16(phase)), 'uint8');% big-endian
+gd1Bytes = typecast(swapbytes(uint16(gd(1))), 'uint8');% big-endian
+gd2Bytes = typecast(swapbytes(uint16(gd(1))), 'uint8');% big-endian
+
+message = [HEAD, uint8(chan), gain1Bytes, gain2Bytes, gain3Bytes, gain4Bytes, gain5Bytes,...
+    phaseBytes, gd1Bytes, gd2Bytes, zeros(1,2,'uint8')];
 
 write(device, message, "uint8");
 
-fprintf("set_txqec gain = 0x%04X, phase = 0x%04X, gd(1) = 0x%04X, gd(2) = 0x%04X\n", ...
-    gain, phase, gd(1), gd(2));
+fprintf("set_txqec gain[2] = 0x%04X, phase = 0x%04X, gd(1) = 0x%04X, gd(2) = 0x%04X\n", ...
+    gain(2), phase, gd(1), gd(2));
 
 end

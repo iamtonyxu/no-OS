@@ -83,7 +83,7 @@ adi_adrv9025_ExtDpdCaptureConfig_t dpdCaptureConfig = {
 	.extDpdCaptureTriggerPin = ADI_ADRV9025_GPIO_INVALID,
 	.extDpdCaptureDoneStatusPin = ADI_ADRV9025_GPIO_INVALID,
 	{
-			.extDpdCaptureFifoDelay = 0u,
+			.extDpdCaptureFifoDelay = 0u, // 147 - (-146); 0 - (-292)
 			.extDpdCaptureInterpolationIndex = 0u,
 	},
 	{
@@ -453,6 +453,7 @@ struct axi_dma_transfer read_transfer = {
 #if BASIC_EXAMPLE == 0
 	gpio_init_plddrbypass.extra = &hal_gpio_param;
 	gpio_init_plddrbypass.number = DAC_GPIO_PLDDR_BYPASS;
+	gpio_init_plddrbypass.platform_ops = &xil_gpio_ops;
 	status = no_os_gpio_get(&gpio_plddrbypass, &gpio_init_plddrbypass);
 	if (status) {
 		printf("no_os_gpio_get() failed with status %d", status);
@@ -748,7 +749,7 @@ static void parse_spi_command(void *devHalInfo)
 
 #define MAX_SIZE (DAC_BUFFER_SAMPLES*4*2)
 	int32_t error = 0;
-	uint32_t bytes_number = 10;
+	uint32_t bytes_number = 20;
 	uint8_t wr_data[MAX_SIZE] = {0};
 	uint32_t bytes_recv = 0;
     uint32_t bytes_send = 0u;
@@ -769,7 +770,7 @@ static void parse_spi_command(void *devHalInfo)
 	{
 		while(1)
 		{
-			bytes_number = 10; // length of spi_write and spi_read
+			bytes_number = 20; // length of spi_write and spi_read
 			// receive data
 			bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
 
@@ -999,6 +1000,15 @@ static void parse_spi_command(void *devHalInfo)
 					adi_adrv9025_ExternalPathDelaySet(phy->madDevice, ADI_ADRV9025_TX3, &externalPathDelay);
 					break;
 
+				case 0x60:
+					adi_adrv9025_ExternalPathDelayGet(phy->madDevice, ADI_ADRV9025_TX3, &externalPathDelay);
+					memset(wr_data, 0, bytes_number);
+					wr_data[0] = 0x60;
+					wr_data[1] = externalPathDelay.fifoDelay;
+					wr_data[2] = externalPathDelay.interpolationIndex & 0xF;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+
 #if 0
 				case 0x70: // get EnabledTrackingCals
 					TALISE_getEnabledTrackingCals(&tal[TALISE_A], &enableMask);
@@ -1017,26 +1027,57 @@ static void parse_spi_command(void *devHalInfo)
 #endif
 				case 0x72: // read qec correction gain and phase adj
 					txqec_param_mask = 0x0Fu;
-					ADRV9025_get_phase_gain_gd_tx3(devHalInfo, &txqecOut, txqec_param_mask);
-					wr_data[2] = (txqecOut.gain >> 8) & 0xff;
-					wr_data[3] = (txqecOut.gain >> 0) & 0xff;
+					chan = wr_data[1];
+					memset(&wr_data[2], 0, bytes_number-2);
+					ADRV9025_get_phase_gain_gd(devHalInfo, chan, &txqecOut, txqec_param_mask);
 
-					wr_data[4] = (txqecOut.phase >> 8) & 0xff;
-					wr_data[5] = (txqecOut.phase >> 0) & 0xff;
+					wr_data[2] = (txqecOut.gain[0] >> 8) & 0xff;
+					wr_data[3] = (txqecOut.gain[0] >> 0) & 0xff;
+					wr_data[4] = (txqecOut.gain[1] >> 8) & 0xff;
+					wr_data[5] = (txqecOut.gain[1] >> 0) & 0xff;
+					wr_data[6] = (txqecOut.gain[2] >> 8) & 0xff;
+					wr_data[7] = (txqecOut.gain[2] >> 0) & 0xff;
+					wr_data[8] = (txqecOut.gain[3] >> 8) & 0xff;
+					wr_data[9] = (txqecOut.gain[3] >> 0) & 0xff;
+					wr_data[10] = (txqecOut.gain[4] >> 8) & 0xff;
+					wr_data[11] = (txqecOut.gain[4] >> 0) & 0xff;
 
-					wr_data[6] = (txqecOut.gd[0] >> 8) & 0xff;
-					wr_data[7] = (txqecOut.gd[0] >> 0) & 0xff;
+					wr_data[12] = (txqecOut.phase >> 8) & 0xff;
+					wr_data[13] = (txqecOut.phase >> 0) & 0xff;
 
-					wr_data[8] = (txqecOut.gd[1] >> 8) & 0xff;
-					wr_data[9] = (txqecOut.gd[1] >> 0) & 0xff;
+					wr_data[14] = (txqecOut.gd[0] >> 8) & 0xff;
+					wr_data[15] = (txqecOut.gd[0] >> 0) & 0xff;
+
+					wr_data[16] = (txqecOut.gd[1] >> 8) & 0xff;
+					wr_data[17] = (txqecOut.gd[1] >> 0) & 0xff;
+
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
 					break;
 				case 0x73: // write qec correction gain and phase adj
-					int16_t wr_gain = (wr_data[2] << 8) +  wr_data[3];
-					int16_t wr_phase = (wr_data[4] << 8) +  wr_data[5];
+					chan = wr_data[1];
+					int16_t wr_gain, wr_phase, wr_gd;
 
-					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_GAIN, wr_gain);
-					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_PHASE, wr_phase);
+					wr_gain = (wr_data[2] << 8) +  wr_data[3];
+					txqecOut.gain[0] = wr_gain;
+					wr_gain = (wr_data[4] << 8) +  wr_data[5];
+					txqecOut.gain[1] = wr_gain;
+					wr_gain = (wr_data[6] << 8) +  wr_data[7];
+					txqecOut.gain[2] = wr_gain;
+					wr_gain = (wr_data[8] << 8) +  wr_data[9];
+					txqecOut.gain[3] = wr_gain;
+					wr_gain = (wr_data[10] << 8) +  wr_data[11];
+					txqecOut.gain[4] = wr_gain;
+
+					wr_phase = (wr_data[12] << 8) +  wr_data[13];
+					txqecOut.phase = wr_phase;
+
+					wr_gd = (wr_data[14] << 8) +  wr_data[15];
+					txqecOut.gd[0] = wr_gd;
+					wr_gd = (wr_data[16] << 8) +  wr_data[17];
+					txqecOut.gd[1] = wr_gd;
+
+					ADRV9025_set_phase_gain_gd(devHalInfo, chan, PARAM_GAIN, &txqecOut);
+					ADRV9025_set_phase_gain_gd(devHalInfo, chan, PARAM_PHASE, &txqecOut);
 					break;
 
 				default:

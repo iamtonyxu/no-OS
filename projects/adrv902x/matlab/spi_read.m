@@ -15,12 +15,12 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x5B
+% Construct the message, length = 20, starting with 0x5B
 
 device = serialport(serialCOM, baudRate, "Timeout", 5);
 
 %rdaddr = 0x1234;
-message = [HEAD, uint8(0), zeros(1,4,'uint8'), zeros(1,4,'uint8')];
+message = [HEAD, uint8(0), zeros(1,4,'uint8'), zeros(1,14,'uint8')];
 %addrBytes = typecast(uint32(rdaddr), 'uint8'); % little-endian
 addrBytes = typecast(swapbytes(uint32(rdaddr)), 'uint8');% big-endian
 message(2+(1:length(addrBytes))) = addrBytes;
@@ -28,7 +28,7 @@ message(2+(1:length(addrBytes))) = addrBytes;
 write(device, message, "uint8");
 
 pause(1); % wait for response
-response = read(device, 10, 'uint8');
+response = read(device, 20, 'uint8');
 
 %response = [0x5B, 0, 52, 18,  0, 0, 0x12, 0x34, 0x56, 0x78];
 if response(1) == 0x5B

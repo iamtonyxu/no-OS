@@ -28,15 +28,15 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x60
+% Construct the message, length = 20, starting with 0x70
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-message = [HEAD, zeros(1,9,'uint8')];
+message = [HEAD, zeros(1,19,'uint8')];
 write(device, message, "uint8");
 
 pause(1); % wait for response
-response = read(device, 10, 'uint8');
+response = read(device, 20, 'uint8');
 
 %response = [HEAD, (uint32)enable_mask,  0, 0, 0, 0];
 if response(1) == HEAD

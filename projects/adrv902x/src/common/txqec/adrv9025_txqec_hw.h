@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "adrv9025_txqec_reg_addr_macros.h"
 
+#define TXQEC_GAIN_NUM_TAPS 5
+
 /* ============================================================================================================================
         Tx_LO_Delay_Correction_Registers Register BitMasks, Positions & Enumerations 
         Note: It applies to all Tx channels.
@@ -63,12 +65,12 @@ typedef enum {
 /* outputs of txqec algorithm to be written to compensation hardware */
 typedef struct {
     int16_t phase;     /*!< phase or "lo delay" (delay between LO for I and Q) */
-    int16_t gain;      /*!< gain of Q channel */
+    int16_t gain[TXQEC_GAIN_NUM_TAPS];   /*!< gain of Q channel */
     int16_t gd[2];     /*!< group delay values */
 } txqec_outputs_t;
 
-void TALISE_set_phase_gain_gd(void *devHalInfo, uint32_t ch, txqec_params_t param, int16_t value);
-void TALISE_get_phase_gain_gd(void *devHalInfo, uint32_t ch, txqec_outputs_t *out, uint32_t param_mask);
+void ADRV9025_set_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_params_t param, txqec_outputs_t *out);
+void ADRV9025_get_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_outputs_t *out, uint32_t param_mask);
 
 
 #endif // ADRV9025_TXQEC_HW_H_

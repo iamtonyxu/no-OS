@@ -23,7 +23,7 @@ end
 
 device = serialport(serialCOM, baudRate, "Timeout", 10);
 
-message = [uint8(HEAD), zeros(1, 9, 'uint8')];
+message = [uint8(HEAD), zeros(1, 19, 'uint8')];
 % Convert lengths to 3 bytes and append
 bytesCount = capSize * 2 * 2;
 bytesCount = typecast(swapbytes(uint32(bytesCount)), 'uint8'); % big-endian

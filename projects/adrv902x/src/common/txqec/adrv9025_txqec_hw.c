@@ -25,19 +25,22 @@ static void __NOP()
  * Parameters:
  * @param [in]  chan  - channel (0, 1, 2 or 3)
  * @param [in]  param - parameter type to set/write to hardware
- * @param [in]  value - number to set/write
+ * @param [in]  out   - structure containing values to set/write
  *
  * @return   None
  *
  ***************************************************************************
 */
-void ADRV9025_set_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_params_t param, int16_t value) 
+void ADRV9025_set_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_params_t param, txqec_outputs_t *out) 
 {
     uint32_t base = TxSpiBaseAddr[chan];
     uint8_t tempdata = 0;
+    int16_t value = 0;
+
     /* Saturation is done in the main algorithm.  Adjustments are assumed to be in range in this routine. */
     switch (param) {
         case PARAM_PHASE: /* Adjust phase of Q */
+            value = out->phase;
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_LO_DELAY_CORR_DAC_1, (value >> 2) & 0xff);
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_LO_DELAY_CORR_DAC_0, (value & 0x03u) | BITM_SPI_TX1_LO_DELAY_CORR_DAC_0_TX1_LO_DELAY_LATCH_EN);
             __NOP(); __NOP(); __NOP();
@@ -47,25 +50,44 @@ void ADRV9025_set_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_params_t p
             break;
 
         case PARAM_GAIN: /* Adjust gain of Q */
+            value = out->gain[0];
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_0, value & 0xff);    /* program LSB's */
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_0, (value >> 8) & 0xff);   /* and MSB's */
+
+            value = out->gain[1];
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_1, value & 0xff);    /* program LSB's */
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_1, (value >> 8) & 0xff);   /* and MSB's */
+
+            value = out->gain[2];
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_2, value & 0xff);    /* program LSB's */
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_2, (value >> 8) & 0xff);   /* and MSB's */
+
+            value = out->gain[3];
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_3, value & 0xff);    /* program LSB's */
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_3, (value >> 8) & 0xff);   /* and MSB's */
+
+            value = out->gain[4];
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_4, value & 0xff);    /* program LSB's */
+            adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_4, (value >> 8) & 0xff);   /* and MSB's */
 
             __NOP(); __NOP(); __NOP(); /* Force update */
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_CFG, (BITM_SPI_TXQEC_FILTER_CFG_TXQEC_FILTER_CH1_COEFF_UPDATE << chan)); /* self clears after update */
             break;
 
         case PARAM_GROUP_DELAY: /* Adjust first-order group delay in BBF */
+            value = out->gd[0];
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_ABBF_C1_QEC_TRIM_MSBS, (value >> 8) & 0x03);
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_ABBF_C1_QEC_TRIM_LSBS, (value & 0xff));
             break;
 
         case PARAM_GROUP_DELAY_2ND: /* Adjust second-order group delay in BBF */
+            value = out->gd[1];
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_ABBF_C2_QEC_TRIM_MSBS, (value >> 8) & 0x03);
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_ABBF_C2_QEC_TRIM_LSBS, (value & 0xff));
             break;
 
         case PARAM_DIGITAL_PHASE: /* Digital phase correction */
-            value = -value; /* sign is flipped relative to Tx lo delay knob */
+            value = -out->phase; /* sign is flipped relative to Tx lo delay knob */
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_I_LSB_2, value & 0xff);
             adi_adrv9025_SpiByteWrite(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_I_MSB_2, value >> 8);
 
@@ -106,10 +128,26 @@ void ADRV9025_get_phase_gain_gd(void *devHalInfo, uint8_t chan, txqec_outputs_t 
     }
 
     if (param_mask & MASK_PARAM_GAIN) {
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_0, &tempdata);
+        out->gain[0]  = (uint16_t)tempdata & 0xff;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_0, &tempdata);
+        out->gain[0] |= (uint16_t)tempdata << 8;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_1, &tempdata);
+        out->gain[1]  = (uint16_t)tempdata & 0xff;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_1, &tempdata);
+        out->gain[1] |= (uint16_t)tempdata << 8;
         adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_2, &tempdata);
-        out->gain  = (uint16_t)tempdata & 0xff;
+        out->gain[2]  = (uint16_t)tempdata & 0xff;
         adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_2, &tempdata);
-        out->gain |= (uint16_t)tempdata << 8;
+        out->gain[2] |= (uint16_t)tempdata << 8;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_3, &tempdata);
+        out->gain[3]  = (uint16_t)tempdata & 0xff;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_3, &tempdata);
+        out->gain[3] |= (uint16_t)tempdata << 8;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_LSB_4, &tempdata);
+        out->gain[4]  = (uint16_t)tempdata & 0xff;
+        adi_adrv9025_SpiByteRead(devHalInfo, base + IDX_TXQEC_FILTER_COEFF_Q_MSB_4, &tempdata);
+        out->gain[4] |= (uint16_t)tempdata << 8;
     }
 
     if (param_mask & (MASK_PARAM_GROUP_DELAY | MASK_PARAM_GROUP_DELAY_2ND)) {

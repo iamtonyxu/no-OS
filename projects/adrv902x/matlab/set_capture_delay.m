@@ -15,7 +15,7 @@ end
 % mode: one byte
 % address: four bytes
 % Returns: four bytes of data received
-% Construct the message, length = 10, starting with 0x61
+% Construct the message, length = 20, starting with 0x5F
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
@@ -27,7 +27,7 @@ if frac_delay > 15 || frac_delay < 0
     frac_delay = 0;
 end
 
-message = [HEAD, uint8(int_delay), uint8(frac_delay), zeros(1,7,'uint8')];
+message = [HEAD, uint8(int_delay), uint8(frac_delay), zeros(1,17,'uint8')];
 
 write(device, message, "uint8");
 

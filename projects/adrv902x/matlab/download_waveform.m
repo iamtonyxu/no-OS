@@ -13,7 +13,7 @@ end
 
 device = serialport(serialCOM, baudRate);
 
-message = [uint8(HEAD), zeros(1, 9, 'uint8')];
+message = [uint8(HEAD), zeros(1, 19, 'uint8')];
 % Convert lengths to 2 bytes and append
 bytesCount = length(signal) * 2 * 2;
 bytesCount = typecast(swapbytes(uint32(bytesCount)), 'uint8'); % big-endian
