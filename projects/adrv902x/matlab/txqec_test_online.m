@@ -3,8 +3,9 @@ clear all;
 clc;
 
 %% Test Configuration
-option = 0; % 0: tone; 1: nb signal
-offline_sim = 0;
+offline_sim = 1; % 0: real-time debugging; 1: offline simulation
+waveform_type = 0; % 0: tone; 1: nb signal; 2: chirp; 3: DDS; 4: PN15
+
 enable_pathdelay_est = 0;
 skip_download_waveform = 0;
 debug_info = 0;
@@ -27,8 +28,8 @@ TXQEC_GAIN_SCALE = 15400;
 TXQEC_PHASE_SCALE = 20372;
 PARAM_ADJ_SCALE = 0.5;
 
-%% generate single tone waveform
-if offline_sim
+%% generate waveform
+if offline_sim == 1
     phi = 2/180*pi; % phase error
     gain = 0.90; % gain error
 
@@ -36,101 +37,106 @@ if offline_sim
     %rx_aligned = tu; % no qec error
     rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi));
 else
-    if option == 0 % tone as train signal
+    if waveform_type == 0 % tone as train signal
         tu = Amp * exp(1i*2*pi*Fc*t+phi/180*pi);
         plot_signal_in_freq_domain(tu, Fs, L, "generated tone");
-    elseif option == 1 % nb signal
+    elseif waveform_type == 1 % nb signal
         %tu = load('UMTS_3P84_UL_245P76_20M_32k.txt');
         tu = load('lTE20_245P76_N11BackOff_32k.txt');
         tu = (tu(1:L, 1) + 1j*tu(1:L,2))./2^15;
         plot_signal_in_freq_domain(tu.', Fs, L, "nb signal");
-    else % chirp signal
-%         Fc1 = 15e6; % start frequency
-%         Fc2 = 18e6; % end frequency
-%         freq_scale = Fs/1e3;
-%         fo = Fc1*1e3/Fs;
-%         f1 = Fc2*1e3/Fs;
-%         t = 0:1/1e3:(L-1)/1e3;
-%         tu = Amp*chirp(t,fo,t(end),f1,'linear',0,'complex').';
-%         plot_signal_in_freq_domain(tu, Fs, L, "generated chirp signal");
+    elseif waveform_type == 2 % chirp signal
+        Fc1 = 15e6; % start frequency
+        Fc2 = 18e6; % end frequency
+        freq_scale = Fs/1e3;
+        fo = Fc1*1e3/Fs;
+        f1 = Fc2*1e3/Fs;
+        t = 0:1/1e3:(L-1)/1e3;
+        tu = Amp*chirp(t,fo,t(end),f1,'linear',0,'complex').';
+        plot_signal_in_freq_domain(tu, Fs, L, "generated chirp signal");
+    elseif waveform_type == 3 % DDS in FPGA
+        datasel = 0; % 0: DDS, 1: PN15
+        tone_freq = 60; % MHz
+        tone_scale = 500; % max is 1000
+    elseif waveform_type == 4 % PN15 in FPGA
+        datasel = 1; % 0: DDS, 1: PN15
+    else
+        disp("please select a waveform_type first, exit now.");
+        return;
+    end
+    
+    if ismember(waveform_type, [0,1,2])
+        % download waveform into FPGA
+        download_waveform(serial_port, tu);
+        disp("download waveform ends.");
+        [fw_intDelay, fw_fracDelay] = read_extpath_delay(serial_port);
+    else
+        % select DDS
+        set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
+    end
+end
+
+%% set path delay (Debug)
+if 0
+    if offline_sim == 0
+        int_delay = 0;
+        frac_delay = 0;
+        set_capture_delay(serial_port, int_delay, frac_delay);
+    end
+end
+
+%% read capture (Debug)
+debug_capture = 1; % 1: debug capture; 0: skip debug
+if (offline_sim == 0) && (debug_capture == 1)
+    % trigger capture and read orx
+    [capORx] = read_capture(serial_port, 0, 5);
+    if debug_info
+        plot_signal_in_freq_domain(capORx, Fs*4, 4096, "capORx");
+    end
+    % read tx
+    [capTx] = read_capture(serial_port, 1, 5);
+    if debug_info
+        plot_signal_in_freq_domain(capTx, Fs*4, 4096, "capTx");
+    end
+    % read tu
+    [capTu] = read_capture(serial_port, 2, 5);
+    if debug_info
+        plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
     end
 
-    download_waveform(serial_port, tu);
-    disp("download waveform ends...");
-    [fw_intDelay, fw_fracDelay] = read_extpath_delay(serial_port);
-    return;
-end
+    alignment_option = 0; % 0: no alignment; 1: estimate pathdelay; 2: use estimated
 
-%% select DDS
-datasel = 0; % 0: DDS, 1: PN15
-tone_freq = 60; % MHz
-tone_scale = 500; % max is 1000
-set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
-
-if datasel
-    intDelay = -292; %-292: wb signal
-    fracDelay = 38;
-else
-    intDelay = -292-3; %-293-3: tone
-    fracDelay = 9;
-end
-
-%% set path delay
-if 0
-    int_delay = 0;
-    frac_delay = 0;
-    set_capture_delay(serial_port, int_delay, frac_delay);
-end
-
-%% read capture
-if 1
-    for ii = 1:1
-        [capORx] = read_capture(serial_port, 0, 5);
-        if debug_info
-            plot_signal_in_freq_domain(capORx, Fs*4, 4096, "capORx");
-        end
-     
-        [capTx] = read_capture(serial_port, 1, 5);
-        if debug_info
-            plot_signal_in_freq_domain(capTx, Fs*4, 4096, "capTx");
-        end
-    
-    %     [capTu] = read_capture(serial_port, 2, 5);
-    %     if debug_info
-    %         plot_signal_in_freq_domain(capTu, Fs*4, L, "capTu");
-    %     end
-    if 1
-        if 0
-            tx_aligned = capTx;
-            [intDelay, fracDelay, orx_aligned, m] = CalDelayPhase(capTx, capORx);
-            orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
-            fprintf("intDelay = %d, fracDelay = %d\n", intDelay, fracDelay);
-            figure;
-            plot(abs(xcorr(capTx, capORx)));
-        else
-            [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay-3, fracDelay);
-            orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
-        end
+    if alignment_option == 1
+        tx_aligned = capTx;
+        [intDelay, fracDelay, orx_aligned, m] = CalDelayPhase(capTx, capORx);
+        orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
+        fprintf("intDelay = %d, fracDelay = %d\n", intDelay, fracDelay);
+        figure;
+        plot(abs(xcorr(capTx, capORx)));
+    elseif alignment_option == 2
+        intDelay = -292-3; %-293-3: tone
+        fracDelay = 9;
+        [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
+        orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
     else
         tx_aligned = capTx;
         orx_aligned = std(tx_aligned)/std(capORx).*capORx;
     end
 
-        figure;
-        rr = 300+(1:3500);
-        plot(real(tx_aligned(rr)), '.b--'); hold on
-        plot(real(orx_aligned(rr)), '.r--');
-    
-        ratio = sum(abs(tx_aligned(rr)))/sum(abs(orx_aligned(rr)));
-        diff_ratio = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
-        fprintf("ratio = %f\n", ratio);
-        fprintf("diff_ratio = %f\n", diff_ratio);
-    
-    end
+    figure;
+    rr = 300+(1:3500);
+    plot(real(tx_aligned(rr)), '.b--'); hold on
+    plot(real(orx_aligned(rr)), '.r--');
+
+    ratio = sum(abs(tx_aligned(rr)))/sum(abs(orx_aligned(rr)));
+    diff_ratio = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
+    fprintf("ratio = %f\n", ratio);
+    fprintf("diff_ratio = %f\n", diff_ratio);
+    return;
 end
 
-%% sort the best frac_delay
-if 0
+%% sort the best frac_delay for tone (Not required?)
+if offline_sim == 0 && waveform_type == 0
     diff_ratio = [];
     for fracDelay = 1:1:64
         [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
@@ -142,41 +148,46 @@ if 0
     find(diff_ratio == min(diff_ratio))
 end
 
-
 %% read calibrated phase/gain/group delay and save
-% power on adrv9009 and wait the calibration is done
+% power on adrv9026 and wait the calibration is done
 % monitor tu is transfering waveform
 % reuse calculated delay value
 %intDelay = -296;
 %fracDelay = 9;
 % disable txqec tracking cal via changing initMask in profile
-[good_phase, good_gain, good_gd] = get_txqec_phase_gain_gd(serial_port, chan);
+if offline_sim == 0
+    [good_phase, good_gain, good_gd] = get_txqec_phase_gain_gd(serial_port, chan);
+end
 
 %% read orx capture (bench mark)
-[capORx] = read_capture(serial_port, 0, 5);
-[capTx] = read_capture(serial_port, 1, 5);
-
-% sync tx and orx
-[tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
-orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
-
-figure;
-rr = 300+(1:3500);
-plot(real(tx_aligned(rr)), '.b--'); hold on
-plot(real(orx_aligned(rr)), '.r--');
-
-ratio = sum(abs(tx_aligned(rr)))/sum(abs(orx_aligned(rr)));
-diff_ratio = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
-fprintf("ratio = %f\n", ratio);
-fprintf("diff_ratio = %f\n", diff_ratio);
-
-tx_aligned_good = tx_aligned;
-orx_aligned_good = orx_aligned;
-
-plot_signal_in_freq_domain([tx_aligned_good;orx_aligned_good], Fs*4, length(tx_aligned_good), "capture signals after txqec");
+if offline_sim == 0
+    [capORx] = read_capture(serial_port, 0, 5);
+    [capTx] = read_capture(serial_port, 1, 5);
+    
+    % sync tx and orx
+    [tx_aligned, orx_aligned] = adjust_delay(capTx, capORx, intDelay, fracDelay);
+    orx_aligned = std(tx_aligned)/std(orx_aligned).*orx_aligned;
+    
+    figure;
+    rr = 300+(1:3500);
+    plot(real(tx_aligned(rr)), '.b--'); hold on
+    plot(real(orx_aligned(rr)), '.r--');
+    
+    ratio = sum(abs(tx_aligned(rr)))/sum(abs(orx_aligned(rr)));
+    diff_ratio = sum(abs(diff(tx_aligned(rr) - orx_aligned(rr))))/sum(abs(tx_aligned(rr)));
+    fprintf("ratio = %f\n", ratio);
+    fprintf("diff_ratio = %f\n", diff_ratio);
+    
+    tx_aligned_good = tx_aligned;
+    orx_aligned_good = orx_aligned;
+    
+    plot_signal_in_freq_domain([tx_aligned_good;orx_aligned_good], Fs*4, length(tx_aligned_good), "capture signals after txqec");
+end
 
 %% program calibrated txqec phase/gain
-set_txqec_phase_gain_gd(serial_port, chan, good_gain, good_phase, good_gd);
+if offline_sim == 0
+    set_txqec_phase_gain_gd(serial_port, chan, good_gain, good_phase, good_gd);
+end
 
 %% program init txqec phase/gain
 updates = 0;
