@@ -1,33 +1,36 @@
 close all;
-clear all;
 clc;
 
 %% Test Configuration
-phase = 2; % phase error (degree)
-gain = 0.9; % gain error
-SNR_dB = 40; % SNR in dB
-fprintf("gain_set = %.3f, phase_set = %.3f\n", gain, phase);
+gain = 0.9;           % Gain error
+phase_deg = 2;        % Phase error (degree)
+SNR_dB = 40;          % SNR in dB
+Fs = 245.76e6;        % Sampling frequency
+Fc = 60e6;            % Signal frequency
+L = 8192;             % Signal length
+Amp = 0.5;            % Amplitude of single tone
 
-%% generate signals
-Fs = 245.76e6;
-Fc = 60e6;%3e6, 15e6
-L = 8192;
-t = 1/Fs*(0:L-1);
-Amp = 0.5; % amplitude of single tone
-phi = phase/180*pi;
+fprintf("gain_set = %.3f, phase_set = %.3f\n", gain, phase_deg);
 
-tu_aligned = Amp * exp(1i*2*pi*Fc*t); 
-%rx_aligned = tu_aligned; % no qec error
+%% Generate signals
+t = (0:L-1) / Fs;
+phase_rad = deg2rad(phase_deg);
 
-signal_power = Amp^2; % Power of the signal
-noise_power = signal_power / (10^(SNR_dB/10)); % Calculate noise power from SNR
-noise = sqrt(noise_power/2) * (randn(size(t)) + 1j*randn(size(t)));
+% Ideal transmit signal
+tu_aligned = Amp * exp(1i * 2 * pi * Fc * t);
 
-rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi)) + noise;
+% Calculate noise power from SNR
+signal_power = Amp^2;
+noise_power = signal_power / (10^(SNR_dB/10));
+noise = sqrt(noise_power/2) * (randn(size(t)) + 1j * randn(size(t)));
 
-plot_signal_in_freq_domain([tu_aligned;rx_aligned], Fs, length(tu_aligned), "capture signal with simulation");
+% Received signal with gain and phase error, plus noise
+rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j * sin(2*pi*Fc*t + phase_rad)) + noise;
 
-%% txqecInit_ChannelEstimate
+%% Plot signals in frequency domain
+plot_signal_in_freq_domain([tu_aligned; rx_aligned], Fs, L, "capture signal with simulation");
+
+%% Channel estimation
 txqec = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned);
-fprintf("txqec.gain=%d, phase=%d\n", txqec.gain, txqec.phase);
+fprintf("txqec.gain = %.4f, txqec.phase = %.4f\n", txqec.gain, txqec.phase);
 
