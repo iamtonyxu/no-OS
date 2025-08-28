@@ -5,6 +5,7 @@ clc;
 %% Test Configuration
 phase = 2; % phase error (degree)
 gain = 0.9; % gain error
+SNR_dB = 40; % SNR in dB
 fprintf("gain_set = %.3f, phase_set = %.3f\n", gain, phase);
 
 %% generate signals
@@ -17,7 +18,12 @@ phi = phase/180*pi;
 
 tu_aligned = Amp * exp(1i*2*pi*Fc*t); 
 %rx_aligned = tu_aligned; % no qec error
-rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi));
+
+signal_power = Amp^2; % Power of the signal
+noise_power = signal_power / (10^(SNR_dB/10)); % Calculate noise power from SNR
+noise = sqrt(noise_power/2) * (randn(size(t)) + 1j*randn(size(t)));
+
+rx_aligned = Amp * (cos(2*pi*Fc*t) + gain * 1j*sin(2*pi*Fc*t + phi)) + noise;
 
 plot_signal_in_freq_domain([tu_aligned;rx_aligned], Fs, length(tu_aligned), "capture signal with simulation");
 
