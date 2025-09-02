@@ -132,11 +132,11 @@ def read_iq_data(filename):
     
     return I_data, Q_data
     
-def download_waveformfile(data_file = 'c:/tmp/waveform.txt'):
+def download_waveformfile(data_file = 'waveform.txt'):
     data_i, data_q = read_iq_data(data_file)
     download_waveform(data_i, data_q)
 
-def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):  
+def read_capture(cap_size = 1024, file_path = 'cap_data.txt'):  
     if cap_size > 16384:
         raise ValueError("capture length cannot be larger than 16384")
 
@@ -202,8 +202,8 @@ ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
 ser.isOpen()
 
 ## example: spi_write, spi_read
-#spi_write(0, 0x20212223, 0x30313233)
-#spi_read(1, 0x20212223)
+spi_write(0, 0x20212223, 0x30313233)
+spi_read(1, 0x20212223)
 
 ## example: download_waveformfile
 #download_waveformfile()
@@ -211,6 +211,5 @@ ser.isOpen()
 ## example: save capture data
 #read_capture()
 
-select_sdcard_waveform(1, 1024)
 
 ser.close()
