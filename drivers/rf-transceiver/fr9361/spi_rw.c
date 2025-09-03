@@ -47,6 +47,15 @@ enum  ENUM_DEV{
 };
 
 #if 1
+
+static struct no_os_spi_desc *desc = NULL;
+
+uint8_t spi_hook(struct no_os_spi_desc *spi_desc)
+{
+	desc = spi_desc;
+	return (!desc);
+}
+
 unsigned int FPGA_WR(unsigned int reg_addr,unsigned int value)
 {
 	printf("dummy FPGA_WR(%d, %d)", reg_addr, value);
@@ -61,14 +70,38 @@ unsigned int FPGA_RD(unsigned int reg_addr)
 
 unsigned int AD9361_WR(unsigned int reg_addr,unsigned int value)
 {
-	printf("dummy AD9361_WR(%d, %d)", reg_addr, value);
-    return 0;
+	uint8_t data[3];
+	const uint8_t bytes_number = 3;
+	int32_t ret = 0;
+	uint8_t rdbyte = 0xff;
+
+	data[0] = value;
+	data[1] = reg_addr & 0xff;
+	data[2] = 0x80 | (reg_addr >> 8);
+	ret = no_os_spi_write_and_read(desc, data, bytes_number);
+	if(ret==0)
+	{
+		return 0;
+	}
+    return 1;
 }
 
 unsigned int AD9361_RD(unsigned int reg_addr)
 {
-	printf("dummy AD9361_RD(%d)", reg_addr);
-    return 0;
+	uint8_t data[3];
+	const uint8_t bytes_number = 3;
+	int32_t ret = 0;
+	uint8_t rdbyte = 0xff;
+
+	data[0] = 0u;
+	data[1] = reg_addr & 0xff;
+	data[2] = 0x0f & (reg_addr >> 8);
+	ret = no_os_spi_write_and_read(desc, data, bytes_number);
+	if(ret==0)
+	{
+		rdbyte = data[0]; //todo: data[2]
+	}
+    return rdbyte;
 }
 
 unsigned int CPU_WR(unsigned int reg_addr,unsigned int value)
