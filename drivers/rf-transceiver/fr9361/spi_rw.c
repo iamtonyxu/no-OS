@@ -75,9 +75,9 @@ unsigned int AD9361_WR(unsigned int reg_addr,unsigned int value)
 	int32_t ret = 0;
 	uint8_t rdbyte = 0xff;
 
-	data[0] = value;
+	data[2] = value;
 	data[1] = reg_addr & 0xff;
-	data[2] = 0x80 | (reg_addr >> 8);
+	data[0] = 0x80 | (reg_addr >> 8);
 	ret = no_os_spi_write_and_read(desc, data, bytes_number);
 	if(ret==0)
 	{
@@ -93,13 +93,13 @@ unsigned int AD9361_RD(unsigned int reg_addr)
 	int32_t ret = 0;
 	uint8_t rdbyte = 0xff;
 
-	data[0] = 0u;
+	data[2] = 0u;
 	data[1] = reg_addr & 0xff;
-	data[2] = 0x0f & (reg_addr >> 8);
+	data[0] = 0x0f & (reg_addr >> 8);
 	ret = no_os_spi_write_and_read(desc, data, bytes_number);
 	if(ret==0)
 	{
-		rdbyte = data[0]; //todo: data[2]
+		rdbyte = data[2];
 	}
     return rdbyte;
 }

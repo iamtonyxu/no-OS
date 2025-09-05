@@ -2,9 +2,19 @@
 #include <spi_rw.h>
 #include "xparameters.h"
 #include "xilinx_spi.h"
+#include "xilinx_gpio.h"
 #include "no_os_spi.h"
+#include "no_os_gpio.h"
 #include "custom_cfg.h"
 #include "main_init.h"
+
+#define SPI_DEVICE_ID			XPAR_PS7_SPI_0_DEVICE_ID
+#define SPI_CS                  0
+#define SPI_OPS					&xil_spi_ops
+
+#define GPIO_DEVICE_ID			XPAR_PS7_GPIO_0_DEVICE_ID
+#define GPIO_OPS				&xil_gpio_ops
+#define GPIO_RESET_PIN			100
 
 struct xil_spi_init_param xil_spi_param = {
 #ifdef PLATFORM_MB
@@ -15,10 +25,16 @@ struct xil_spi_init_param xil_spi_param = {
 	.flags = 0
 };
 
-#define SPI_DEVICE_ID			XPAR_PS7_SPI_0_DEVICE_ID
-#define SPI_CS                  0
+struct xil_gpio_init_param xil_gpio_param = {
+#ifdef PLATFORM_MB
+	.type = GPIO_PL,
+#else
+	.type = GPIO_PS,
+#endif
+	.device_id = GPIO_DEVICE_ID
+};
 #define SPI_PARAM				&xil_spi_param
-#define SPI_OPS					&xil_spi_ops
+#define GPIO_PARAM				&xil_gpio_param
 
 //struct no_os_spi_desc *spi_desc
 struct no_os_spi_desc **spi_desc;
@@ -33,9 +49,32 @@ struct no_os_spi_init_param	spi_param =
 	.max_speed_hz = 640000,
 };
 
+//gpio_resetb
+struct no_os_gpio_init_param gpio_resetb =
+{
+	.number = GPIO_RESET_PIN,
+	.platform_ops = GPIO_OPS,
+	.extra = GPIO_PARAM,
+};
+
+struct no_os_gpio_desc 	*gpio_desc_resetb;
+
 int main(void)
 {
 	int ret = -1;
+	uint8_t spi_rddata = 0;
+
+	no_os_gpio_get(&gpio_desc_resetb, &gpio_resetb);
+
+	//fr9361_reset
+	if(gpio_desc_resetb)
+	{
+		no_os_gpio_direction_output(gpio_desc_resetb, 0);
+		no_os_gpio_set_value(gpio_desc_resetb, 0); // DMM to check resetb = 0
+		no_os_mdelay(1);
+		no_os_gpio_set_value(gpio_desc_resetb, 1);// DMM to check resetb = 1
+		no_os_mdelay(1);
+	}
 
 	// spi init
 	if(no_os_spi_init(spi_desc, &spi_param) != 0)
@@ -46,6 +85,13 @@ int main(void)
 
 	// spi hook
 	spi_hook(*spi_desc);
+
+	AD9361_WR(0x900, 0x07);
+	AD9361_WR(0x904, 0xA4);
+
+	spi_rddata = AD9361_RD(0x615);
+	AD9361_WR(0x615, 0x04);
+	spi_rddata = AD9361_RD(0x615);
 
     ret = fr936x_init(&g_phy_obj[0], &g_phy_config[0]);
     if (ret < 0)
