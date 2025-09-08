@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include "platform.h"
+#include "no_os_delay.h"
 
 #define IOC_MAGIC 'k'
 #define GETDATA _IOR(IOC_MAGIC,1,int)
@@ -73,12 +74,13 @@ unsigned int AD9361_WR(unsigned int reg_addr,unsigned int value)
 	uint8_t data[3];
 	const uint8_t bytes_number = 3;
 	int32_t ret = 0;
-	uint8_t rdbyte = 0xff;
+
 
 	data[2] = value;
 	data[1] = reg_addr & 0xff;
 	data[0] = 0x80 | (reg_addr >> 8);
 	ret = no_os_spi_write_and_read(desc, data, bytes_number);
+	no_os_mdelay(1);
 	if(ret==0)
 	{
 		return 0;
@@ -97,6 +99,7 @@ unsigned int AD9361_RD(unsigned int reg_addr)
 	data[1] = reg_addr & 0xff;
 	data[0] = 0x0f & (reg_addr >> 8);
 	ret = no_os_spi_write_and_read(desc, data, bytes_number);
+	no_os_mdelay(1);
 	if(ret==0)
 	{
 		rdbyte = data[2];
@@ -138,8 +141,9 @@ unsigned char spi_read_reg(unsigned short reg)
 
 short spi_write_reg(unsigned short reg, unsigned char val)
 {
-	AD9361_WR(reg, val);
-	return 0;
+    unsigned char ret = 1;
+	ret = AD9361_WR(reg, val);
+	return ret;
 }
 
 int get_spi_fd(void)

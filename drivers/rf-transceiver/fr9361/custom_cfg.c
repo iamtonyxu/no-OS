@@ -6,10 +6,10 @@ chip_config_t g_phy_config[RF_PHY_NUMBER] =
 {
     //chip 0
     {
-        .mode = CH1_CH2_TDD,
+        .mode = CH1_CH2_FDD,
         .use_bybrid_mode = 0,
         .hybrid_mode = HYBRID_FDD_SXTX,
-        .dig_if = LVDS_IF,
+        .dig_if = CMOS_IF,
         .p0p1_port = DUAL_PORT,
         .data_rate = DDR,
         .tx_port[0] = TX_A,

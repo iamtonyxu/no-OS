@@ -7,6 +7,7 @@
 #include "no_os_gpio.h"
 #include "custom_cfg.h"
 #include "main_init.h"
+#include "driver.h"
 
 #define SPI_DEVICE_ID			XPAR_PS7_SPI_0_DEVICE_ID
 #define SPI_CS                  0
@@ -15,6 +16,8 @@
 #define GPIO_DEVICE_ID			XPAR_PS7_GPIO_0_DEVICE_ID
 #define GPIO_OPS				&xil_gpio_ops
 #define GPIO_RESET_PIN			100
+#define GPIO_ENABLE_PIN			101
+#define GPIO_TXNRX_PIN			102
 
 struct xil_spi_init_param xil_spi_param = {
 #ifdef PLATFORM_MB
@@ -46,7 +49,7 @@ struct no_os_spi_init_param	spi_param =
 	.chip_select = SPI_CS,
 	.platform_ops = SPI_OPS,
 	.extra = SPI_PARAM,
-	.max_speed_hz = 640000,
+	.max_speed_hz = 0, //0:prescaler_default(64) is used, spi_clk = 167/64 = 2.6MHz
 };
 
 //gpio_resetb
@@ -58,6 +61,8 @@ struct no_os_gpio_init_param gpio_resetb =
 };
 
 struct no_os_gpio_desc 	*gpio_desc_resetb;
+
+static void cmd_api_tx_tone(TRX_CHN_ENUM chn, short on, long freq);
 
 int main(void)
 {
@@ -93,7 +98,10 @@ int main(void)
 	AD9361_WR(0x615, 0x04);
 	spi_rddata = AD9361_RD(0x615);
 
+	module_debug_onoff(&g_phy_obj[0], 0xFFF);
+
     ret = fr936x_init(&g_phy_obj[0], &g_phy_config[0]);
+
     if (ret < 0)
     {
         printf("chip init failed!\n");
@@ -101,4 +109,11 @@ int main(void)
 
 	while(1);
 	return 0;
+}
+
+static void cmd_api_tx_tone(TRX_CHN_ENUM chn, short on, long freq)
+{
+	LOG_MAIN("tx tone, chn:%d, on:%d, freq=%d\n", chn, on, freq);
+	//fn_tx_send_tone(chn, on, freq);
+	send_cordic_signal(&g_phy_obj[g_phy_select], chn, g_phy_obj[g_phy_select].config->bandwidth, on, freq);
 }
