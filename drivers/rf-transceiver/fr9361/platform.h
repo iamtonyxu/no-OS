@@ -31,10 +31,10 @@
 #define  LUT_BIN_PATH            ("./lut_bin")
 
 #define  CH1_FDD_LUT_ON             (0)
-#define  RX1_TX2_FDD_LUT_ON         (1)
+#define  RX1_TX2_FDD_LUT_ON         (0)
 #define  RX2_TX1_FDD_LUT_ON         (0)
 #define  CH2_FDD_LUT_ON             (0)
-#define  CH1_CH2_FDD_LUT_ON         (0)
+#define  CH1_CH2_FDD_LUT_ON         (1)
 #define  CH1_TDD_LUT_ON             (0)
 #define  CH2_TDD_LUT_ON             (0)
 #define  CH1_CH2_TDD_LUT_ON         (0)
