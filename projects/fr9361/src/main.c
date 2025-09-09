@@ -31,6 +31,11 @@
 #define SPI_CS                  0
 #define SPI_OPS					&xil_spi_ops
 
+
+#define UART_DEVICE_ID			XPAR_XUARTPS_0_DEVICE_ID
+#define UART_IRQ_ID				XPAR_XUARTPS_1_INTR
+#define UART_BAUDRATE 			115200
+
 #define GPIO_DEVICE_ID			XPAR_PS7_GPIO_0_DEVICE_ID
 #define GPIO_OPS				&xil_gpio_ops
 #define GPIO_RESET_PIN			100
@@ -144,7 +149,6 @@ struct axi_dma_transfer read_transfer = {
 /******************************************************************************/
 /************************ Function Definitions ********************************/
 /******************************************************************************/
-static void cmd_api_tx_tone(TRX_CHN_ENUM chn, short on, long freq);
 void parse_spi_command(struct no_os_spi_desc *spi);
 
 
@@ -267,17 +271,9 @@ int main(void)
 	return 0;
 }
 
-static void cmd_api_tx_tone(TRX_CHN_ENUM chn, short on, long freq)
-{
-	LOG_MAIN("tx tone, chn:%d, on:%d, freq=%d\n", chn, on, freq);
-	//fn_tx_send_tone(chn, on, freq);
-	send_cordic_signal(&g_phy_obj[g_phy_select], chn, g_phy_obj[g_phy_select].config->bandwidth, on, freq);
-}
-
-#define UART_DEVICE_ID			XPAR_XUARTPS_0_DEVICE_ID
-#define UART_IRQ_ID				XPAR_XUARTPS_1_INTR
-#define UART_BAUDRATE 			115200
-
+/******************************************************************************/
+/************************ parse_spi_command Functions *************************/
+/******************************************************************************/
 void parse_spi_command(struct no_os_spi_desc *spi)
 {
 	struct xil_uart_init_param platform_uart_init_par = {
@@ -307,6 +303,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 	uint32_t spi_addr = 0;
 	uint32_t spi_data = 0;
 
+	uint8_t chan = 0;
 	error = no_os_uart_init(&uart_desc, &uart_param);
 
 	if(error == 0)
@@ -411,6 +408,80 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					}
 
 					no_os_mdelay(10);
+				}
+				else if(wr_data[0] == 0x60)
+				{
+					// read rx power: rx_rssi_get
+					chan = wr_data[1];
+					int rssi = rx_rssi_get(&g_phy_obj[0], chan);
+					// send data
+					wr_data[2] = (rssi >> 3*8) & 0xff;
+					wr_data[3] = (rssi >> 2*8) & 0xff;
+					wr_data[4] = (rssi >> 1*8) & 0xff;
+					wr_data[5] = (rssi >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x61)
+				{
+					//set tx tone: cmd_api_tx_tone
+					chan = wr_data[1];
+					short on = wr_data[2];
+					long freq = (wr_data[3] << 3*8) | (wr_data[4] << 2*8) | (wr_data[5] << 1*8) | wr_data[6];
+					cmd_api_tx_tone((TRX_CHN_ENUM)chan, on, freq);
+				}
+				else if(wr_data[0] == 0x62)
+				{
+					//set rx gain: chip_rx_mgc_gain
+					chan = wr_data[1];
+					RX_MGC_GAIN_ENUM tb = (RX_MGC_GAIN_ENUM)wr_data[2];
+					unsigned char val = wr_data[3];
+					cmd_api_rx_mgc_split_table_gain((TRX_CHN_ENUM)chan, tb, val);
+				}
+				else if(wr_data[0] == 0x63)
+				{
+					//set debug option: module_debug_onoff
+					unsigned long en = (wr_data[1] << 3*8) | (wr_data[2] << 2*8) | (wr_data[3] << 1*8) | wr_data[4];
+					module_debug_onoff(&g_phy_obj[0], en);
+				}
+				else if(wr_data[0] == 0x64)
+				{
+					//read sxtrx_lock_status
+					short dir = wr_data[1];
+					int voltage = 0;
+					short lock = sxtrx_lock_status(&g_phy_obj[0], dir, &voltage);
+					// send data
+					wr_data[2] = (lock >> 1*8) & 0xff;
+					wr_data[3] = (lock >> 0*8) & 0xff;
+					wr_data[4] = (voltage >> 3*8) & 0xff;
+					wr_data[5] = (voltage >> 2*8) & 0xff;
+					wr_data[6] = (voltage >> 1*8) & 0xff;
+					wr_data[7] = (voltage >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x65)
+				{
+					//set_tx_atten_chn
+					chan = wr_data[1];
+					unsigned long long flo = ( (unsigned long long)wr_data[2] << 3*8) |
+											( (unsigned long long)wr_data[3] << 2*8) |
+											( (unsigned long long)wr_data[4] << 1*8) |
+											( (unsigned long long)wr_data[5] << 0*8);
+					unsigned char gain = wr_data[6];
+					short immed = wr_data[7];
+					set_tx_atten_chn(&g_phy_obj[0], chan, flo, gain, immed);
+				}
+				else if(wr_data[0] == 0x66)
+				{
+					//set_tx_dig_atten
+					chan = wr_data[1];
+					unsigned short index = (wr_data[2] << 1*8) | wr_data[3];
+					set_tx_dig_atten(&g_phy_obj[0], (TRX_CHN_ENUM)chan, index);
+				}
+				else if(wr_data[0] == 0x67)
+				{
+					//todo
+					//read capture data from adc_ram: cmd_api_adc_ram_dump
+
 				}
 			}
 		}

@@ -11,7 +11,8 @@
 CFLAGS += -DFILE_SYSTEM_INTERFACE_SD \
         -DFILE_SYSTEM_USE_MKFS
 
-SRCS += $(PROJECT)/src/main.c
+SRCS += $(PROJECT)/src/main.c \
+        $(PROJECT)/src/app_cmd.c
 SRCS += $(DRIVERS)/rf-transceiver/fr9361/utility.c \
         $(DRIVERS)/rf-transceiver/fr9361/transceiver_api.c \
         $(DRIVERS)/rf-transceiver/fr9361/spi_rw.c \
@@ -111,7 +112,8 @@ INCS += $(DRIVERS)/rf-transceiver/fr9361/utility.h \
     $(DRIVERS)/rf-transceiver/fr9361/efuse.h \
     $(DRIVERS)/rf-transceiver/fr9361/driver.h \
     $(DRIVERS)/rf-transceiver/fr9361/digtal.h \
-    $(DRIVERS)/rf-transceiver/fr9361/custom_cfg.h
+    $(DRIVERS)/rf-transceiver/fr9361/custom_cfg.h \
+    $(PROJECT)/src/app_cmd.h
 
 #$(DRIVERS)/rf-transceiver/ad9361/ad9361.h \
 #$(PROJECT)/src/parameters.h \
