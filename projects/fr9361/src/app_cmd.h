@@ -9,5 +9,6 @@
 void cmd_api_tx_tone(TRX_CHN_ENUM chn, short on, long freq);
 void cmd_api_rx_mgc_split_table_gain(TRX_CHN_ENUM chn, RX_MGC_GAIN_ENUM tb, unsigned char val);
 void cmd_api_adc_ram_dump(TRX_CHN_ENUM chn, char *name);
+void cmd_api_adc_ram_dump_v2(TRX_CHN_ENUM chn, uint16_t *I_data, uint16_t *Q_data, uint16_t len);
 
 #endif

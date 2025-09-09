@@ -480,8 +480,35 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 				else if(wr_data[0] == 0x67)
 				{
 					//todo
-					//read capture data from adc_ram: cmd_api_adc_ram_dump
+					//read capture data from adc_ram: cmd_api_adc_ram_dump_v2
+					chan = wr_data[1];
+					uint16_t len = (wr_data[2] << 1*8) | wr_data[3];
+					uint16_t I_data[1024] = {0};
+					uint16_t Q_data[1024] = {0};
+					cmd_api_adc_ram_dump_v2((TRX_CHN_ENUM)chan, I_data, Q_data, len);
+					// send data
+					bytes_number = len * 4 * 2;
+					for(int i = 0; i < len; i++)
+					{
+						wr_data[i*4 + 0] = (I_data[i] >> 8) & 0xff;
+						wr_data[i*4 + 1] = (I_data[i] >> 0) & 0xff;
+						wr_data[i*4 + 2] = (Q_data[i] >> 8) & 0xff;
+						wr_data[i*4 + 3] = (Q_data[i] >> 0) & 0xff;
+					}
 
+					uint32_t bytes_send = 0u;
+					const uint32_t bytes_chunk = 4096u;
+
+					while(bytes_send + bytes_chunk < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+						bytes_send += bytes_chunk;
+					}
+					if(bytes_send < bytes_number)
+					{
+						no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+					}
+					no_os_mdelay(10);
 				}
 			}
 		}
