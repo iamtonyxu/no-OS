@@ -1,5 +1,5 @@
 /**
-* Copyright (c) 2023 CHIP INC. All rights reserved.
+* Copyright (c) 2023 ****** CHIP INC. All rights reserved.
 *
 * BSD-3-Clause
 *
@@ -46,7 +46,7 @@ extern "C" {
 /*********************************************************************/
 #include "transceiver_def.h"
 #include "platform.h"
-#include "efuse.h"
+#include "limit_efuse.h"
 /*-------------------------------------------------------------------------------------------------*/
 // basic APIs for transceiver
 /*-------------------------------------------------------------------------------------------------*/

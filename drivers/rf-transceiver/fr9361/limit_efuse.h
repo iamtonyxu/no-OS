@@ -1,9 +1,11 @@
-#ifndef  __EFUSE_H__
-#define  __EFUSE_H__
+#ifndef  __LIMIT_EFUSE_H__
+#define  __LIMIT_EFUSE_H__
 
 #include <stdio.h>
 #include <string.h>
 #include "platform.h"
+
+#define LIB_EFUSE_VER "liblimit_efuse.a: V0.01"
 
 typedef struct chip_info {
 	int low_freq;
@@ -25,9 +27,9 @@ enum CHIP_VERSION {
 	CHIP_VERSION_D1 = 0,
 	CHIP_VERSION_D2 = 1,
 	CHIP_VERSION_E1 = 2,
-	CHIP_VERSION_GSREDA1 = 3,
-	CHIP_VERSION_F1 = CHIP_VERSION_D2,
-	CHIP_VERSION_GSREDB1 = 4,
+	CHIP_VERSION_GSREDA1 = 3, // FR936X GSREDA1
+	CHIP_VERSION_F1 = CHIP_VERSION_D2, // FR936X  
+	CHIP_VERSION_GSREDB1 = 4, // FR936X GSREDB1
 };
 
 typedef enum EFUSE_INFO_SECTION_OPT {
@@ -67,4 +69,4 @@ typedef enum EFUSE_INFO_SECTION_OPT {
 int confim_config_info(rf_chip_phy_t *phy);
 int efuse_read_opt(rf_chip_phy_t *phy, char *data, EFUSE_INFO_SECTION_OPT_T index);
 
-#endif  // __EFUSE_H__
+#endif  // __LIMIT_EFUSE_H__

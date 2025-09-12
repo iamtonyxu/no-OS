@@ -1,4 +1,5 @@
-#include "efuse.h"
+#include "limit_efuse.h"
+#include "platform.h"
 
 int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T *chipInfo)
 {
@@ -24,11 +25,9 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         chipInfo->chip_ver = CHIP_VERSION_GSREDA1;
         break;
     case 0x5:
-	case 0xD:
         chipInfo->chip_ver = CHIP_VERSION_F1;
         break;
     case 0x6:
-	case 0xE:
         chipInfo->chip_ver = CHIP_VERSION_GSREDB1;
         break;
     default:
@@ -38,7 +37,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
     
     switch(val & 0x0F)
     {
-    case 0x0:
+    case 0x0: // FR9360
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_6_125G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -49,7 +48,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
     
-    case 0x1:
+    case 0x1: // FR9361
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_6G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -59,7 +58,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
         
-    case 0x2:
+    case 0x2: // FR9362 
         chipInfo->low_freq = FREQ_200M;
         chipInfo->high_freq = FREQ_5G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -69,8 +68,8 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
         
-    case 0x3:
-    case 0x8:
+    case 0x3: // FR9363
+    case 0x8: // FR9368
         chipInfo->low_freq = FREQ_200M;
         chipInfo->high_freq = FREQ_3G_800M;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -80,7 +79,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
         
-    case 0x4:
+    case 0x4: // FR9364
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_6G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -90,7 +89,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
         
-    case 0x5:
+    case 0x5: // FR9365
         chipInfo->low_freq = FREQ_200M;
         chipInfo->high_freq = FREQ_3G_800M;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -100,8 +99,8 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
 
-    case 0x6:
-    case 0xC:
+    case 0x6: // FR9366
+    case 0xC: // FR9362H
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_6_125G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -111,7 +110,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
 
-    case 0x7:
+    case 0x7: // FR9367
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_5G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;
@@ -121,7 +120,7 @@ int get_efuse_info(rf_chip_phy_t *phy, XTAL_EN_INDEX_T xtal_index, CHIP_INFOR_T 
         ret = 0;
         break;
 
-    case 0xD:
+    case 0xD: // FR9362L
         chipInfo->low_freq = FREQ_30M;
         chipInfo->high_freq = FREQ_6G;
         chipInfo->low_bandwidth = BANDWIDTH_12K;

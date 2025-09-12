@@ -10,7 +10,7 @@
 #include "digtal.h"
 
 //digital ldo setting
-int DIG_LDO_CFG(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth)
+int DIG_LDO_CFG(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth)
 {
 	#if 0//D1
 	if ((bandwidth==BW_LTE100) || (bandwidth==BW_LTE80) || (bandwidth==BW_LTE60))
@@ -43,7 +43,7 @@ int DIG_FIR_FILTER_CFG_WITH_MANUAL(rf_chip_phy_t *phy, short manual_on)
 
 
 //digital rx filter setting
-int DIG_RX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, short fir_en)
+int DIG_RX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, short fir_en)
 {
 	short map_bw, ratio, i;
 	unsigned int val, filt_ctrl_reg;
@@ -119,7 +119,7 @@ int DIG_RX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwi
 }
 
 //enable or disable tx filter
-int DIG_TX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, short fir_en)
+int DIG_TX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, short fir_en)
 {
 	short map_bw, ratio, i;
 	unsigned int val, filt_ctrl_reg;
@@ -174,7 +174,7 @@ int DIG_TX_FILTER_CFG(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwi
 	return 0;
 }
 
-int DIG_FIR_FILTER_READ(rf_chip_phy_t *phy, short dir, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, short fir_tap_n, unsigned short *fir_tap_coeff)
+int DIG_FIR_FILTER_READ(rf_chip_phy_t *phy, short dir, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, short fir_tap_n, unsigned short *fir_tap_coeff)
 {
 	int addr, offset, addr_via_bw;
 	unsigned char val[4];
@@ -197,7 +197,7 @@ int DIG_FIR_FILTER_READ(rf_chip_phy_t *phy, short dir, TRX_CHN_ENUM chn, BANDWIT
 }
 
 //set trx filter coef
-int DIG_FIR_FILTER_CFG(rf_chip_phy_t *phy, short manual_on, short dir, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, short fir_tap_n, int *fir_tap_coeff, short rw_lut_flag)
+int DIG_FIR_FILTER_CFG(rf_chip_phy_t *phy, short manual_on, short dir, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, short fir_tap_n, int *fir_tap_coeff, short rw_lut_flag)
 {
 	unsigned char coeff_write_ctrl[2][2] = {{0x09, 0x11}, {0x03, 0x05}};
 	int addr, offset, addr_via_bw;
@@ -297,7 +297,7 @@ int DIG_TX_DAC_MANUAL_ENA(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, short manual_on)
 //digital interface setting
 int DIG_INTF_CFG(rf_chip_phy_t *phy, DIG_IF_ENUM dif, IF_TYPE_ENUM port, DATA_RATE_ENUM rate, PHY_MODE_ENUM mode)
 {
-	//short bb_interface_config[18] = {0x62, 0x42, 0x6a, 0x4a, 0x62, 0x42, 0x6a, 0x4a, 0x12, 0x62, 0x42, 0x6a, 0x4a, 0x62, 0x42, 0x6a, 0x4a, 0x12};
+	short bb_interface_config[18] = {0x62, 0x42, 0x6a, 0x4a, 0x62, 0x42, 0x6a, 0x4a, 0x12, 0x62, 0x42, 0x6a, 0x4a, 0x62, 0x42, 0x6a, 0x4a, 0x12};
 	unsigned char reg_val;
 
 	hal_spi_write_reg(phy, 0x061, 0x08);
@@ -398,7 +398,7 @@ int DIG_ENSM_CFG(rf_chip_phy_t *phy, short manual_on)
 }
 
 //data interface clock setting
-int DIG_INTF_CLK_CFG(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth, DATA_RATE_MODE_ENUM data_rate)
+int DIG_INTF_CLK_CFG(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth, DATA_RATE_MODE_ENUM data_rate)
 {
 	unsigned int data_rate_hz, adc_sample_rate_hz;
 	short map_bw, data_div;
@@ -426,7 +426,7 @@ int DIG_INTF_CLK_CFG(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth, DATA_RATE_MODE
 //digital channel enable
 int DIG_CHAN_ENA(rf_chip_phy_t *phy, short dir, TRX_CHN_ENUM chn, short enable)
 {
-	//unsigned int val;
+	unsigned int val;
 	REG_BIT dig_chn_config[2][2] = {{BIT0, BIT1}, {BIT2, BIT3}};
 
 	if (enable)

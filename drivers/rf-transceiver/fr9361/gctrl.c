@@ -1093,19 +1093,35 @@ int GCTRL_DEMO_AGC_FAST_HHH(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, TABLE_MODE_ENU
     GCTRL_DEFAULT_CFG(phy, &gctrl_cfg);
 
     gctrl_cfg.basic.cfg_agc_mode                = 2;
-    if(mode == FULL_TBL)
-    	gctrl_cfg.basic.cfg_gain_table_mode = 0;
-    else
-    	gctrl_cfg.basic.cfg_gain_table_mode = 1;
-	
-	gctrl_cfg.gain_digital.cfg_digital_gain_ena = 1;
-	gctrl_cfg.gain_digital.cfg_digital_init_index = 0;
-	gctrl_cfg.gain_digital.cfg_digital_max_index = 0;
+    gctrl_cfg.basic.cfg_gain_table_mode         = 0;
+    gctrl_cfg.lmt_pdt.cfg_lmt_overload_ena      = 1;
+    gctrl_cfg.lmt_pdt.cfg_lmt_prevent_inc_ena   = 0;
+    gctrl_cfg.lmt_pdt.cfg_lmt_underload_ena     = 0;
+    gctrl_cfg.lmt_pdt.cfg_lmt_prevent_inc_ena   = 0;
+
+    gctrl_cfg.adc_pdt.cfg_adc_overload_lg_ena            = 1;
+    gctrl_cfg.adc_pdt.cfg_adc_overload_lg_threshold      = (short)(    pow(10,-2.0/20)*255.0 );
+    gctrl_cfg.adc_pdt.cfg_adc_overload_lg_exceed_counter = 10;
+
+    gctrl_cfg.adc_pdt.cfg_adc_overload_sm_ena   = 0;
+    gctrl_cfg.adc_pdt.cfg_adc_overload_sm_threshold      = (short)(    pow(10,-2.0/20)*255.0 );
+    gctrl_cfg.adc_pdt.cfg_adc_overload_sm_exceed_counter = 50;
+
+    gctrl_cfg.adc_pdt.cfg_adc_prevent_inc_ena            = 1;
+    gctrl_cfg.adc_pdt.cfg_adc_prevent_inc_threshold      = (short)(    pow(10,-5.0/20)*255.0 );
+    gctrl_cfg.adc_pdt.cfg_adc_prevent_inc_exceed_counter = 50;
+
+    gctrl_cfg.adc_pdt.cfg_adc_underload_ena              = 1;
+    gctrl_cfg.adc_pdt.cfg_adc_underload_threshold        = (short)(    pow(10,-30.0/20)*255.0 );
+    gctrl_cfg.adc_pdt.cfg_adc_underload_exceed_counter   = 250;
+    gctrl_cfg.adc_pdt.cfg_adc_underload_power_coeff      = 3;
 
     gctrl_cfg.hbf_ovf.cfg_hbf_ovf_ena           = 0;
     gctrl_cfg.hbf_lpwr.cfg_hbf_low_pwr_ena      = 0;
-    gctrl_cfg.hbf_pwr.cfg_hbf_avp_ena           = 1;
-    
+    gctrl_cfg.hbf_pwr.cfg_hbf_avp_ena           = 0;
+    gctrl_cfg.hbf_pwr.cfg_hbf_avp_meas_num      = 15;
+
+
     GCTRL_CFG(phy, chn,&gctrl_cfg);
 
     return 0;

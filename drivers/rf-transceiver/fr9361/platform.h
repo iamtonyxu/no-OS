@@ -13,13 +13,13 @@
 #include "fr9361_common.h"
 #include "utility.h"
 
-#define  DEVICE_VERSION              ("V23R1")
+#define  DEVICE_VERSION              ("V2.8.25-2023_12_06")
 #define  LUT_VERSION_D1              ("231116-1.11")
-#define  LUT_VERSION_D2F1            ("241023-2.14")
-#define  LUT_VERSION_GSREDA1B1       ("241023-3.2")
+#define  LUT_VERSION_D2F1            ("240822-2.12")
+#define  LUT_VERSION_GSREDA1B1       ("240822-3.0")
 #define  LUT_VERSION_E1              ("231010-4.9")
 
-#define  FPGA_BIT_FILE               ("/home/FPGA_TOP_PIN_4.bit")
+
 
 #define  VENDOR_SPI_RW           (1)
 #define  LINUX_OS                (0)
@@ -46,6 +46,7 @@
 #define FPGA_CTRL_RST_PERL_MASK        UINT8_C(1<<0)
 #define FPGA_CTRL_RST_FPGA_MASK        UINT8_C(1<<1)
 #define FPGA_CTRL_RST_QEC_MASK         UINT8_C(1<<2)
+
 
 #define RX_DC_TRACK_MAX_CNT   		(100)
 
@@ -75,10 +76,9 @@ typedef struct task_struct
 #define  TASK_HANDLE_INVALID(task) (task.pid = 0)
 
 #else //+++++++++++++++++++++++++++++
-#include "no_os_delay.h"
-#define  CHIP_DELAY(time)	no_os_mdelay(time)
-#define  CHIP_UDELAY(time)	no_os_udelay(time)
-#define  CHIP_SDELAY(time) 	no_os_mdelay(time)
+#define  CHIP_DELAY(time)
+#define  CHIP_UDELAY(time)
+#define  CHIP_SDELAY(time)    sleep(time)
 
 typedef struct task_struct
 {
@@ -195,17 +195,13 @@ void set_trigger_num(int num);
     {   \
         int trigger_num = get_trigger_num();\
         if(trigger_num!=0 && trigger_num == trigger_point) { \
-            //cmd_debug(); \
+            cmd_debug(); \
         } \
     }
 #else 
+    void cmd_debug();
     #define ENTER_CMD(trigger_point)
 #endif
-
-typedef enum FPGA_BOARD_E {
-    FPGA_7020,
-    FPGA_706
-} fpga_board_e;
 
 typedef struct _tracking_thread 
 {
@@ -279,10 +275,8 @@ typedef struct rf_chip_phy_struct
     char rx_dc_lut_update;
 
     char rx_bw_cal_flag[2];
-    char tx_bw_cal_flag[2];
     unsigned char rx_imbalance_cal[2][2];
     unsigned char rx_bw_cal[2][2];
-    unsigned char tx_bw_cal[2][3];
 
     char rx_qec_flag[2];
     RX_QEC_CFG_REGS rx_qec[2];
@@ -299,7 +293,7 @@ typedef struct rf_chip_phy_struct
     short rx_lpf_gain[2];
     short rx_dig_gain[2];
 
-    BANDWITH_ENUM bandwidth;
+    BANDWIDTH_ENUM bandwidth;
     unsigned long long  rxlo;
     unsigned long long  txlo;
     unsigned long long  min_vco;
@@ -313,7 +307,6 @@ typedef struct rf_chip_phy_struct
     int spi;
     rx_qec_tracking_thread_var rxqec_track_thread[TRX_CH_CNT];
     rx_ana_tracking_thread_var rxdc_track_thread[TRX_CH_CNT];
-    unsigned char set_trx_lo_sw_cal_flag;
 } rf_chip_phy_t;
 
 extern unsigned int hal_fpga_read_reg(rf_chip_phy_t *phy, unsigned int reg);

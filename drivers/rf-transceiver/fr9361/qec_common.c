@@ -3,7 +3,7 @@
 #include "driver.h"
 #include "register.h"
 
-#include "efuse.h"
+#include "limit_efuse.h"
 
 #undef PI
 #define PI (3.14159265359)
@@ -2727,7 +2727,7 @@ int fn_rx_ana_set_gain (rf_chip_phy_t *phy, int channel_sel , int mixer_att ,int
 
 void fn_connect_rxlo_to_sxrx(rf_chip_phy_t * phy,int channel,unsigned long long rx_lo)
 {
-	//rx_band_selection(phy, channel,rx_lo);
+	rx_band_selection(phy, channel,rx_lo);
 	// IIO_DEMO\IIO_FSM_Script\Power_Up_E_0_2_SXRX_wFCAL_ON_VCO9600_XO30p72_X4.txt
     hal_spi_write_reg(phy, 0x634,0x04);
     hal_spi_write_reg(phy, 0x61E,0x12);
@@ -3001,13 +3001,13 @@ void fn_open_loop_back(
 	{
 		if(rxqec_sel == 1) // FDD RXQEC , use TX DC ,change TX lo to fullfill it.
 		{
-			rx_band_selection(phy, chn, lo_freq);
 			tx_band_selection(phy, chn, lo_freq + (unsigned long long)(sample_rate / 32*1));
+			rx_band_selection(phy, chn, lo_freq);
 		}
 		else // FDD TXQEC, use rx bandslection to 2*unit_freq
 		{
-			rx_band_selection(phy, chn, lo_freq - (unsigned long long)(sample_rate / 32*2));	
 			tx_band_selection(phy, chn, lo_freq);
+			rx_band_selection(phy, chn, lo_freq - (unsigned long long)(sample_rate / 32*2));	
 		}
 	}
 	else // TDD model, now i have only TX LO to adjust.
@@ -3406,7 +3406,7 @@ int fn_rx_qec_diag_print(
 			LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC ERROR : target index power is too low, Maybe RX or TX is not lock or sample rate is not right please check .\n");	
 			if(rx_qec_diag_info->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3792,7 +3792,7 @@ int rxqec_diag_info_diag (
 				mag_diff);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3815,7 +3815,7 @@ int rxqec_diag_info_diag (
 				phg_diff);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3840,7 +3840,7 @@ int rxqec_diag_info_diag (
 					wb_cnt-1);
 				if(debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3871,7 +3871,7 @@ int rxqec_diag_info_diag (
 					wb_cnt-1);
 				if(debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3916,7 +3916,7 @@ int rxqec_diag_info_diag (
 			);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{

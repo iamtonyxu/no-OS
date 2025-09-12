@@ -13,7 +13,7 @@ extern int tx_split_atten_change(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, TX_SPLIT_
 extern int trx_lo_change(rf_chip_phy_t *phy, unsigned long long  txlo, unsigned long long  rxlo);
 extern int trx_lo_change_ext(rf_chip_phy_t *phy, unsigned char lo_change_mode, unsigned long long  txlo, unsigned long long  rxlo);
 extern int trx_lo_change_act(rf_chip_phy_t *phy);
-extern int rf_bandwidth_change(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth);
+extern int rf_bandwith_change(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth);
 extern int tx_port_enable(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, short en);
 extern int rx_port_enable(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, short en);
 extern int tx_dig_atten_change(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, unsigned short index);

@@ -27,7 +27,7 @@ SRCS += $(DRIVERS)/rf-transceiver/fr9361/utility.c \
         $(DRIVERS)/rf-transceiver/fr9361/fsm_lut_d2f1.c \
         $(DRIVERS)/rf-transceiver/fr9361/fsm_lut_d1.c \
         $(DRIVERS)/rf-transceiver/fr9361/fr9361_common.c \
-        $(DRIVERS)/rf-transceiver/fr9361/efuse.c \
+        $(DRIVERS)/rf-transceiver/fr9361/limit_efuse.c \
         $(DRIVERS)/rf-transceiver/fr9361/driver.c \
         $(DRIVERS)/rf-transceiver/fr9361/digtal.c \
         $(DRIVERS)/rf-transceiver/fr9361/custom_cfg.c
@@ -109,7 +109,7 @@ INCS += $(DRIVERS)/rf-transceiver/fr9361/utility.h \
     $(DRIVERS)/rf-transceiver/fr9361/main_init.h \
     $(DRIVERS)/rf-transceiver/fr9361/gctrl.h \
     $(DRIVERS)/rf-transceiver/fr9361/fr9361_common.h \
-    $(DRIVERS)/rf-transceiver/fr9361/efuse.h \
+    $(DRIVERS)/rf-transceiver/fr9361/limit_efuse.h \
     $(DRIVERS)/rf-transceiver/fr9361/driver.h \
     $(DRIVERS)/rf-transceiver/fr9361/digtal.h \
     $(DRIVERS)/rf-transceiver/fr9361/custom_cfg.h \

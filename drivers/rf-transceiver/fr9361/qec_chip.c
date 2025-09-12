@@ -16,7 +16,7 @@
 /****************************************************************************************/
 // qec test
 /****************************************************************************************/
-int write_rx_qec_cal_word(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, RX_QEC_CFG_REGS *rx_qec_cfg)
+int write_rx_qec_cal_word(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, RX_QEC_CFG_REGS *rx_qec_cfg)
 {
     int i=0, base;
     unsigned short h8, l8;
@@ -43,7 +43,7 @@ int write_rx_qec_cal_word(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM ba
     return 0;
 }
 
-int write_tx_qec_lol_cal_word(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWITH_ENUM bandwidth, short band_index, short bw_index, short bb_gain, TX_QEC_CFG_REGS *tx_qec_cfg)
+int write_tx_qec_lol_cal_word(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, BANDWIDTH_ENUM bandwidth, short band_index, short bw_index, short bb_gain, TX_QEC_CFG_REGS *tx_qec_cfg)
 {
     int i=0, end, offset, base;
     unsigned short h8, l8;
@@ -259,7 +259,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX QEC ERROR: DC cannot remove\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -277,7 +277,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX QEC ERROR  : LOOPBACK power is too large\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -293,7 +293,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX QEC ERROR  : LOOPBACK power is too small\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -364,7 +364,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX LOL ERROR: DC cannot remove\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -382,14 +382,14 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX LOL ERROR  : LOOPBACK power is too large\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
 					flag_lol_ok = -1;
 				}
 			}
-			else if(rssi > -6 )
+			else if(rssi> -6 )
 			{
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX LOL WARNING: LOOPBACK power is too large\n");		
 			}
@@ -398,7 +398,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 				LOG_MDEBUG(phy,TRX_QEC_CAL,"TX LOL ERROR  : LOOPBACK power is too small\n");
 				if(tx_qec_cfg.debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -494,7 +494,7 @@ int fn_tx_qec_lol_cal_rflp (int chn, int ext_loop, int qec_dbfs, int lol_dbfs, v
 	{
 		 fn_recovery_txlo_to_sxrx(phy);
 	}
-
+    
 	if(flag_qec_ok == -1 || flag_lol_ok == -1)
 	{
 		return -1 ;
@@ -521,8 +521,6 @@ int fn_rx_qec_cal(int chn, int ext_loop, void *arg)
 	mode = phy->config->mode;
 	mode = (mode>=5)? 1: 0;
 
-	int flg_ok = 0;
-
 	if ((phy->config->syspll_cfg_flag) || (phy->config->custom_bandwidth_flag))
 		sample_rate =  phy->config->bb_sample_rate;
 	else
@@ -541,13 +539,13 @@ int fn_rx_qec_cal(int chn, int ext_loop, void *arg)
 		bw_hz = phy->config->custom_bandwidth;
 	else
     	bw_hz = signal_bandwidth[phy->config->bandwidth];
-	flg_ok = fn_rx_qec_self_calib(phy, chn, ext_loop, mode, phy->config->rx_flo, sample_rate, bw_hz, &rx_qec_cfg);
+	fn_rx_qec_self_calib(phy, chn, ext_loop, mode, phy->config->rx_flo, sample_rate, bw_hz, &rx_qec_cfg);
 	LOG_MAIN("[%s,%d] sample_rate=%d\n", __func__, __LINE__, sample_rate);
 
 	memcpy(&(phy->rx_qec[chn]), &rx_qec_cfg, sizeof(RX_QEC_CFG_REGS));
 	write_rx_qec_cal_word(phy, (TRX_CHN_ENUM)chn, phy->config->bandwidth, &rx_qec_cfg);
 
-    if (((phy->config->bandwidthswitch_flag != 1) || (phy->config->bandwidthswitch_length <= 1)) && flg_ok>=0)
+    if ((phy->config->bandwidthswitch_flag != 1) || (phy->config->bandwidthswitch_length <= 1))
     {
         phy->rx_qec_flag[chn] = 1;
     }
@@ -557,7 +555,7 @@ int fn_rx_qec_cal(int chn, int ext_loop, void *arg)
 	else
 		hal_spi_write_reg(phy, 0x748, 0x0);
 		
-    return flg_ok;
+    return 0;
 }
 
 short fn_tx_qec_lol_lut_update(int chn, void *arg)
@@ -2132,18 +2130,18 @@ int fn_rx_qec_self_calib(rf_chip_phy_t *phy,
 		LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC ERROR: DC cannot remove\n");
 		if(rx_qec_cfg->debug_level>=2)
 		{
-			//cmd_debug();
+			cmd_debug();
 		}
 		else
 		{
 			flag_qec_ok = -1;
 		}
+		
 	}
 	else if(abs(rx_qec_diag_info.rx_dc_i)/10 > 100 || abs(rx_qec_diag_info.rx_dc_q)/10 > 100 )
 	{
 		LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC WARNING: DC cannot remove\n");
 	}
-
 	
 	rssi = 20.0*log10(sqrt((double)rx_qec_diag_info.rx_power/4.0)/pow(2.0,9.0));	
 	if(rssi > -3 )
@@ -2151,7 +2149,7 @@ int fn_rx_qec_self_calib(rf_chip_phy_t *phy,
 		LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC ERROR  : LOOPBACK power is too large\n");
 		if(rx_qec_cfg->debug_level>=2)
 		{
-			//cmd_debug();
+			cmd_debug();
 		}
 		else
 		{
@@ -2167,7 +2165,7 @@ int fn_rx_qec_self_calib(rf_chip_phy_t *phy,
 		LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC ERROR  : LOOPBACK power is too small\n");
 		if(rx_qec_cfg->debug_level>=2)
 		{
-			//cmd_debug();
+			cmd_debug();
 		}
 		else
 		{
@@ -2211,7 +2209,7 @@ int fn_rx_qec_self_calib(rf_chip_phy_t *phy,
 					LOG_MDEBUG(phy, TRX_QEC_CAL, "--- wb %d ---\n",i);
 				}
                 rx_band_selection(phy, chn,rx_lo-(unsigned long long)(sample_rate / 32*(i+1)));	
-                flag_qec_ok |= fn_tx_qec_5tone_method_rflp(phy, chn,p_tx_qec_cfg[i-1] , & (tx_qec_diag_info));
+                flag_qec_ok = fn_tx_qec_5tone_method_rflp(phy, chn,p_tx_qec_cfg[i-1] , & (tx_qec_diag_info));
             }
             else
             {
@@ -2783,7 +2781,7 @@ int fn_rx_qec_self_calib(rf_chip_phy_t *phy,
 		&rf_loopback_regs);
 	ENTER_CMD(5890);
 
-    flag_qec_ok |= rxqec_diag_info_diag(phy,rx_qec_cfg->debug_level,&rx_qec_diag_info);
+    flag_qec_ok = rxqec_diag_info_diag(phy,rx_qec_cfg->debug_level,&rx_qec_diag_info);
     ENTER_CMD(5891);
     
     if(tdd_sel==1)
@@ -3094,7 +3092,7 @@ int fn_tx_qec_5tone_method_rflp(rf_chip_phy_t *phy, int chn, TX_QEC_CFG_REGS * t
 				20*log10(( fabs(1.0-((double)tx_qec_diag_info->tx_qec_mag_err[tx_qec_diag_info->wb_cnt])/10000.0))));
 			if(tx_qec_cfg->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3109,7 +3107,7 @@ int fn_tx_qec_5tone_method_rflp(rf_chip_phy_t *phy, int chn, TX_QEC_CFG_REGS * t
 				(double)(tx_qec_diag_info->tx_qec_phg_err[tx_qec_diag_info->wb_cnt])/10000.0);
 			if(tx_qec_cfg->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3128,7 +3126,7 @@ int fn_tx_qec_5tone_method_rflp(rf_chip_phy_t *phy, int chn, TX_QEC_CFG_REGS * t
 					tx_qec_diag_info->wb_cnt-1);
 				if(tx_qec_cfg->debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3155,7 +3153,7 @@ int fn_tx_qec_5tone_method_rflp(rf_chip_phy_t *phy, int chn, TX_QEC_CFG_REGS * t
 					tx_qec_diag_info->wb_cnt-1);
 				if(tx_qec_cfg->debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3184,7 +3182,7 @@ int fn_tx_qec_5tone_method_rflp(rf_chip_phy_t *phy, int chn, TX_QEC_CFG_REGS * t
 				tx_qec_diag_info->wb_cnt,irr_result);
 			if(tx_qec_cfg->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3512,7 +3510,7 @@ int fn_tx_lol_5tone_method_rflp    (rf_chip_phy_t *phy, int chn,  TX_QEC_CFG_REG
 				tx_lol_diag_info->tx_lol_dc_q[tx_lol_diag_info->wb_cnt]);
 			if(tx_qec_cfg->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3538,7 +3536,7 @@ int fn_tx_lol_5tone_method_rflp    (rf_chip_phy_t *phy, int chn,  TX_QEC_CFG_REG
 					tx_lol_diag_info->wb_cnt-1);
 				if(tx_qec_cfg->debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3554,7 +3552,7 @@ int fn_tx_lol_5tone_method_rflp    (rf_chip_phy_t *phy, int chn,  TX_QEC_CFG_REG
 					tx_lol_diag_info->wb_cnt-1);
 				if(tx_qec_cfg->debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3575,7 +3573,7 @@ int fn_tx_lol_5tone_method_rflp    (rf_chip_phy_t *phy, int chn,  TX_QEC_CFG_REG
 				tx_lol_diag_info->wb_cnt,irr_result);
 			if(tx_qec_cfg->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{

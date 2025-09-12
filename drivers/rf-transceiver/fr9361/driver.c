@@ -8,11 +8,10 @@
 #include "main_init.h"
 #include "gctrl.h"
 #include "digtal.h"
-#include "efuse.h"
+#include "limit_efuse.h"
 
 #define _RX_BBF_6DB_GAIN 0x06
 #define _RX_BBF_GAIN 0x0c
-#define TX_BW_CAL_TUNE_MAX_VAL   255
 
 typedef struct syspll_select_struct
 {
@@ -150,7 +149,7 @@ unsigned long module_debug_get(rf_chip_phy_t *phy)
 	return phy->module_debug;
 }
 
-int tx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BANDWITH_ENUM bw_index)
+int tx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BANDWIDTH_ENUM bw_index)
 {
 	unsigned long val, ctune;
 
@@ -209,12 +208,12 @@ int tx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BAN
 	return 0;
 }
 
-int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BANDWITH_ENUM bw_index)
+int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BANDWIDTH_ENUM bw_index)
 {
 	unsigned long val, ctune;
 
 
-	if (custom_bandwidth <= 1500000)	 
+	if (custom_bandwidth <= 1500000)
 	{
 		phy->rx_bw_setting[0] = 127;
 		phy->rx_bw_setting[1] = 63;
@@ -235,7 +234,7 @@ int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BAN
 		val = ctune - (val << 8);
 		phy->rx_bw_setting[12] = val;
 	}
-	else if (custom_bandwidth <= 3000000)	 
+	else if (custom_bandwidth <= 3000000)
 	{
 		phy->rx_bw_setting[0] = 127;
 		phy->rx_bw_setting[1] = 63;
@@ -257,7 +256,7 @@ int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BAN
 		phy->rx_bw_setting[12] = val;
 
 	}
-	else if (custom_bandwidth < 6000000)	 
+	else if (custom_bandwidth < 6000000)
 	{
 		phy->rx_bw_setting[0] = 127;
 		phy->rx_bw_setting[1] = 59;
@@ -278,7 +277,7 @@ int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BAN
 		val = ctune - (val << 8);
 		phy->rx_bw_setting[12] = val;
 	}
-	else if (custom_bandwidth < 12000000)   
+	else if (custom_bandwidth < 12000000)
 	{
 		phy->rx_bw_setting[0] = 127;
 		phy->rx_bw_setting[1] = 59;
@@ -341,7 +340,7 @@ int rx_custom_bw_setting(rf_chip_phy_t *phy, unsigned long custom_bandwidth, BAN
         val = ctune - (val << 8);
         phy->rx_bw_setting[12] = val;
     }
-	else if (custom_bandwidth < 70000000)   
+	else if (custom_bandwidth < 70000000)
 	{
 		phy->rx_bw_setting[0] = 127;
 		phy->rx_bw_setting[1] = 59;
@@ -392,7 +391,7 @@ short proximity_bandwidth_seek(rf_chip_phy_t *phy, unsigned long custom_bandwidt
 {
 	
 	short i;
-	BANDWITH_ENUM bw_index = phy->config->bandwidth;
+	BANDWIDTH_ENUM bw_index = phy->config->bandwidth;
 	
 	rx_custom_bw_setting(phy, custom_bandwidth, bw_index);
 	tx_custom_bw_setting(phy, custom_bandwidth, bw_index);
@@ -450,7 +449,7 @@ short rf_chip_phy_obj_init(rf_chip_phy_t *phy)
     }
 
 	phy->config->rx_adc_cal_flag = 0;
-	//phy->config->tx_bw_cal_flag = 0;
+	phy->config->tx_bw_cal_flag = 0;
 	phy->config->rxfe_gain[0] = RX_PORT_G0;
 	phy->config->rxfe_gain[1] = RX_PORT_G0;
 	phy->config->rcal_read = R_CAL_CNT_BIT0_IN_REG850;
@@ -480,33 +479,15 @@ short rf_chip_phy_obj_init(rf_chip_phy_t *phy)
     //dc_track_cfg.cfg_interval_update       = 2000;
     //dc_track_cfg.cfg_track_dig_offset      = 1   ; 
     //dc_track_cfg.cfg_dc_tracking_mode_r1   = 0   ;
-	
+
 
     memcpy(&(phy->rxdc_track_thread[0].track_cfg), &dc_track_cfg, sizeof(RX_DC_TRACK_CFG));
     memcpy(&(phy->rxdc_track_thread[1].track_cfg), &dc_track_cfg, sizeof(RX_DC_TRACK_CFG));
 
 	for (i=0; i<50; i++)
-	{
 		for (j=0; j<16; j++)
-		{
 			phy->tx_bb_gain_config[i][j] = g_tx_bb_gain_config[i][j];
-		}
-	}
-
-
-	int bb_gain_index;
-	int chn;
-	for (chn=0;chn<2;chn++)
-	{
-		for (bb_gain_index=0; bb_gain_index<6; bb_gain_index++)
-		{
-			phy->tx_qec[chn][bb_gain_index].dc_i          = 0x0   ;
-			phy->tx_qec[chn][bb_gain_index].dc_q          = 0x0   ;
-			phy->tx_qec[chn][bb_gain_index].fiiq_imag     = 0x4000;
-			phy->tx_qec[chn][bb_gain_index].fiiq_real     = 0x0   ;	
-			phy->tx_qec[chn][bb_gain_index].fdiq_fir[16]  = 0x390A;
-		}
-	}
+	
 	return 0;
 }
 
@@ -583,7 +564,7 @@ void cfg_trx_band_lo_range(rf_chip_phy_t *phy)
 /****************************************************************************************/
 // set rf bandwidth
 /****************************************************************************************/
-void set_rf_bandwidth(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth)
+void set_rf_bandwidth(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth)
 {
 	unsigned char bw_config[9] =
 	{
@@ -1636,10 +1617,6 @@ int set_trx_lo(rf_chip_phy_t *phy, TRX_ENUM trx, TRX_CHN_ENUM chn, unsigned long
         write_lut_byte(phy, SX_CAL_LUT, index, 0x648, index/2, ((index+1)%2)?1:3, sx_vco_scap_l_val);
         LOG_MDEBUG(phy, SX_TRX_CAL, "sw cal, write scap, SX_CAL_LUT index=0x%x, sx_vco_scap_h(0x%03x)=0x%x, sx_vco_scap_l(0x%03x)=0x%x\n", 
                                         index, da_sxtrx_vco_scap_reg_h, sx_vco_scap_h_val, da_sxtrx_vco_scap_reg_l, sx_vco_scap_l_val);
-        if (0 == phy->set_trx_lo_sw_cal_flag)
-        {
-            phy->set_trx_lo_sw_cal_flag = 1;
-        }
     }
     LOG_MDEBUG(phy, SX_TRX_CAL, "--------------------------------------set_trx_lo end---------------------------------------------------\n");
 		
@@ -6129,7 +6106,7 @@ void rx_dc_offset_cal_enable_ext(rf_chip_phy_t *phy, TRX_CHN_ENUM channel_sel, u
 			r_addr = RX_DC_CTRL_0;
 			r_data = hal_spi_read_reg(phy, r_addr);
 			w_addr = r_addr;
-			w_data = r_data | 0xEA;
+			w_data = (r_data & 0xf5) | (0xa);
 			hal_spi_write_reg(phy, w_addr,w_data);
 		}
 	}
@@ -9501,12 +9478,12 @@ long long get_imbalance_inBand(rf_chip_phy_t *phy)
 	}
 	else if (phy->config->syspll_cfg_flag)
 	{
-		freq_inBand = (g_3db_band[phy->config->bandwidth] / (phy->config->bb_sample_rate / 32)) * 
+		freq_inBand = (g_3db_band[phy->config->bandwidth] / (phy->config->bb_sample_rate / 32)) *
 						(phy->config->bb_sample_rate / 32);
 	}
 	else
 	{
-		freq_inBand = (g_3db_band[phy->config->bandwidth] / (g_band_bbrate[phy->config->bandwidth] * 1000 / 32)) * 
+		freq_inBand = (g_3db_band[phy->config->bandwidth] / (g_band_bbrate[phy->config->bandwidth] * 1000 / 32)) *
 						(g_band_bbrate[phy->config->bandwidth] * 1000 / 32);
 	}
 
@@ -10188,7 +10165,7 @@ int  trx_band_pa_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo)
 
 }
 
-void trx_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo, BANDWITH_ENUM bw, short custom_bw_flag)
+void trx_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo, BANDWIDTH_ENUM bw, short custom_bw_flag)
 {
 	trx_bw_lut_load(phy, bw, custom_bw_flag);
 	trx_band_pa_lut_load(phy, tx_flo);
@@ -10206,7 +10183,7 @@ void trx_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo, BANDWITH_ENUM b
 	}
 }
 
-short trx_bw_lut_load(rf_chip_phy_t *phy, BANDWITH_ENUM bw, short custom_bw_flag)
+short trx_bw_lut_load(rf_chip_phy_t *phy, BANDWIDTH_ENUM bw, short custom_bw_flag)
 {
 	short i, ret;
 	unsigned char lut_val;
@@ -10371,7 +10348,7 @@ int confim_rx_bw_cal_value(rf_chip_phy_t *phy, int channel, int *calVal)
 	}
 	else
 	{
-		if((*calVal >= ((unsigned short)RxBwCal_Val_Def[phy->config->bandwidth]*0.7)) && 
+		if((*calVal >= ((unsigned short)RxBwCal_Val_Def[phy->config->bandwidth]*0.7)) &&
 			(*calVal <= ((unsigned short)RxBwCal_Val_Def[phy->config->bandwidth]*1.3)))
 		{
 			LOG_MDEBUG(phy, RX_BW_CAL, "Cal Value 0x%03x is expectant.\n", *calVal);
@@ -10474,7 +10451,7 @@ int do_rx_bw_cal(rf_chip_phy_t *phy, int channel, long long half_power, unsigned
 }
 
 
-short rx_bw_lut_update(rf_chip_phy_t *phy, BANDWITH_ENUM bw, unsigned short rx_ctune_reg1, unsigned short rx_ctune_reg2)
+short rx_bw_lut_update(rf_chip_phy_t *phy, BANDWIDTH_ENUM bw, unsigned short rx_ctune_reg1, unsigned short rx_ctune_reg2)
 {
 	short ret;
 	int addr1, addr2;
@@ -10528,7 +10505,7 @@ void stop_edge_signal(rf_chip_phy_t *phy, int channel)
 	fn_tx_send_tone(phy, channel,  0,  0);
 }
 
-void send_edge_signal(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth)
+void send_edge_signal(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth)
 {
 	int freq_index;
 	long g_3dbband_freq;
@@ -10539,7 +10516,7 @@ void send_edge_signal(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth)
 	fn_tx_send_tone(phy, channel ,  1,   g_3dbband_freq / freq_index +1);
 }
 
-void send_cordic_signal(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth, short en, long freq)
+void send_cordic_signal(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth, short en, long freq)
 {
 	int freq_index;
 	long g_3dbband_freq;
@@ -10623,7 +10600,7 @@ void close_if_loopback(rf_chip_phy_t *phy)
 }
 
 
-void rx_bw_config_tone_tx(rf_chip_phy_t *phy, int chnl, BANDWITH_ENUM bw, CHIP_MODE_ENUM mode)
+void rx_bw_config_tone_tx(rf_chip_phy_t *phy, int chnl, BANDWIDTH_ENUM bw, CHIP_MODE_ENUM mode)
 {
 	LOG_MDEBUG(phy, RX_BW_CAL, "Used Digit Api. Set Mode: %d\n", mode);
 	ENSM_MANAUL_ENA(phy, 1, FSM_IDLE);
@@ -10638,7 +10615,7 @@ void rx_bw_config_tone_tx(rf_chip_phy_t *phy, int chnl, BANDWITH_ENUM bw, CHIP_M
 		ENSM_MANAUL_ENA(phy, 1, FSM_FDD);
 }
 
-void init_ctune(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth)
+void init_ctune(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth)
 {
 	unsigned int rx_ctune_reg1, rx_ctune_reg2, rx_ctrl_reg;
 	unsigned int ctune_val;
@@ -10823,21 +10800,21 @@ short rx_bw_cal(rf_chip_phy_t *phy, TRX_CHN_ENUM channel)
             //goertzle_wb_div32 = (int)round(32 * phy->config->custom_bandwidth / 2000.0 / g_band_bbrate[phy->config->bandwidth]/1.0);
             goertzle_wb_div32 = (int)round(32 * phy->config->custom_bandwidth / 2.0 / phy->config->bb_sample_rate/1.0);
             LOG_MDEBUG(phy, RX_BW_CAL, "phy->config->bandwidth = %d, BB Sampling rate = %ld, custom_bandwidth = %ld, custom_bandwidth_flag = %d\n",
-                phy->config->bandwidth, phy->config->bb_sample_rate/1000, 
-                phy->config->custom_bandwidth, phy->config->custom_bandwidth_flag);	
+                phy->config->bandwidth, phy->config->bb_sample_rate/1000,
+                phy->config->custom_bandwidth, phy->config->custom_bandwidth_flag);
 		}
 		else if (phy->config->syspll_cfg_flag)
 		{
 			goertzle_wb_div32 = (int)round(32*g_3db_band[phy->config->bandwidth] / phy->config->bb_sample_rate/1.0);
             LOG_MDEBUG(phy, RX_BW_CAL, "phy->config->bandwidth = %d, BB Sampling rate = %ld, custom_bandwidth = %ld, custom_bandwidth_flag = %d\n",
-            phy->config->bandwidth,  phy->config->bb_sample_rate/1000, 
+            phy->config->bandwidth,  phy->config->bb_sample_rate/1000,
             phy->config->custom_bandwidth, phy->config->custom_bandwidth_flag);
 		}
 		else	
 		{
 			goertzle_wb_div32 = (int)round(32*g_3db_band[phy->config->bandwidth] / g_band_bbrate[phy->config->bandwidth] / 1000.0/1.0);
             LOG_MDEBUG(phy, RX_BW_CAL, "phy->config->bandwidth = %d, BB Sampling rate = %ld, custom_bandwidth = %ld, custom_bandwidth_flag = %d\n",
-            phy->config->bandwidth,  g_band_bbrate[phy->config->bandwidth], 
+            phy->config->bandwidth,  g_band_bbrate[phy->config->bandwidth],
             phy->config->custom_bandwidth, phy->config->custom_bandwidth_flag);
 		}
 
@@ -11794,28 +11771,6 @@ void rxgain_force_valid_config(rf_chip_phy_t *phy, int enable)
 		val = hal_spi_read_reg(phy, 0x0d7);
 		val = CLR_BIT(val, BIT6);
 		hal_spi_write_reg(phy, 0x0d7, val);
-
-        if (CH1_FDD == phy->config->mode || 
-            RX1_TX2_FDD == phy->config->mode || 
-            CH1_CH2_FDD == phy->config->mode || 
-            CH1_TDD == phy->config->mode || 
-            CH1_CH2_TDD == phy->config->mode)
-        {
-            val = hal_spi_read_reg(phy, 0xE00);
-            val = SET_BIT(val, BIT7);
-            hal_spi_write_reg(phy, 0xE00, val);
-        }
-
-        if (CH2_FDD == phy->config->mode || 
-            RX2_TX1_FDD == phy->config->mode || 
-            CH1_CH2_FDD == phy->config->mode || 
-            CH2_TDD == phy->config->mode || 
-            CH1_CH2_TDD == phy->config->mode)
-        {
-            val = hal_spi_read_reg(phy, 0xE80);
-            val = SET_BIT(val, BIT7);
-            hal_spi_write_reg(phy, 0xE80, val);
-        }
 	}
 }
 
@@ -12320,7 +12275,7 @@ int map_to_data_mode(CHIP_MODE_ENUM mode, DIG_IF_ENUM data_if, IF_TYPE_ENUM if_t
         return (ret + 9);//1r1t
 }
 
-int user_map_to_standard(BANDWITH_ENUM user_bw)
+int user_map_to_standard(BANDWIDTH_ENUM user_bw)
 {
 	int ret=LTE20;
 
@@ -12387,7 +12342,7 @@ void txdc_digtial_remove(rf_chip_phy_t *phy, TRX_CHN_ENUM chn)
 	HAL_REG_CLR_BIT(phy, 0x203+offset, BIT1);
 }
 
-short digital_init(rf_chip_phy_t *phy, CHIP_MODE_ENUM mode, BANDWITH_ENUM bandwidth, 
+short digital_init(rf_chip_phy_t *phy, CHIP_MODE_ENUM mode, BANDWIDTH_ENUM bandwidth,
     DIG_IF_ENUM dif, IF_TYPE_ENUM port, DATA_RATE_ENUM rate, short step)
 {
 	short map_rate, i, val;
@@ -12587,7 +12542,7 @@ void manual_enable(rf_chip_phy_t *phy, short en)
 
 unsigned int get_product_id(rf_chip_phy_t *phy)
 {
-	return  0x9361;
+	return  0x0801;
 
 }
 short write_chip_lut(rf_chip_phy_t *phy, unsigned char data[])
@@ -13911,7 +13866,7 @@ int handle_vco_range_cal(rf_chip_phy_t * phy, TRX_ENUM trx)
 
     if (phy->config->use_bybrid_mode)
     {
-        tdd_flag = (phy->config->hybrid_mode == HYBRID_FDD_SXTX) ? true : false;
+        tdd_flag = (phy->config->hybrid_mode == HYBRID_TDD_SXTXRX) ? true : false;
     }
     else
     {
@@ -14186,410 +14141,4 @@ int vco_range_cal(rf_chip_phy_t * phy)
     return 0;
 }
 
-int rx_get_goertzle_power_db(rf_chip_phy_t * phy, int channel, int wb_div32)
-{
-    int goertzle_0_i = 0;
-    int goertzle_0_q = 0;
-    int goertzle_1_i = 0;
-    int goertzle_1_q = 0;
-    int goertzle_shift = 0;
-    double goertzle_linear;
-    int power_db;
 
-    fn_rx_run_goertzle(phy, channel, 0, wb_div32, wb_div32, 4096, 8, &goertzle_0_i,
-                       &goertzle_0_q, &goertzle_1_i, &goertzle_1_q, &goertzle_shift);
-    goertzle_linear =
-        (pow((double)(goertzle_0_i - goertzle_1_q), 2.0) +
-         pow((double)(goertzle_0_q + goertzle_1_i), 2.0))
-        * pow(4.0, (double)goertzle_shift);
-
-    return ((int)((10.0 * log10(goertzle_linear) - 234.79) * 10.0));
-}
-
-static int do_tx_bw_cal(rf_chip_phy_t * phy, int channel, int target_power, unsigned int tx_cbq_reg,
-                 unsigned int tx_ctune_reg1, unsigned int tx_ctune_reg2, int goertzle_wb_div32)
-{
-
-    short ret, find_best_tune_val = 0;
-    int tune_val_min = 0;
-    int tune_val_max = TX_BW_CAL_TUNE_MAX_VAL;
-    int tune_val_mid;
-    unsigned int tx_ctune_reg1_val;
-    unsigned int tx_ctune_reg2_val;
-    unsigned int tx_cbq_reg_val;
-    int old_ctune_val, old_powerOffset, powerOffset;
-    int fine_tune_val;
-    long long goertzle_power, old_goertzle_power;
-    uint32_t current_bw = g_bandwidth[phy->config->bandwidth];
-
-    //二分法校准tx bw 寄存器
-    if (current_bw <= 20000000UL) {
-        tx_cbq_reg_val = 0x00;
-        hal_spi_write_reg(phy, tx_cbq_reg, tx_cbq_reg_val);
-    }
-
-    int addr = 0;
-    int i = 0;
-    while (tune_val_min <= tune_val_max) {
-        old_goertzle_power = goertzle_power;
-        old_ctune_val = tune_val_mid;
-        tune_val_mid = (tune_val_min + tune_val_max) / 2;
-        tx_ctune_reg1_val = tune_val_mid;
-        tx_ctune_reg2_val = tune_val_mid;
-        if (current_bw > 20000000UL) {
-            tx_cbq_reg_val = tune_val_mid;
-            hal_spi_write_reg(phy, tx_cbq_reg, tx_cbq_reg_val);
-        }
-        hal_spi_write_reg(phy, tx_ctune_reg1, tx_ctune_reg1_val);
-        hal_spi_write_reg(phy, tx_ctune_reg2, tx_ctune_reg2_val);
-        CHIP_DELAY(1);
-
-        goertzle_power = rx_get_goertzle_power_db(phy, channel, goertzle_wb_div32);
-
-        LOG_MDEBUG(phy, TX_BW_CAL,
-                   "tx bw cal, tune val:%u, 0x%x:0x%x, 0x%x:0x%x, 0x%x:0x%x, goertzle_power:%lld, target power:%d\n",
-                   tune_val_mid, tx_ctune_reg1, tx_ctune_reg1_val, tx_ctune_reg2, tx_ctune_reg2_val,
-                   tx_cbq_reg, tx_cbq_reg_val, goertzle_power, target_power);
-
-        if (goertzle_power > target_power) {
-            tune_val_min = tune_val_mid + 1;
-        } else if (goertzle_power < target_power) {
-            tune_val_max = tune_val_mid - 1;
-        } else {
-            find_best_tune_val = 1;
-            break;
-        }
-    }
-
-    //未能找到最佳校准值，比较最后两次的校准值，选择最接近目标功率的校准值
-    if (!find_best_tune_val) {
-        old_powerOffset = old_goertzle_power - target_power;
-        if (old_powerOffset < 0)
-            old_powerOffset = old_powerOffset * -1;
-        powerOffset = goertzle_power - target_power;
-
-        if (powerOffset < 0)
-            powerOffset = powerOffset * -1;
-
-        if (old_powerOffset < powerOffset)
-            fine_tune_val = old_ctune_val;
-        else
-            fine_tune_val = tune_val_mid;
-
-        confim_rx_bw_cal_value(phy, channel, &fine_tune_val);
-
-        hal_spi_write_reg(phy, tx_ctune_reg1, tx_ctune_reg1_val);
-        hal_spi_write_reg(phy, tx_ctune_reg2, tx_ctune_reg2_val);
-
-        goertzle_power = rx_get_goertzle_power_db(phy, channel, goertzle_wb_div32);
-        //goertzle_power = rx_bw_cal_get_goertzle_power(phy, channel, goertzle_wb_div32);
-        LOG_MDEBUG(phy, TX_BW_CAL,
-                   "tx bw cal, the final tune val:%u, 0x%x:0x%x, 0x%x:0x%x, goertzle_power = %lld, target_power = %d\n",
-                   fine_tune_val, tx_ctune_reg1, tx_ctune_reg1_val, tx_ctune_reg2,
-                   tx_ctune_reg2_val, goertzle_power, target_power);
-    }
-    return 0;
-}
-
-static short tx_bw_lut_update(rf_chip_phy_t * phy, BANDWITH_ENUM bw, unsigned short tx_cbq_reg,
-                       unsigned short tx_ctune_reg1, unsigned short tx_ctune_reg2)
-{
-    short ret;
-    int addr0, addr1, addr2;
-    unsigned char reg_val_0, reg_val_1, reg_val_2, offset0, offset1, offset2;
-
-    if (tx_ctune_reg1 == 0x706) {
-        addr0 = 0 + 73 * bw;
-        offset0 = 0;
-
-        addr1 = 0 + 73 * bw;
-        offset1 = 1;
-
-        addr2 = 0 + 73 * bw;
-        offset2 = 2;
-    } else {
-        addr0 = 4 + 73 * bw;
-        offset0 = 1;
-
-        addr1 = 4 + 73 * bw;
-        offset1 = 2;
-
-        addr2 = 4 + 73 * bw;
-        offset2 = 3;
-    }
-
-    reg_val_0 = hal_spi_read_reg(phy, tx_cbq_reg);
-    ret = write_lut_byte(phy, TRX_BW_LUT, bw * 11, tx_cbq_reg, addr0, offset0, reg_val_0);
-    if (ret != 0) {
-        //LOG_INFO("Failed to write the val of reg 0x%0x to LUT\n", rx_ctune_reg1);
-        return -1;
-    }
-
-    reg_val_1 = hal_spi_read_reg(phy, tx_ctune_reg1);
-    ret = write_lut_byte(phy, TRX_BW_LUT, bw * 11, tx_ctune_reg1, addr1, offset1, reg_val_1);
-    if (ret != 0) {
-        //LOG_INFO("Failed to write the val of reg 0x%0x to LUT\n", rx_ctune_reg1);
-        return -1;
-    }
-
-    reg_val_2 = hal_spi_read_reg(phy, tx_ctune_reg2);
-    ret = write_lut_byte(phy, TRX_BW_LUT, bw * 11, tx_ctune_reg2, addr2, offset2, reg_val_2);
-    if (ret != 0) {
-        //LOG_INFO("Failed to write the val of reg 0x%0x to LUT\n", rx_ctune_reg2);
-        return -1;
-    }
-
-    return 0;
-}
-
-
-short tx_bw_cal(rf_chip_phy_t * phy, TRX_CHN_ENUM channel)
-{
-    int ret = 0;
-    unsigned long long  flo_bak, tx_flo;
-    long bw;
-    long inband_freq;
-    long g_3dbband_freq;
-    int freq_index;
-    unsigned int tx_ctune_reg1, tx_ctune_reg2, tx_cbq_reg;
-    unsigned int reg_val;
-    int dc_power, half_band_power, power, half_power, try_num, mean_power;
-    unsigned int q_rxbbf_offset_tia_reg, i_rxbbf_offset_tia_reg;
-    unsigned int q_rxbbf_offset_bq_reg, i_rxbbf_offset_bq_reg;
-    unsigned int bbf_gain_reg;
-    unsigned int tx_adc_reg;
-    unsigned int rg_DE_val, rg_604_val, reg_65A_bak, reg_65B_bak;
-    int tmpTxGainVal;
-    int regTxGan = (channel == TRX_CHN1) ? 0xE6 : 0xE8;
-    unsigned int rx_bbf_val;
-    int i;
-    int goertzle_0_i = 0;
-    int goertzle_0_q = 0;
-    int goertzle_1_i = 0;
-    int goertzle_1_q = 0;
-    int goertzle_shift = 0;
-    int goertzle_wb_div32 = 10;
-
-    long long goertzle_0_i_val;
-    long long goertzle_0_q_val;
-    long long goertzle_1_i_val;
-    long long goertzle_1_q_val;
-    long long goertzle_power, goertzle_halfPower;
-    int wb_div_64;
-    int rg_rx_hg_offset;
-    int rg_rx_lg_offset;
-    long tone_freq;
-    int rg_65C_val;
-    int rg_67A_val;
-    int target_power;
-    TX_QEC_CFG_REGS tx_qec_cfg;
-    uint32_t current_bw = g_bandwidth[phy->config->bandwidth];
-
-    if (((hal_spi_read_reg(phy, 0xD33) & 0xf0) >> 4) != 0x07) {
-        LOG_ERROR("Reg 0xD33 Err.\n");
-        return -1;
-    }
-
-    rg_rx_hg_offset = (channel == TRX_CHN1) ? 0 : -1;
-    rg_rx_lg_offset = (channel == TRX_CHN1) ? 0 : 1;
-
-    reg_65A_bak = hal_spi_read_reg(phy, 0x65A);
-    reg_65B_bak = hal_spi_read_reg(phy, 0x65B);
-    hal_spi_write_reg(phy, 0x65A, 0x00);
-    hal_spi_write_reg(phy, 0x65B, 0x1A);
-
-    if (phy->tx_bw_cal_flag[channel]) {
-        //校准已经完成
-        if (channel == TRX_CHN1) {
-            tx_cbq_reg = 0x705;
-            tx_ctune_reg1 = 0x706;
-            tx_ctune_reg2 = 0x707;
-        } else {
-            tx_cbq_reg = 0x74D;
-            tx_ctune_reg1 = 0x74E;
-            tx_ctune_reg2 = 0x74F;
-        }
-
-        hal_spi_write_reg(phy, tx_cbq_reg, phy->tx_bw_cal[channel][0]);
-        hal_spi_write_reg(phy, tx_ctune_reg1, phy->tx_bw_cal[channel][1]);
-        hal_spi_write_reg(phy, tx_ctune_reg2, phy->tx_bw_cal[channel][2]);
-
-        /* update lut */
-        //wait for update
-        ret = tx_bw_lut_update(phy, current_bw , tx_cbq_reg, tx_ctune_reg1, tx_ctune_reg2);
-        if (ret != 0) {
-            phy->error = -TX_BW_CAL_FAIL;
-            LOG_ERROR("Failed to update tx bw info to	the LUT\n");
-        }
-    } else {
-        //校准未完成
-        //重锁txlo
-        set_trx_lo(phy, TX_DIR, channel, phy->config->tx_flo);
-
-        if (channel == TRX_CHN1) {
-            //设置 rx bbf gain
-            bbf_gain_reg = 0x65C;
-            rx_bbf_val = hal_spi_read_reg(phy, bbf_gain_reg);
-            hal_spi_write_reg(phy, bbf_gain_reg, _RX_BBF_GAIN);
-
-            //确保test pin 与外部信号断开
-            hal_spi_write_reg(phy, 0x837, 0x0);
-            //设置chn1 tx bw 校准寄存器
-            tx_cbq_reg = 0x705;
-            tx_ctune_reg1 = 0x706;
-            tx_ctune_reg2 = 0x707;
-
-        } else if (channel == TRX_CHN2) {
-            //设置 rx bbf gain
-            bbf_gain_reg = 0x67A;
-            rx_bbf_val = hal_spi_read_reg(phy, bbf_gain_reg);
-            hal_spi_write_reg(phy, bbf_gain_reg, _RX_BBF_GAIN);
-            
-            //确保test pin 与外部信号断开
-            hal_spi_write_reg(phy, 0x836, 0x0);
-            //设置chn2 tx bw 校准寄存器
-            tx_cbq_reg = 0x74D;
-            tx_ctune_reg1 = 0x74E;
-            tx_ctune_reg2 = 0x74F;
-        } else {
-            LOG_ERROR("Wrongly channel setting\n");
-        }
-
-        rx_bw_config_tone_tx(phy, channel, phy->config->bandwidth, phy->config->mode);
-        if_loopback_rxfe_off(phy);
-
-        //backup tx digital gain value
-        tmpTxGainVal = hal_spi_read_reg(phy, regTxGan);
-        hal_spi_write_reg(phy, regTxGan, 0x00); // TX  GAIN
-
-        if(phy->config->custom_bandwidth_flag)
-		{
-            //goertzle_wb_div32 = (int)round(32 * phy->config->custom_bandwidth / 2000.0 / g_band_bbrate[phy->config->bandwidth]/1.0);
-            goertzle_wb_div32 = (int)round(32 * phy->config->custom_bandwidth / 2.0 / phy->config->bb_sample_rate/1.0);
-            LOG_MDEBUG(phy, TX_BW_CAL,"phy->config->bandwidth = %d, BB Sampling rate = %ld, tx_ana_bandwith = %ld\n",
-                   phy->config->bandwidth,phy->config->bb_sample_rate / 1000, current_bw );
-		}
-		else if (phy->config->syspll_cfg_flag)
-		{
-			goertzle_wb_div32 = (int)round(32*g_3db_band[phy->config->bandwidth] / phy->config->bb_sample_rate/1.0);
-            LOG_MDEBUG(phy, TX_BW_CAL,"phy->config->bandwidth = %d, BB Sampling rate = %ld, tx_ana_bandwith = %ld\n",
-                   phy->config->bandwidth,phy->config->bb_sample_rate / 1000, current_bw );
-		}
-		else	
-		{
-			goertzle_wb_div32 = (int)round(32*g_3db_band[phy->config->bandwidth] / g_band_bbrate[phy->config->bandwidth] / 1000.0/1.0);
-            LOG_MDEBUG(phy, TX_BW_CAL,"phy->config->bandwidth = %d, BB Sampling rate = %ld, tx_ana_bandwith = %ld\n",
-                   phy->config->bandwidth,g_band_bbrate[phy->config->bandwidth], current_bw );
-		}
-
-
-        //设置tx bw 校准寄存器的初始值
-        if (current_bw > 20000000UL) {
-            hal_spi_write_reg(phy, tx_cbq_reg, 0x08);
-            hal_spi_write_reg(phy, tx_ctune_reg1, 0x08);
-            hal_spi_write_reg(phy, tx_ctune_reg2, 0x08);
-        } else {
-            hal_spi_write_reg(phy, tx_ctune_reg1, 0x08);
-            hal_spi_write_reg(phy, tx_ctune_reg2, 0x08);
-        }
-
-        fn_tx_qec_gain_set(phy, channel, &tx_qec_cfg, 22 * 2);        //codic 减小20db         
-
-        //获取初始的回环能量
-        do {
-            if (channel == TRX_CHN1) {
-                LOG_MDEBUG(phy, TX_BW_CAL, "0x65c = 0x%x \n", hal_spi_read_reg(phy, 0x65c));
-                LOG_MDEBUG(phy, TX_BW_CAL, "0xE5 = 0x%x ,0xE6=0x%x \n", hal_spi_read_reg(phy, 0xE5),
-                           hal_spi_read_reg(phy, 0xE6));
-                LOG_MDEBUG(phy, TX_BW_CAL,
-                           "reg_705=0x%x, reg_706=0x%x, reg_707=0x%x ,reg_70B=0x%x ,reg_70F=0x%x\n",
-                           hal_spi_read_reg(phy, 0x705), hal_spi_read_reg(phy, 0x706),
-                           hal_spi_read_reg(phy, 0x707), hal_spi_read_reg(phy, 0x70B),
-                           hal_spi_read_reg(phy, 0x70F));
-            } else {
-                LOG_MDEBUG(phy, TX_BW_CAL, "0x67A = 0x%x \n", hal_spi_read_reg(phy, 0x67A));
-                LOG_MDEBUG(phy, TX_BW_CAL, "0xE7 = 0x%x ,0xE8=0x%x \n", hal_spi_read_reg(phy, 0xE7),
-                           hal_spi_read_reg(phy, 0xE8));
-                LOG_MDEBUG(phy, TX_BW_CAL,
-                           "reg_74D=0x%x, reg_74E=0x%x, reg_74F=0x%x ,reg_753=0x%x ,reg_757=0x%x\n",
-                           hal_spi_read_reg(phy, 0x74D), hal_spi_read_reg(phy, 0x74E),
-                           hal_spi_read_reg(phy, 0x74F), hal_spi_read_reg(phy, 0x753),
-                           hal_spi_read_reg(phy, 0x757));
-            }
-            wb_div_64 = goertzle_wb_div32 * 2;
-
-            if ((phy->config->custom_bandwidth_flag) || (phy->config->syspll_cfg_flag))
-				tone_freq = goertzle_wb_div32 * phy->config->bb_sample_rate / 32000;
-			else
-				tone_freq = goertzle_wb_div32 * g_band_bbrate[phy->config->bandwidth] / 32;    
-
-            fn_tx_send_tone(phy, channel, 1, wb_div_64); //send tone error  tone 频点不对
-            CHIP_DELAY(1);
-            goertzle_power = rx_get_goertzle_power_db(phy, channel, goertzle_wb_div32);
-
-            //goertzle_power = rx_bw_cal_get_goertzle_power(phy, channel, goertzle_wb_div32);
-            goertzle_halfPower = goertzle_power / 2;
-            LOG_MDEBUG(phy, TX_BW_CAL,
-                       "tx bw cal, tone = %d K, goertzle_wb_div32 = %d,goertzle_power = %lld,0x604 = 0x%x\n",
-                       tone_freq, goertzle_wb_div32, goertzle_power, hal_spi_read_reg(phy, 0x604));
-            ENTER_CMD(5825);
-        } while (0);
-
-        /* set target_power */
-        bw = current_bw / 1000000;
-        if (current_bw <= 20000000UL)
-            target_power = goertzle_power - bw / 3;
-        else
-            target_power = goertzle_power - (-0.007 * bw * bw + 1.63 * bw - 7.1);
-        LOG_MDEBUG(phy, TX_BW_CAL, "bw = %d, target_power = %d\n", bw, target_power);
-
-        /* cali */
-        hal_spi_write_reg(phy, 0x0DD, 0xF3);
-        if (do_tx_bw_cal(phy, channel, target_power, tx_cbq_reg, tx_ctune_reg1, tx_ctune_reg2,
-             goertzle_wb_div32) < 0) {
-            phy->error = -TX_BW_CAL_FAIL;
-            return -1;
-        }
-        hal_spi_write_reg(phy, 0x0DD, 0xF0);
-        LOG_MDEBUG(phy, TX_BW_CAL, "tx bw cal, custom %ldMHZ bandwidth tune end\n",
-                   current_bw / 1000000);
-        fn_tx_send_tone(phy, channel, 0, 0);
-
-        //��ԭ TX GAIN
-        hal_spi_write_reg(phy, regTxGan, tmpTxGainVal); // TX  GAIN
-
-        /* update lut */
-        phy->tx_bw_cal[channel][0] = hal_spi_read_reg(phy, tx_cbq_reg);
-        phy->tx_bw_cal[channel][1] = hal_spi_read_reg(phy, tx_ctune_reg1);
-        phy->tx_bw_cal[channel][2] = hal_spi_read_reg(phy, tx_ctune_reg2);
-        //wait for update
-        ret =
-            tx_bw_lut_update(phy, phy->config->bandwidth, tx_cbq_reg, tx_ctune_reg1, tx_ctune_reg2);
-        if (ret != 0) {
-            phy->error = -TX_BW_CAL_FAIL;
-            LOG_ERROR("Failed to update bw info to	the LUT\n");
-            //return -1;
-        }
-        //��ԭ bbf gain
-        hal_spi_write_reg(phy, bbf_gain_reg, rx_bbf_val);
-        hal_spi_write_reg(phy, 0x660, 0x00);
-        hal_spi_write_reg(phy, 0x661, 0x00);
-        hal_spi_write_reg(phy, 0x67e, 0x00);
-        hal_spi_write_reg(phy, 0x67f, 0x00);
-
-        /* close lookback */
-        hal_spi_write_reg(phy, 0x846, 0x00);
-        hal_spi_write_reg(phy, 0x847, 0x00);
-        hal_spi_write_reg(phy, 0x848, 0x00);
-
-        hal_spi_write_reg(phy, 0x65A, reg_65A_bak);
-        hal_spi_write_reg(phy, 0x65B, reg_65B_bak);
-
-        /* reset digif */
-        DIG_SOFT_RST_N(phy, 0);
-
-        phy->tx_bw_cal_flag[channel] = 1;
-    }
-    fn_tx_qec_gain_set(phy, channel, &tx_qec_cfg, 1 * 2);     //codic   restore 
-    return ret;
-}

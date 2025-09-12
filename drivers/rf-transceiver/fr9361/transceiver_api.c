@@ -1,5 +1,5 @@
 /**
-* Copyright (c) 2023 Geo CHIP INC. All rights reserved.
+* Copyright (c) 2023 ****** CHIP INC. All rights reserved.
 *
 * BSD-3-Clause
 *
@@ -414,16 +414,8 @@ int32_t rx1_init(rf_chip_phy_t *phy)
 	int32_t    tmpVal_1;
 
     rslt  = hal_spi_write_reg(phy, 0x651, 0x7F);
-	if (phy->config->chip_ver)
-		rslt |= hal_spi_write_reg(phy, 0x666, 0x0B);
-	else
-		rslt |= hal_spi_write_reg(phy, 0x666, 0x27);
-
+    rslt |= hal_spi_write_reg(phy, 0x666, 0x27);
     rslt |= hal_spi_write_reg(phy, 0x667, 0x82);
-
-	if (phy->config->chip_ver)
-		rslt |= hal_spi_write_reg(phy, 0x668, 0x02);
-
     rslt |= hal_spi_write_reg(phy, 0x66D, 0x00);
     rslt |= hal_spi_write_reg(phy, 0x6D0, 0xEF);
     rslt |= hal_spi_write_reg(phy, 0x6D2, 0xC3);
@@ -453,15 +445,8 @@ int32_t rx2_init(rf_chip_phy_t *phy)
 	int32_t    tmpVal_1;
 	
     rslt  = hal_spi_write_reg(phy, 0x66f, 0x7f);
-	if (phy->config->chip_ver)
-		rslt |= hal_spi_write_reg(phy, 0x684, 0x0B);
-	else
- 		rslt |= hal_spi_write_reg(phy, 0x684, 0x27);
-
+    rslt |= hal_spi_write_reg(phy, 0x684, 0x27);
     rslt |= hal_spi_write_reg(phy, 0x685, 0x82);
-	if (phy->config->chip_ver)
-		rslt |= hal_spi_write_reg(phy, 0x686, 0x02);
-
     rslt |= hal_spi_write_reg(phy, 0x68b, 0x00);
     rslt |= hal_spi_write_reg(phy, 0x6e0, 0xef);
     rslt |= hal_spi_write_reg(phy, 0x6e2, 0xC3);

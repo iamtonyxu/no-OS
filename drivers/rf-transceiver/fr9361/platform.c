@@ -3,12 +3,17 @@
 #include  "main_init.h"
 #include  "utility.h"
 #include  "regs_init.h"
-#include  "efuse.h"
+#include  "limit_efuse.h"
 
 #if VENDOR_SPI_RW
 #include "spi_rw.h"
 #endif
 
+void cmd_debug()
+{
+	// dummy function, do nothing!
+	return;
+};
 
 static unsigned int cmd_trigger_num = 0;
 
@@ -435,48 +440,8 @@ void chip_reset_withus(rf_chip_phy_t *phy, unsigned int delay)
     hal_fpga_write_reg(phy, 0x8, reg_val_high_level);
 }
 
-int fpga_platform_get(rf_chip_phy_t *phy, fpga_board_e *fpga_board)
-{
-#if 0
-	char command[512];
-	char buffer[512];
-	FILE *pipe;
-	size_t len;
-
-	memset(command, 0, sizeof(command));
-	snprintf(command, sizeof(command), "file -b %s", FPGA_BIT_FILE);
-	pipe = popen(command, "r");
-	if (!pipe) {
-		perror("popen failed");
-		return -1;
-	}
-
-	if (fgets(buffer, sizeof(buffer), pipe) == NULL) {
-		pclose(pipe);
-		return -1;
-	}
-
-	len = strlen(buffer);
-	if (len > 0 && buffer[len-1] == '\n') {
-		buffer[len-1] = '\0';
-	}
-
-	pclose(pipe);
-
-	LOG_MAIN("fpga bit file: %s\n", buffer);
-	if (strstr(buffer, "FPGA_706_TOP_PIN") != NULL)
-		*fpga_board = FPGA_706;
-	else if (strstr(buffer, "FPGA_Z7020_TOP_PIN") != NULL)
-		*fpga_board = FPGA_7020;
-#endif
-	return 0;
-}
-
 int fpga_tail_set(rf_chip_phy_t *phy, short dir, short chn, short intflag)
 {
-#if 0
-	fpga_board_e fpga_board;
-	
 	if (intflag)
 	{
 		if ((phy->config->mode >= CH1_FDD) && (phy->config->mode <= CH1_CH2_FDD))
@@ -524,37 +489,10 @@ int fpga_tail_set(rf_chip_phy_t *phy, short dir, short chn, short intflag)
 			}
 		}
 	}
-
-	fpga_platform_get(phy, &fpga_board);
-	if (fpga_board == FPGA_7020) {
-		LOG_MAIN("fpga platform: 7020\n");
-		hal_fpga_write_reg(phy, 0x8, 0x1);
-		hal_fpga_write_reg(phy, 0x8, 0x3);
-		if ((phy->config->mode == CH1_CH2_TDD && 
-				phy->config->dig_if == LVDS_IF && 
-				phy->config->bandwidth == BW_LTE100) || 
-			(phy->config->mode == CH1_CH2_FDD && 
-				phy->config->dig_if == LVDS_IF && 
-				phy->config->bandwidth == BW_LTE40) || 
-			((phy->config->mode == CH1_FDD || 
-				phy->config->mode == CH2_FDD ||
-				phy->config->mode == RX1_TX2_FDD ||
-				phy->config->mode == RX2_TX1_FDD) && 
-				phy->config->dig_if == LVDS_IF && 
-				phy->config->bandwidth == BW_LTE100))
-			hal_fpga_write_reg(phy, 0x2c, 0x1f);
-		else
-			hal_fpga_write_reg(phy, 0x2c, 0x0);
-	} else {
-		LOG_MAIN("fpga platform: 706\n");
-	}
-#endif
-	return 0;
 }
 
 int fn_fpga_set_if(rf_chip_phy_t *phy, short mode, short dif, short port, short rate, short flag)
 {
-#if 0
 	short chn_flag, phy_flag;
 	int r_data=0, w_data;
 
@@ -598,7 +536,7 @@ int fn_fpga_set_if(rf_chip_phy_t *phy, short mode, short dif, short port, short 
     hal_fpga_write_reg(phy, 0x34, 0x53B);
     hal_fpga_write_reg(phy, 0x2c, 0x1f);
     hal_fpga_write_reg(phy, 0x8, 0x7);
-#endif
+	
 	return 0;
 }
 
