@@ -78,7 +78,7 @@ typedef struct task_struct
 #include "no_os_delay.h"
 #define  CHIP_DELAY(time)	no_os_mdelay(time)
 #define  CHIP_UDELAY(time)	no_os_udelay(time)
-#define  CHIP_SDELAY(time) 	no_os_mdelay(time)
+#define  CHIP_SDELAY(time) 	no_os_mdelay(time*1000)
 
 typedef struct task_struct
 {
