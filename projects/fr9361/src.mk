@@ -89,8 +89,7 @@ SRCS += $(NO-OS)/util/no_os_fifo.c \
 	$(NO-OS)/iio/iio_app/iio_app.c \
 	$(NO-OS)/util/no_os_circular_buffer.c
 endif
-INCS += $(DRIVERS)/src/app_config.h \
-    $(NO-OS)/libraries/fatfs/source/integer.h \
+INCS += $(NO-OS)/libraries/fatfs/source/integer.h \
     $(NO-OS)/libraries/fatfs/source/diskio.h\
     $(NO-OS)/libraries/fatfs/source/ff.h\
     $(NO-OS)/libraries/fatfs/source/ffconf.h\

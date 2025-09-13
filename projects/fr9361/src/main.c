@@ -170,7 +170,7 @@ int main(void)
 	//fr9361_reset
 	if(gpio_desc_resetb)
 	{
-		no_os_gpio_direction_output(gpio_desc_resetb, 0);
+		no_os_gpio_direction_output(gpio_desc_resetb, NO_OS_GPIO_OUT);
 		no_os_gpio_set_value(gpio_desc_resetb, 0); // DMM to check resetb = 0
 		no_os_mdelay(1);
 		no_os_gpio_set_value(gpio_desc_resetb, 1);// DMM to check resetb = 1
