@@ -67,6 +67,40 @@ short hal_spi_write_reg(rf_chip_phy_t *phy, unsigned short reg, unsigned char va
 	return ret;
 }
 
+short hal_spi_write_reg_v2(rf_chip_phy_t *phy, unsigned short reg, unsigned char val)
+{
+	short ret=0;
+	int try_cnt = 6; // try 5 times
+
+	#if VENDOR_SPI_RW
+	unsigned char read_val;
+	ret = spi_write_reg(reg, val);
+	while(try_cnt-- > 0)
+	{
+		read_val = spi_read_reg(reg);
+		if (read_val != val)
+		{
+			CHIP_UDELAY(10);
+			ret = spi_write_reg(reg, val);
+		}
+		else {
+			break;
+		}
+	}
+
+	if (try_cnt == 0)
+	{
+		LOG_ERROR("%s in line %d REPORT ERR: FAIL to write reg 0x%x, val=0x%x, read_val=0x%x\n",
+			__FUNCTION__, __LINE__, reg, val, read_val);
+		ret = -1;
+	}
+	#endif
+
+	//if (phy->debug_on)
+	LOG_MDEBUG(phy, SPI_RW_LOG, "W: addr=0x%x, val=0x%x\n", reg, val);
+	return ret;
+}
+
 void HAL_CONFIG_REGS(rf_chip_phy_t *phy, const reg_t *setting, short len)
 {
 	short i;
@@ -122,7 +156,12 @@ void  HAL_REG_SET_BIT(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit)
 
 	val = hal_spi_read_reg(phy, reg);
 	val = SET_BIT(val, bit);
+#if 0
 	hal_spi_write_reg(phy, reg, val);
+#else
+	hal_spi_write_reg_v2(phy, reg, val);
+#endif
+
 }
 
 void  HAL_REG_CLR_BIT(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit)
@@ -131,7 +170,11 @@ void  HAL_REG_CLR_BIT(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit)
 
 	val = hal_spi_read_reg(phy, reg);
 	val = CLR_BIT(val, bit);
+#if 0
 	hal_spi_write_reg(phy, reg, val);
+#else
+	hal_spi_write_reg_v2(phy, reg, val);
+#endif
 }
 
 /*-------------------------------------------------------------------------------------------------*/

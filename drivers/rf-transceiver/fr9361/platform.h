@@ -320,6 +320,7 @@ extern unsigned int hal_fpga_read_reg(rf_chip_phy_t *phy, unsigned int reg);
 extern short hal_fpga_write_reg(rf_chip_phy_t *phy, unsigned int reg, unsigned int val);
 extern unsigned char hal_spi_read_reg(rf_chip_phy_t *phy, unsigned short reg);
 extern short hal_spi_write_reg(rf_chip_phy_t *phy, unsigned short reg, unsigned char val);
+extern short hal_spi_write_reg_v2(rf_chip_phy_t *phy, unsigned short reg, unsigned char val);
 extern void HAL_CONFIG_REGS(rf_chip_phy_t *phy, const reg_t *setting, short len);
 extern unsigned char HAL_REG_GET_BITS(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit, char cnt);
 extern void  HAL_REG_SET_BITS(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit, char cnt, unsigned char setval);
