@@ -1,5 +1,5 @@
 /**
-* Copyright (c) 2023 CHIP INC. All rights reserved.
+* Copyright (c) 2023 Geo CHIP INC. All rights reserved.
 *
 * BSD-3-Clause
 *

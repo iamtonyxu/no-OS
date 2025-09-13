@@ -12,11 +12,12 @@
 
 #include "fr9361_common.h"
 #include "utility.h"
+#include "no_os_delay.h"
 
 #define  DEVICE_VERSION              ("V23R1")
 #define  LUT_VERSION_D1              ("231116-1.11")
-#define  LUT_VERSION_D2F1            ("241023-2.14")
-#define  LUT_VERSION_GSREDA1B1       ("241023-3.2")
+#define  LUT_VERSION_D2F1            ("250521-2.12")
+#define  LUT_VERSION_GSREDA1B1       ("250421-2.16")
 #define  LUT_VERSION_E1              ("231010-4.9")
 
 #define  FPGA_BIT_FILE               ("/home/FPGA_TOP_PIN_4.bit")
@@ -75,10 +76,9 @@ typedef struct task_struct
 #define  TASK_HANDLE_INVALID(task) (task.pid = 0)
 
 #else //+++++++++++++++++++++++++++++
-#include "no_os_delay.h"
-#define  CHIP_DELAY(time)	no_os_mdelay(time)
-#define  CHIP_UDELAY(time)	no_os_udelay(time)
-#define  CHIP_SDELAY(time) 	no_os_mdelay(time*1000)
+#define  CHIP_DELAY(time)   no_os_mdelay(time)
+#define  CHIP_UDELAY(time)  no_os_udelay(time)
+#define  CHIP_SDELAY(time)  no_os_mdelay(time*1000)
 
 typedef struct task_struct
 {
@@ -195,10 +195,11 @@ void set_trigger_num(int num);
     {   \
         int trigger_num = get_trigger_num();\
         if(trigger_num!=0 && trigger_num == trigger_point) { \
-            //cmd_debug(); \
+            cmd_debug(); \
         } \
     }
 #else 
+    extern void cmd_debug(void);
     #define ENTER_CMD(trigger_point)
 #endif
 
@@ -279,10 +280,8 @@ typedef struct rf_chip_phy_struct
     char rx_dc_lut_update;
 
     char rx_bw_cal_flag[2];
-    char tx_bw_cal_flag[2];
     unsigned char rx_imbalance_cal[2][2];
     unsigned char rx_bw_cal[2][2];
-    unsigned char tx_bw_cal[2][3];
 
     char rx_qec_flag[2];
     RX_QEC_CFG_REGS rx_qec[2];
@@ -299,7 +298,7 @@ typedef struct rf_chip_phy_struct
     short rx_lpf_gain[2];
     short rx_dig_gain[2];
 
-    BANDWITH_ENUM bandwidth;
+    BANDWIDTH_ENUM bandwidth;
     unsigned long long  rxlo;
     unsigned long long  txlo;
     unsigned long long  min_vco;
@@ -320,7 +319,6 @@ extern unsigned int hal_fpga_read_reg(rf_chip_phy_t *phy, unsigned int reg);
 extern short hal_fpga_write_reg(rf_chip_phy_t *phy, unsigned int reg, unsigned int val);
 extern unsigned char hal_spi_read_reg(rf_chip_phy_t *phy, unsigned short reg);
 extern short hal_spi_write_reg(rf_chip_phy_t *phy, unsigned short reg, unsigned char val);
-extern short hal_spi_write_reg_v2(rf_chip_phy_t *phy, unsigned short reg, unsigned char val);
 extern void HAL_CONFIG_REGS(rf_chip_phy_t *phy, const reg_t *setting, short len);
 extern unsigned char HAL_REG_GET_BITS(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit, char cnt);
 extern void  HAL_REG_SET_BITS(rf_chip_phy_t *phy, unsigned short reg, REG_BIT bit, char cnt, unsigned char setval);

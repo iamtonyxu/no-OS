@@ -9,6 +9,12 @@
 #include "spi_rw.h"
 #endif
 
+// dummy function for no-os
+void cmd_debug(void)
+{
+	// do nothing
+	return;
+}
 
 static unsigned int cmd_trigger_num = 0;
 

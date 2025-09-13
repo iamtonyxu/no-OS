@@ -205,20 +205,6 @@ static int band_dep_calibr_phase_of_switch_bandwidth(rf_chip_phy_t *phy)
                 PRINT_TIME("rx_bw_cal");
             }
 
-            if (phy->config->tx_bw_cal_flag) {
-                START_TIME();
-                set_tx_port(phy, TRX_CHN1, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN1);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-                PRINT_TIME("tx_bw_cal");
-            }
-
             if (phy->config->tx_dc_cal_flag)
             {
                 START_TIME();
@@ -281,21 +267,6 @@ static int band_dep_calibr_phase_of_switch_bandwidth(rf_chip_phy_t *phy)
                 }
                 END_TIME();
                 PRINT_TIME("rx_bw_cal");
-            }
-
-
-            if (phy->config->tx_bw_cal_flag) {
-                START_TIME();
-                set_tx_port(phy, TRX_CHN2, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN2);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-                PRINT_TIME("tx_bw_cal");
             }
             
             if (phy->config->tx_dc_cal_flag)
@@ -361,20 +332,6 @@ static int band_dep_calibr_phase_of_switch_bandwidth(rf_chip_phy_t *phy)
                 PRINT_TIME("rx_bw_cal");
             }
 
-            if (phy->config->tx_bw_cal_flag) {
-                START_TIME();
-                set_tx_port(phy, TRX_CHN1, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN1);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-                PRINT_TIME("tx_bw_cal");
-            }
-
             if (phy->config->tx_dc_cal_flag)
             {
                 START_TIME();
@@ -437,20 +394,6 @@ static int band_dep_calibr_phase_of_switch_bandwidth(rf_chip_phy_t *phy)
                 }
                 END_TIME();
                 PRINT_TIME("rx_bw_cal");
-            }
-
-            if (phy->config->tx_bw_cal_flag) {
-                START_TIME();
-                set_tx_port(phy, TRX_CHN2, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN2);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-                PRINT_TIME("tx_bw_cal");
             }
 
             if (phy->config->tx_dc_cal_flag)
@@ -528,32 +471,6 @@ static int band_dep_calibr_phase_of_switch_bandwidth(rf_chip_phy_t *phy)
                 }
                 END_TIME();
                 PRINT_TIME("rx_bw_cal");
-            }
-
-            if (phy->config->tx_bw_cal_flag) {
-                START_TIME();
-                set_tx_port(phy, TRX_CHN1, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN1);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-
-                PRINT_TIME("tx_bw_cal");
-                                START_TIME();
-                set_tx_port(phy, TRX_CHN2, phy->config->tx_port[0], 1);
-                phy->config->rxfe_gain[0] = RX_PORT_G0;
-                set_rf_bandwidth(phy, phy->config->bandwidth);
-                ret = tx_bw_cal(phy, TRX_CHN2);
-                if ((ret < 0) || (phy->error < 0)) {
-                    LOG_ERROR("tx bw cal failed!\n");
-                    return -1;
-                }
-                END_TIME();
-                PRINT_TIME("tx_bw_cal");
             }
 
             if (phy->config->tx_dc_cal_flag)
@@ -1080,7 +997,7 @@ static int band_dep_calibr(rf_chip_phy_t *phy)
     int i = 0;
     int ret=0, tdd_sel=1;
 	unsigned char mode_bak;
-    BANDWITH_ENUM bandwidth_bak; 
+    BANDWIDTH_ENUM bandwidth_bak; 
 	DEFINE_TIME();
 
 	phy->error = ret;
@@ -1697,7 +1614,7 @@ int detect_chip(rf_chip_phy_t *phy)
     {   
         /* 
          * This interface should be modified to align with the specific reset control requirements of the customer.
-         * On the customer's motherboard, it is necessary to generate a 1ms low-level pulse to the fr936x reset pin.
+         * On the customer's motherboard, it is necessary to generate a 1ms low-level pulse to the fr9361 reset pin.
          * Direct usage of the original chip_reset_withus function is not recommended.
          */
         chip_reset_withus(phy, 1000);
@@ -1811,7 +1728,7 @@ short fsm_status_get(rf_chip_phy_t *phy, short target_st)
 	return -1;
 }
 
-int rf_bandwidth_change(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth)
+int rf_bandwidth_change(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth)
 {
     int i = 0;
     DEFINE_TIME();

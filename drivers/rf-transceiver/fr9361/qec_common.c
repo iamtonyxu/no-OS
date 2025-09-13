@@ -3406,7 +3406,7 @@ int fn_rx_qec_diag_print(
 			LOG_MDEBUG(phy,TRX_QEC_CAL,"RX QEC ERROR : target index power is too low, Maybe RX or TX is not lock or sample rate is not right please check .\n");	
 			if(rx_qec_diag_info->debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3792,7 +3792,7 @@ int rxqec_diag_info_diag (
 				mag_diff);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3815,7 +3815,7 @@ int rxqec_diag_info_diag (
 				phg_diff);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{
@@ -3840,7 +3840,7 @@ int rxqec_diag_info_diag (
 					wb_cnt-1);
 				if(debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3871,7 +3871,7 @@ int rxqec_diag_info_diag (
 					wb_cnt-1);
 				if(debug_level>=2)
 				{
-					//cmd_debug();
+					cmd_debug();
 				}
 				else
 				{
@@ -3916,7 +3916,7 @@ int rxqec_diag_info_diag (
 			);
 			if(debug_level>=2)
 			{
-				//cmd_debug();
+				cmd_debug();
 			}
 			else
 			{

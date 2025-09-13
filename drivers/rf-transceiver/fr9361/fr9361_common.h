@@ -62,7 +62,7 @@ typedef enum RX_PORT
 	MIX_CNT,
 }RX_PORT_ENUM;
 
-typedef enum BANDWITH
+typedef enum BANDWIDTH
 {
 	BW_GSM=0,
 	BW_BT,
@@ -74,7 +74,7 @@ typedef enum BANDWITH
 	BW_LTE80,
 	BW_LTE100,
 	BW_CNT,
-}BANDWITH_ENUM;
+}BANDWIDTH_ENUM;
 
 typedef enum STANDARD_BW
 {
@@ -580,7 +580,7 @@ typedef struct chip_config_struct
 	DATA_RATE_ENUM data_rate;
 	TX_PORT_ENUM tx_port[2];
 	RX_PORT_ENUM rx_port[2];
-	BANDWITH_ENUM bandwidth;
+	BANDWIDTH_ENUM bandwidth;
 	LO_CHANGE_MODE_ENUM lo_change_mode;
     xo_type xo_sel;
 	unsigned long xtal_freq;
@@ -596,7 +596,7 @@ typedef struct chip_config_struct
 	short gain_ctrl_pin_flag;
     short bandwidthswitch_flag;
     short bandwidthswitch_length;
-    BANDWITH_ENUM *pBandwidthloop;
+    BANDWIDTH_ENUM *pBandwidthloop;
 	short custom_bandwidth_flag;
 	unsigned long custom_bandwidth;
 	unsigned char dac_syspll_lo_div;

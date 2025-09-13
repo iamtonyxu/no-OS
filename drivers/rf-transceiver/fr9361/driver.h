@@ -17,18 +17,18 @@ extern int rx_rssi_get(rf_chip_phy_t *phy, int channel);
 extern void  rx_cfg_rssi_init(rf_chip_phy_t *phy, int channel);
 
 extern short rx_bw_cal(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
-extern void init_ctune(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth);
-extern void rx_bw_config_tone_tx(rf_chip_phy_t *phy, int chnl, BANDWITH_ENUM bw, CHIP_MODE_ENUM mode);
+extern void init_ctune(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth);
+extern void rx_bw_config_tone_tx(rf_chip_phy_t *phy, int chnl, BANDWIDTH_ENUM bw, CHIP_MODE_ENUM mode);
 extern void if_loopback_rxfe_off(rf_chip_phy_t *phy);
 extern int get_dc_power(rf_chip_phy_t *phy, int channel, int *power);
 //extern int rx_bw_get_power(TRX_CHN_ENUM channel, unsigned short rx_adc_reg1, unsigned short rx_adc_reg2);
 extern int get_edge_power(rf_chip_phy_t *phy, int channel, int *power);
-extern void send_cordic_signal(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth, short en, long freq);
-extern void send_edge_signal(rf_chip_phy_t *phy, int channel, BANDWITH_ENUM bandwidth);
+extern void send_cordic_signal(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth, short en, long freq);
+extern void send_edge_signal(rf_chip_phy_t *phy, int channel, BANDWIDTH_ENUM bandwidth);
 extern void stop_edge_signal(rf_chip_phy_t *phy, int channel);
-extern short rx_bw_lut_update(rf_chip_phy_t *phy, BANDWITH_ENUM bw, unsigned short rx_ctune_reg1, unsigned short rx_ctune_reg2);
+extern short rx_bw_lut_update(rf_chip_phy_t *phy, BANDWIDTH_ENUM bw, unsigned short rx_ctune_reg1, unsigned short rx_ctune_reg2);
 extern int do_rx_bw_cal(rf_chip_phy_t *phy, int channel, long long half_power, unsigned int rx_ctune_reg1, unsigned int rx_ctune_reg2, unsigned int rx_adc_reg1, unsigned int rx_adc_reg2, int goertzle_wb_div32);
-extern short trx_bw_lut_load(rf_chip_phy_t *phy, BANDWITH_ENUM bw, short custom_bw_flag);
+extern short trx_bw_lut_load(rf_chip_phy_t *phy, BANDWIDTH_ENUM bw, short custom_bw_flag);
 extern long get_goertzle_power(rf_chip_phy_t *phy, int channel, long long flo);
 
 extern int sx_cal_lut_update(rf_chip_phy_t *phy);
@@ -62,6 +62,8 @@ extern int print_cal_val(rf_chip_phy_t *phy, int channel);
 extern int lo_leakage_cal(rf_chip_phy_t *phy, int channel);
 
 extern int rx_dc_offset_cal(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
+extern int rx_dc_offset_cal_v3(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
+extern int rx_dc_offset_cal_v5(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
 extern void rx_dc_offset_cal_enable(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, unsigned char enable);
 extern short rx_dc_offset_cal_status(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
 extern void rx_dc_offset_cal_enable_ext(rf_chip_phy_t *phy, TRX_CHN_ENUM channel_sel, unsigned char ena);
@@ -82,7 +84,7 @@ extern int inbalance_cal_with_G0(rf_chip_phy_t *phy, int channel);
 extern int inbalance_cal_with_G2(rf_chip_phy_t *phy, int channel);
 extern int inbalance_cal(rf_chip_phy_t *phy, int channel);
 
-extern void set_rf_bandwidth(rf_chip_phy_t *phy, BANDWITH_ENUM bandwidth);
+extern void set_rf_bandwidth(rf_chip_phy_t *phy, BANDWIDTH_ENUM bandwidth);
 extern short config_syspll(rf_chip_phy_t *phy, unsigned long freq, unsigned long long vco_freq);
 extern void set_rx_port(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, RX_PORT_ENUM port, RXFE_GAIN_ENUM gain, short en);
 extern void set_rx_port_man(rf_chip_phy_t *phy, TRX_CHN_ENUM chn, RX_PORT_ENUM port, RXFE_GAIN_ENUM gain);
@@ -133,10 +135,10 @@ extern int tx1_c2_hw_dll_cal(rf_chip_phy_t *phy);
 extern int tx1_c2_win_sw_cal(rf_chip_phy_t *phy);
 extern int tx1_c2_win_hw_cal(rf_chip_phy_t *phy);
 extern int tx1_c2_reload(rf_chip_phy_t *phy, unsigned int regs_val[]);
-extern int user_map_to_standard(BANDWITH_ENUM user_bw);
+extern int user_map_to_standard(BANDWIDTH_ENUM user_bw);
 extern int map_to_data_mode(CHIP_MODE_ENUM mode, DIG_IF_ENUM data_if, IF_TYPE_ENUM if_type, DATA_RATE_ENUM data_rate);
 extern void txdc_digtial_remove(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
-extern short digital_init(rf_chip_phy_t *phy, CHIP_MODE_ENUM mode, BANDWITH_ENUM bandwidth, DIG_IF_ENUM dif, IF_TYPE_ENUM port, DATA_RATE_ENUM rate, short step);
+extern short digital_init(rf_chip_phy_t *phy, CHIP_MODE_ENUM mode, BANDWIDTH_ENUM bandwidth, DIG_IF_ENUM dif, IF_TYPE_ENUM port, DATA_RATE_ENUM rate, short step);
 extern short load_lut(rf_chip_phy_t *phy, CHIP_MODE_ENUM mode);
 extern short lut_version_get(rf_chip_phy_t *phy, unsigned char ver[]);
 extern int gen_int_val(unsigned char *val);
@@ -149,7 +151,7 @@ extern int fdd_wait_to_alert(rf_chip_phy_t *phy);
 extern int fdd_alert_to_fsm(rf_chip_phy_t *phy);
 extern int fdd_fsm_to_alert(rf_chip_phy_t *phy);
 
-extern void trx_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo, BANDWITH_ENUM bw, short custom_bw_flag);
+extern void trx_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo, BANDWIDTH_ENUM bw, short custom_bw_flag);
 extern int  trx_band_pa_lut_load(rf_chip_phy_t *phy, unsigned long long tx_flo);
 
 extern short proximity_bandwidth_seek(rf_chip_phy_t *phy, unsigned long custom_bandwidth);
@@ -181,9 +183,6 @@ extern int sx_temperature_track_v2(rf_chip_phy_t *phy, TRX_ENUM trx);
 extern int get_syspll_status(rf_chip_phy_t *phy);
 extern int handle_vco_range_cal(rf_chip_phy_t * phy, TRX_ENUM trx);
 extern int vco_range_cal(rf_chip_phy_t * phy);
-
-extern int rx_dc_offset_cal_v3(rf_chip_phy_t *phy, TRX_CHN_ENUM chn);
-extern int rx_dc_offset_cal_v5(rf_chip_phy_t * phy, TRX_CHN_ENUM chn);
 
 #endif  /* __DRIVER_H */
 

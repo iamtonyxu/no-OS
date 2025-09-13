@@ -32,7 +32,6 @@ chip_config_t g_phy_config[RF_PHY_NUMBER] =
         .r_cal_flag = 1,
         .tx_atten_chn_flag = 0,
         .rx_bw_cal_flag = 1,
-        .tx_bw_cal_flag = 1,
         .rx_dc_cal_flag = 1,
         .rx_qec_flag = 1,
         .tx_dc_cal_flag = 1,
