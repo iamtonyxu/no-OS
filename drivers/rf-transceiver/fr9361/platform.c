@@ -86,6 +86,8 @@ short hal_spi_write_reg_v2(rf_chip_phy_t *phy, unsigned short reg, unsigned char
 		read_val = spi_read_reg(reg);
 		if (read_val != val)
 		{
+			LOG_WARN("%s in line %d REPORT ERR: FAIL to write reg 0x%x, val=0x%x, read_val=0x%x\n",
+				__FUNCTION__, __LINE__, reg, val, read_val);
 			CHIP_UDELAY(10);
 			ret = spi_write_reg(reg, val);
 		}
