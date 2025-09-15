@@ -11917,11 +11917,11 @@ short read_lut_word(rf_chip_phy_t *phy, LUT_INDEX_ENUM lut, int lut_addr, unsign
 	if (lut <= RX2_AGC_LUT)
 	{
 		reg_val = hal_spi_read_reg(phy, 0x0B5);
-		hal_spi_write_reg(phy, 0x0B5, (1 << lut) | (reg_val & 0x80));
+		hal_spi_write_reg_v2(phy, 0x0B5, (1 << lut) | (reg_val & 0x80));
 	}
 	else
 	{
-		hal_spi_write_reg(phy, 0x0B4, 1 << (lut-8));
+		hal_spi_write_reg_v2(phy, 0x0B4, 1 << (lut-8));
 	}
 
 	//read data
@@ -11968,11 +11968,11 @@ short write_lut_word(rf_chip_phy_t *phy, LUT_INDEX_ENUM lut, int lut_addr, unsig
 	if (lut <= RX2_AGC_LUT)
 	{
 		reg_val = hal_spi_read_reg(phy, 0x0B5);
-		hal_spi_write_reg(phy, 0x0B5, (1 << lut) | (reg_val & 0x80));
+		hal_spi_write_reg_v2(phy, 0x0B5, (1 << lut) | (reg_val & 0x80));
 	}
 	else
 	{
-		hal_spi_write_reg(phy, 0x0B4, 1 << (lut-8));
+		hal_spi_write_reg_v2(phy, 0x0B4, 1 << (lut-8));
 	}
 
 	//disable lut
