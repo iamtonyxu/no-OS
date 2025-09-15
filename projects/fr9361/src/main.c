@@ -203,12 +203,17 @@ int main(void)
 	}
 
 	// fr9361 init
-	module_debug_onoff(&g_phy_obj[0], 0xFFF); // enable debug info print
     status = fr936x_init(&g_phy_obj[0], &g_phy_config[0]);
     if (status < 0)
     {
         printf("chip init failed!\n");
         return status;
+    }
+
+    //cmos if
+    if(CMOS_IF == g_phy_obj[0].config->dig_if)
+    {
+        AD9361_WR(0x67, 0xFF);
     }
 
     // tx_dmac init
