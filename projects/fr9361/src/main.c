@@ -214,6 +214,9 @@ int main(void)
     if(CMOS_IF == g_phy_obj[0].config->dig_if)
     {
         AD9361_WR(0x67, 0xFF);
+        no_os_mdelay(1);
+        AD9361_WR(0x6B, 0xA0); // adjust timing between fclk and data
+        no_os_mdelay(1);
     }
 
     // tx_dmac init
