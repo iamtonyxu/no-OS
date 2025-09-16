@@ -1,7 +1,7 @@
 import serial
 import time
 
-COM_PORT = 'COM4'
+COM_PORT = 'COM1'
 BAUD_RATE = 115200
 MESSAGE_LEN = 10
 
@@ -190,6 +190,16 @@ def select_sdcard_waveform(file_id, file_size):
 
     print('select_sdcard_waveform' + ' ' + 'TEST' + str(file_id) + '.BIN' + ' with '+ str(file_size) + ' bytes')
 
+def cmd_api_tx_tone(chan, on, freq):
+    #construct the message, length = 10, starting with 0x61
+    padding = 0
+    message = bytes([0x61]) + chan.to_bytes(1, 'big') + on.to_bytes(1, 'big') + freq.to_bytes(4, 'big') + padding.to_bytes(2, 'big')
+    #send the message
+    ser.write(message)
+    ser.flush()
+    print('cmd_api_tx_tone' + ' ' + str(chan) + ' ' + str(on) + ' ' + str(freq))
+
+
 ######################################################
 if __name__ == "__main__":
     ports = list_serial_ports()
@@ -211,6 +221,7 @@ ser.isOpen()
 ## example: save capture data
 #read_capture()
 
-select_sdcard_waveform(1, 1024)
+# example: cmd_api_tx_tone
+cmd_api_tx_tone(1, 1, 1000)
 
 ser.close()
