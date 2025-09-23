@@ -2,42 +2,29 @@ close all;
 clear all;
 clc;
 
-fileName = "singleTone.txt";
-Fs = 30.72e6/2;
-Fc = 0.384e6;
-L = 1024000;
+Fs = 30.72e6;
+Fc = 3.84e6;
+L = 4096;
+Amp = 0.6;
 t = 1/Fs*(0:L-1);
 
-%%
-signal = exp(1i*2*pi*Fc*t); 
-
-% signal1 = zeros(1, L*2);
-% 
-% for i = 1:length(signal)
-%     signal1(1, 2*i-1) = signal(1, i);
-%     signal1(1, 2*i) = signal(1, i);
-% end
-% signal = signal1;
-% 
-% Fc2 = Fs/2+1e5;
-% disturb = exp(1i*2*pi*Fc2*t);
-% 
-% figure;
-% plot(real(disturb), '.r'); hold on
-% plot(imag(disturb),'-xb');
-% 
-% signal = signal + real(disturb); 
-
+%% generate signal
+signal = Amp * exp(1i*2*pi*Fc*t); 
 
 figure;
 plot(real(signal), '--.'); hold on
 plot(imag(signal));
 
 figure;
-plot(abs(fftshift(fft(signal))), '-x');
+plot(20*log10(abs(fftshift(fft(signal)))), '-x');
 
-%%
-if 1
+%% download signal
+serialport = "COM3";
+download_waveform(serialport, signal);
+
+%% save file
+if 0
+fileName = "singleTone.txt";
 % Convert the complex waveform to fixed-point 16-bit and then to hexadecimal
 I_fixed = int16(real(signal) * 32767);
 Q_fixed = int16(imag(signal) * 32767);
@@ -54,27 +41,5 @@ for i = 1:length(hexStrings)
     fprintf(fileID, '%s,\n', hexStrings(i, :));
 end
 fclose(fileID);
-
-end
-
-if 0
-fileName = "Test1.bin";
-fid = fopen(fileName, 'wb');
-% Check if the file opened successfully
-if fid == -1
-    error('Failed to open file for writing');
-end
-
-% Write the int16 data to the file
-IQ_fixed = zeros(1, length(I_fixed));
-for index = 1:length(I_fixed)
-    IQ_fixed(1, 2*index-1) = I_fixed(1, index);
-    IQ_fixed(1, 2*index) = Q_fixed(1, index);    
-end
-
-fwrite(fid, IQ_fixed, 'int16');
-
-% Close the file
-fclose(fid);
 end
 
