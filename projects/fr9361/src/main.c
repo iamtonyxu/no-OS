@@ -39,11 +39,12 @@
 #define GPIO_DEVICE_ID			XPAR_PS7_GPIO_0_DEVICE_ID
 #define GPIO_OPS				&xil_gpio_ops
 #define GPIO_RESET_PIN			100
+#define GPIO_SYNC_PIN			99
 #define GPIO_ENABLE_PIN			101
 #define GPIO_TXNRX_PIN			102
 
-#define DAC_BUFFER_SAMPLES		4096
-#define ADC_BUFFER_SAMPLES 		4096
+#define DAC_BUFFER_SAMPLES		16384
+#define ADC_BUFFER_SAMPLES 		16384
 #define ADC_CHANNELS 			4
 #define RX_CORE_BASEADDR		XPAR_AXI_AD9361_0_BASEADDR
 #define TX_CORE_BASEADDR		(XPAR_AXI_AD9361_0_BASEADDR + 0x4000)
@@ -82,24 +83,33 @@ struct no_os_gpio_init_param gpio_resetb =
 	.extra = &xil_gpio_param,
 };
 
+//gpio_sync
+struct no_os_gpio_init_param gpio_sync =
+{
+	.number = GPIO_SYNC_PIN,
+	.platform_ops = GPIO_OPS,
+	.extra = &xil_gpio_param,
+};
+
 struct no_os_spi_desc **spi_desc;
 struct no_os_gpio_desc 	*gpio_desc_resetb;
+struct no_os_gpio_desc 	*gpio_desc_sync;
 
 uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
 uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((aligned));
 extern const uint32_t sine_lut_iq[1024];
 
-struct axi_adc **rx_adc;
+struct axi_adc *rx_adc;
 struct axi_adc_init rx_adc_init = {
-	.name = "cf-fr9361-lpc",
+	.name = "cf-fr9361-rx-adc-lpc",
 	.base = RX_CORE_BASEADDR,
 	.num_channels = 4,
 	.num_slave_channels =  4
 };
 
-struct axi_dac **tx_dac;
+struct axi_dac *tx_dac;
 struct axi_dac_init tx_dac_init = {
-	"cf-fr9361-dds-core-lpc",
+	"cf-fr9361-tx-dac-lpc",
 	TX_CORE_BASEADDR,
 	4,
 	NULL,
@@ -186,7 +196,8 @@ int main(void)
 
 	// spi hook
 	spi_hook(*spi_desc);
-
+#if 0
+	// Debugging on AD9361_WR/RD
 	AD9361_WR(0x900, 0x07);
 	no_os_mdelay(1);
 	AD9361_WR(0x904, 0xA4);
@@ -201,6 +212,7 @@ int main(void)
 		printf("spi access error, addr=0x615, wrdata=0x%x, rddata=0x%x\n", spi_wrdata, spi_rddata);
 		return -1;
 	}
+#endif
 
 	// fr9361 init
     status = fr936x_init(&g_phy_obj[0], &g_phy_config[0]);
@@ -234,16 +246,21 @@ int main(void)
 	}
 
   	/* dac init */
-	axi_dac_init(tx_dac, &tx_dac_init);
+	// mode = 2t2r
+	tx_dac_init.num_channels = 4;
+	tx_dac_init.rate = 1;
+	axi_dac_init(&tx_dac, &tx_dac_init); // fpga dds is working!
 
 	/* adc init */
-	axi_adc_init(rx_adc, &rx_adc_init);
+	rx_adc_init.num_channels = 4;
+	rx_adc_init.num_slave_channels = 0;
+	axi_adc_init(&rx_adc, &rx_adc_init);
 
 	/* set data selection */
-	axi_dac_set_datasel(*tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
+	axi_dac_set_datasel(tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 
 	/* load custom data */
-  	axi_dac_load_custom_data_v2(*tx_dac, sine_lut_iq, sine_lut_iq,
+  	axi_dac_load_custom_data_v2(tx_dac, sine_lut_iq, sine_lut_iq,
   				 	 	 	 NO_OS_ARRAY_SIZE(sine_lut_iq),
 							 (uintptr_t)dac_buffer);
 
@@ -278,6 +295,8 @@ int main(void)
 		parse_spi_command(*spi_desc);
 	}
 
+	Xil_DCacheDisable();
+	Xil_ICacheDisable();
 	return 0;
 }
 
@@ -368,7 +387,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 						axi_dmac_transfer_stop(tx_dmac);
 
 						/* Reload the waveform */
-						axi_dac_load_custom_data_v2(*tx_dac, zero_lut_iq, zero_lut_iq,
+						axi_dac_load_custom_data_v2(tx_dac, zero_lut_iq, zero_lut_iq,
 									 NO_OS_ARRAY_SIZE(zero_lut_iq),
 									 (uintptr_t)dac_buffer);
 						Xil_DCacheFlush();

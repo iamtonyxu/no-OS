@@ -52,8 +52,8 @@ data_q = typecast(swapbytes(int16(data_q)), 'int8'); % big-endian
 
 message = [];
 for ii = 0:length(data_i)/2-1
-    message(end+1:end+2) = data_i(2*ii+(1:2));
     message(end+1:end+2) = data_q(2*ii+(1:2));
+    message(end+1:end+2) = data_i(2*ii+(1:2));
 %      data_i = 0x1100 + rem(ii,256);
 %      data_q = 0x2200 + rem(ii+10, 256);
 %      message(end+1:end+2) = typecast(swapbytes(int16(data_i)), 'int8');
