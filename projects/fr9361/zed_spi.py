@@ -1,7 +1,7 @@
 import serial
 import time
 
-COM_PORT = 'COM1'
+COM_PORT = 'COM3'
 BAUD_RATE = 115200
 MESSAGE_LEN = 10
 
@@ -132,7 +132,7 @@ def read_iq_data(filename):
     
     return I_data, Q_data
     
-def download_waveformfile(data_file = 'c:/tmp/waveform.txt'):
+def download_waveformfile(data_file = r'C:\repo\v23r1_250521\no-OS\projects\fr9361\testTone_30p72M_-1dBFs_0p96M.txt'):
     data_i, data_q = read_iq_data(data_file)
     download_waveform(data_i, data_q)
 
@@ -171,6 +171,9 @@ def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):
             
     print(f"Received {num_bytes} bytes and saved to {file_path}")
 
+
+
+
 def select_sdcard_waveform(file_id, file_size):
     """
     Send a message via UART.
@@ -193,7 +196,7 @@ def select_sdcard_waveform(file_id, file_size):
 def cmd_api_tx_tone(chan, on, freq):
     #construct the message, length = 10, starting with 0x61
     padding = 0
-    message = bytes([0x61]) + chan.to_bytes(1, 'big') + on.to_bytes(1, 'big') + freq.to_bytes(4, 'big') + padding.to_bytes(2, 'big')
+    message = bytes([0x61]) + chan.to_bytes(1, 'big') + on.to_bytes(1, 'big') + freq.to_bytes(4, 'big') + padding.to_bytes(3, 'big')
     #send the message
     ser.write(message)
     ser.flush()
@@ -212,16 +215,36 @@ ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
 ser.isOpen()
 
 ## example: spi_write, spi_read
-#spi_write(0, 0x20212223, 0x30313233)
-#spi_read(1, 0x20212223)
+# spi_write(0, 0x70, 0x0)
+# spi_read(0, 0x70)
 
+#spi_write(0, 0x6a, 0x70)
+# spi_write(0, 0x6a, 0xe0)
+# spi_write(0, 0x6a, 0xe0)
+# spi_write(0, 0x6a, 0xe0)
+# time.sleep(0.1)
 ## example: download_waveformfile
-#download_waveformfile()
+# download_waveformfile()
 
+
+# Rx BIST
+# spi_write(0, 0x70, 0x80) #Rx0
+# spi_write(0, 0x74, 0x03)
+
+# spi_write(0, 0x70, 0x40)#Rx1
+# spi_write(0, 0x75, 0x03)
+
+#spi_write(0, 0x70, 0xC0) #Rx0 & Rx1
+#spi_write(0, 0x74, 0x03)
+#spi_write(0, 0x75, 0x03)
+
+#spi_write(0, 0x70, 0x00)
+#spi_read(0, 0x70)
+# spi_write(0, 0x70,0x0)
 ## example: save capture data
-#read_capture()
+read_capture()
 
 # example: cmd_api_tx_tone
-cmd_api_tx_tone(1, 1, 1000)
+# cmd_api_tx_tone(0, 0, 960000)
 
 ser.close()

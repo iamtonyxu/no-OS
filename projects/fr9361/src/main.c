@@ -40,6 +40,7 @@
 #define GPIO_OPS				&xil_gpio_ops
 #define GPIO_RESET_PIN			100
 #define GPIO_SYNC_PIN			99
+
 #define GPIO_ENABLE_PIN			101
 #define GPIO_TXNRX_PIN			102
 
@@ -187,6 +188,10 @@ int main(void)
 		no_os_mdelay(1);
 	}
 
+
+
+
+
 	// spi init
 	if(no_os_spi_init(spi_desc, &spi_param) != 0)
 	{
@@ -207,6 +212,11 @@ int main(void)
 	spi_wrdata = 0x5a;
 	AD9361_WR(0x615, spi_wrdata);
 	spi_rddata = AD9361_RD(0x615);
+
+
+
+
+
 	if(spi_rddata != spi_wrdata)
 	{
 		printf("spi access error, addr=0x615, wrdata=0x%x, rddata=0x%x\n", spi_wrdata, spi_rddata);
@@ -256,6 +266,37 @@ int main(void)
 	rx_adc_init.num_slave_channels = 0;
 	axi_adc_init(&rx_adc, &rx_adc_init);
 
+	//////////////////////////////////////////////////////
+	uint8_t rx2tx2 = 1;
+	uint8_t is_lvds_mode = 0;
+	uint32_t tmp = 0;
+	axi_adc_write(rx_adc, AXI_ADC_REG_CNTRL, rx2tx2 ? 0 : AXI_ADC_R1_MODE);
+	axi_adc_read(rx_adc, 0x4048, &tmp);
+
+	if (!rx2tx2) {
+		axi_adc_write(rx_adc, 0x4048, tmp | NO_OS_BIT(5)); /* R1_MODE */
+		axi_adc_write(rx_adc, 0x404c, (is_lvds_mode) ? 1 : 0); /* RATE */
+	} else {
+		tmp &= ~NO_OS_BIT(5);
+		axi_adc_write(rx_adc, 0x4048, tmp);
+		axi_adc_write(rx_adc, 0x404c, (is_lvds_mode) ? 3 : 1); /* RATE */
+	}
+
+	uint8_t num_chan = 4;
+	for (int i = 0; i < num_chan; i++) {
+		axi_adc_write(rx_adc, AXI_ADC_REG_CHAN_CNTRL_1(i),
+			      AXI_ADC_DCFILT_OFFSET(0));
+		axi_adc_write(rx_adc, AXI_ADC_REG_CHAN_CNTRL_2(i),
+			      (i & 1) ? 0x00004000 : 0x40000000);
+		axi_adc_write(rx_adc, AXI_ADC_REG_CHAN_CNTRL(i),
+			      AXI_ADC_FORMAT_SIGNEXT | AXI_ADC_FORMAT_ENABLE |
+			      AXI_ADC_ENABLE | AXI_ADC_IQCOR_ENB);
+	}
+	//////////////////////////////////////////////////////
+
+
+
+
 	/* set data selection */
 	axi_dac_set_datasel(tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 
@@ -273,6 +314,7 @@ int main(void)
 	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
 
 	no_os_mdelay(1000);
+
 
 	/* Read the data from the ADC DMA. */
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
