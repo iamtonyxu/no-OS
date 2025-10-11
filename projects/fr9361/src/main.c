@@ -307,8 +307,20 @@ int main(void)
 	/* Flush cache data. */
 	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
 
-	no_os_mdelay(1000);
+	no_os_mdelay(100);
 
+#if 1
+	/* check data sel is adc */
+	const uint8_t ADC_SOURCE = 0u; // 0: adc; 1: dac
+	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
+	{
+		axi_adc_set_datasel(rx_adc, ch, ADC_SOURCE);
+		uint8_t data_sel = axi_adc_get_datasel(rx_adc, ch);
+		printf("data_sel after adc_init for ch-%d = %d\n", ch, data_sel);
+	}
+#endif
+
+	no_os_mdelay(100);
 	/* Read the data from the ADC DMA. */
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
 
