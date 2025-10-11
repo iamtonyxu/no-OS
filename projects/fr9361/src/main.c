@@ -31,7 +31,6 @@
 #define SPI_CS                  0
 #define SPI_OPS					&xil_spi_ops
 
-
 #define UART_DEVICE_ID			XPAR_XUARTPS_0_DEVICE_ID
 #define UART_IRQ_ID				XPAR_XUARTPS_1_INTR
 #define UART_BAUDRATE 			115200
@@ -188,10 +187,6 @@ int main(void)
 		no_os_mdelay(1);
 	}
 
-
-
-
-
 	// spi init
 	if(no_os_spi_init(spi_desc, &spi_param) != 0)
 	{
@@ -212,10 +207,6 @@ int main(void)
 	spi_wrdata = 0x5a;
 	AD9361_WR(0x615, spi_wrdata);
 	spi_rddata = AD9361_RD(0x615);
-
-
-
-
 
 	if(spi_rddata != spi_wrdata)
 	{
@@ -257,8 +248,14 @@ int main(void)
 
   	/* dac init */
 	// mode = 2t2r
-	tx_dac_init.num_channels = 4;
-	tx_dac_init.rate = 1;
+	if(CMOS_IF == g_phy_obj[0].config->dig_if) {
+		tx_dac_init.num_channels = 4;
+		tx_dac_init.rate = 1;
+	}
+	else {
+		tx_dac_init.num_channels = 4;
+		tx_dac_init.rate = 3;
+	}
 	axi_dac_init(&tx_dac, &tx_dac_init); // fpga dds is working!
 
 	/* adc init */
@@ -268,7 +265,7 @@ int main(void)
 
 	//////////////////////////////////////////////////////
 	uint8_t rx2tx2 = 1;
-	uint8_t is_lvds_mode = 0;
+	uint8_t is_lvds_mode = ((CMOS_IF == g_phy_obj[0].config->dig_if) ? 0 : 1);
 	uint32_t tmp = 0;
 	axi_adc_write(rx_adc, AXI_ADC_REG_CNTRL, rx2tx2 ? 0 : AXI_ADC_R1_MODE);
 	axi_adc_read(rx_adc, 0x4048, &tmp);
@@ -294,9 +291,6 @@ int main(void)
 	}
 	//////////////////////////////////////////////////////
 
-
-
-
 	/* set data selection */
 	axi_dac_set_datasel(tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
 
@@ -315,7 +309,6 @@ int main(void)
 
 	no_os_mdelay(1000);
 
-
 	/* Read the data from the ADC DMA. */
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
 
@@ -329,7 +322,6 @@ int main(void)
 	printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
 		   (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
 		   8 * sizeof(adc_buffer[0]));
-
 
 	// parse api command
 	while(1)
