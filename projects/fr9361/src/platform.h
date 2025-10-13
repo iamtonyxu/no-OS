@@ -26,23 +26,23 @@
  *
  */
 
-#include <stdio.h>
-#include "xparameters.h"
-#include "platform.h"
-#include "platform_config.h"
-#if FR_COMM_UART
-#include "no_os_uart.h"
-#include "main_uart.h"
-#else
-#include "main_eth.h"
+#ifndef __PLATFORM_H_
+#define __PLATFORM_H_
+
+/* Platform timer is calibrated for 250 ms, so kept interval value 4 to call
+ * eth_link_detect() at every one second
+ */
+#define ETH_LINK_DETECT_INTERVAL 4
+
+void init_platform();
+void cleanup_platform();
+#ifdef __MICROBLAZE__
+void timer_callback();
+#endif
+#ifdef __PPC__
+void timer_callback();
+#endif
+void platform_setup_timer();
+void platform_enable_interrupts();
 #endif
 
-
-int main()
-{
-#if FR_COMM_UART
-	return main_uart();
-#else
-	return main_eth();
-#endif
-}

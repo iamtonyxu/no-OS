@@ -12,7 +12,20 @@ CFLAGS += -DFILE_SYSTEM_INTERFACE_SD \
         -DFILE_SYSTEM_USE_MKFS
 
 SRCS += $(PROJECT)/src/main.c \
-        $(PROJECT)/src/app_cmd.c
+        $(PROJECT)/src/app_cmd.c \
+        $(PROJECT)/src/common_para.c \
+        $(PROJECT)/src/echo.c \
+        $(PROJECT)/src/i2c_access.c \
+        $(PROJECT)/src/iic_phyreset.c \
+        $(PROJECT)/src/main_eth.c \
+        $(PROJECT)/src/main_uart.c \
+        $(PROJECT)/src/platform.c \
+        $(PROJECT)/src/platform_mb.c \
+        $(PROJECT)/src/platform_ppc.c \
+        $(PROJECT)/src/platform_zynq.c \
+        $(PROJECT)/src/platform_zynqmp.c \
+        $(PROJECT)/src/sfp.c \
+        $(PROJECT)/src/si5324.c
 SRCS += $(DRIVERS)/rf-transceiver/fr9361/utility.c \
         $(DRIVERS)/rf-transceiver/fr9361/transceiver_api.c \
         $(DRIVERS)/rf-transceiver/fr9361/spi_rw.c \
@@ -90,6 +103,7 @@ SRCS += $(NO-OS)/util/no_os_fifo.c \
 	$(NO-OS)/util/no_os_circular_buffer.c
 endif
 INCS += $(DRIVERS)/src/app_config.h \
+    $(DRIVERS)/src/platform_config.h \
     $(NO-OS)/libraries/fatfs/source/integer.h \
     $(NO-OS)/libraries/fatfs/source/diskio.h\
     $(NO-OS)/libraries/fatfs/source/ff.h\
@@ -113,7 +127,13 @@ INCS += $(DRIVERS)/rf-transceiver/fr9361/utility.h \
     $(DRIVERS)/rf-transceiver/fr9361/driver.h \
     $(DRIVERS)/rf-transceiver/fr9361/digtal.h \
     $(DRIVERS)/rf-transceiver/fr9361/custom_cfg.h \
-    $(PROJECT)/src/app_cmd.h
+    $(PROJECT)/src/app_cmd.h \
+    $(PROJECT)/src/common_para.h \
+    $(PROJECT)/src/main_eth.h \
+    $(PROJECT)/src/main_uart.h \
+    $(PROJECT)/src/parameters.h \
+    $(PROJECT)/src/platform.h \
+    $(PROJECT)/src/platform_config.h
 
 #$(DRIVERS)/rf-transceiver/ad9361/ad9361.h \
 #$(PROJECT)/src/parameters.h \
