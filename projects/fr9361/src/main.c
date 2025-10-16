@@ -585,6 +585,26 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 					}
 					no_os_mdelay(10);
 				}
+				else if(wr_data[0] == 0x70)
+				{
+					// read adc_delay
+					uint8_t lane = wr_data[1];
+					uint32_t delay = axi_adc_delay_get(rx_adc, lane);
+					wr_data[2] = delay;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x71)
+				{
+					// set adc_delay
+					uint8_t lane = wr_data[1];
+					uint32_t delay = wr_data[2];
+					axi_adc_delay_set(rx_adc, lane, delay);
+				}
+				else if(wr_data[0] == 0xFF)
+				{
+					// exit
+					break;
+				}
 			}
 		}
 	}
