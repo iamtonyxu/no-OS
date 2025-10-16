@@ -4,6 +4,7 @@ clc;
 
 MBit = 16;
 NFFT = 4096;
+cfg_fs_bb = 30.72e6;
 data = load('C:\tmp\cap_data.txt');
 
 % cap_data: 2t2r
@@ -39,25 +40,47 @@ for i = 1:length(ch0_i)
     end    
 end
 
-rx0 = ch0_i + 1i*ch0_q;
-rx1 = ch1_i + 1i*ch1_q;
-
-%%
 figure;
-subplot(2,1,1);
-plot(real(rx0)); hold on
-plot(imag(rx0));
-title('rx0 in time domain');
+plot(ch0_i);
 
-subplot(2,1,2);
-plot(real(rx1)); hold on
-plot(imag(rx1));
-title('rx1 in time domain');
+rx0_waveform = complex(ch0_i,ch0_q);
+rx1_waveform = complex(ch1_i,ch1_q);
+% figure;
+%% Plot time domain data
+subplot(2,2,1);
+plot(real(rx0_waveform));hold on; 
+plot(imag(rx0_waveform));
+% title('Time-domain');
+title('Rx0 Samples');
+legend('real', 'imag');
+hold off;
 
+subplot(2,2,2);
+plot(real(rx1_waveform));hold on; 
+plot(imag(rx1_waveform));
+% title('Time-domain');
+title('Rx1 Samples');
+legend('real', 'imag');
+hold off;
+
+
+%% FFT analysis
+nBits = 12;
+nHarmonics = 0;
+useHann = true;
+subplot(2,2,3);
+PlotFFT(rx0_waveform, nHarmonics, nBits, useHann, cfg_fs_bb);
+title('Rx0 Freq-domain');
+hold off;
+
+subplot(2,2,4);
+PlotFFT(rx1_waveform, nHarmonics, nBits, useHann, cfg_fs_bb);
+title('Rx1 Freq-domain');
+
+if 0
 figure;
-plot(20*log10(abs(fftshift(fft(rx0, NFFT)/NFFT/2^15)))); hold on
-plot(20*log10(abs(fftshift(fft(rx1, NFFT)/NFFT/2^15))));
-legend('rx0', 'rx1');
-title('rx in freq domain');
-
-
+plot(ch0_i,'.--'); hold on
+plot(ch0_q,'.--');
+plot(ch1_i,'x--');
+plot(ch1_q,'x--');
+end

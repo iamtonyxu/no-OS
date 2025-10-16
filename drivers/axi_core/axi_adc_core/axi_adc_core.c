@@ -277,6 +277,18 @@ int32_t axi_adc_delay_set(struct axi_adc *adc,
 	return 0;
 }
 
+uint32_t axi_adc_delay_get(struct axi_adc *adc,
+			   uint32_t lane)
+{
+	uint32_t rdata;
+	if(lane < 0 || lane > 8){
+		printf("Invalid lane number %d\n", (int)lane);
+		return 0xffffffff;
+	}
+	axi_adc_read(adc, AXI_ADC_REG_DELAY(lane), &rdata);
+	return rdata;
+}
+
 /**
  * @brief Calibrate Delay using specific PN sequence.
  * @param adc - The device structure.

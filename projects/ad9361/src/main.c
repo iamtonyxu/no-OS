@@ -702,14 +702,12 @@ int main(void)
 #endif
 
 	/* check data sel is adc */
+	const uint8_t ADC_SOURCE = 1u; // 0: adc; 1: dac
 	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
 	{
+		axi_adc_set_datasel(ad9361_phy->rx_adc, ch, ADC_SOURCE);
 		uint8_t data_sel = axi_adc_get_datasel(ad9361_phy->rx_adc, ch);
 		printf("data_sel after adc_init for ch-%d = %d\n", ch, data_sel);
-		if(data_sel != 0)
-		{
-			axi_adc_set_datasel(ad9361_phy->rx_adc, ch, 0u);
-		}
 	}
 
 #else
@@ -1034,7 +1032,7 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 
 					no_os_mdelay(10);
 				}
-				else if(wr_data[0] = 0x5E)
+				else if(wr_data[0] == 0x5E)
 				{
 					/* Read waveform from SD card and transmit */
 					char fileID = wr_data[1] + '0';
@@ -1070,6 +1068,26 @@ void parse_spi_command(struct no_os_spi_desc *spi)
 						/* Flush cache data. */
 						Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, file_size);
 					}
+				}
+				else if(wr_data[0] == 0x60)
+				{
+					// read adc_delay
+					uint8_t lane = wr_data[1];
+					uint32_t delay = axi_adc_delay_get(ad9361_phy->rx_adc, lane);
+					wr_data[2] = delay;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				}
+				else if(wr_data[0] == 0x61)
+				{
+					// set adc_delay
+					uint8_t lane = wr_data[1];
+					uint32_t delay = wr_data[2];
+					axi_adc_delay_set(ad9361_phy->rx_adc, lane, delay);
+				}
+				else if(wr_data[0] == 0xFF)
+				{
+					// exit
+					break;
 				}
 			}
 		}

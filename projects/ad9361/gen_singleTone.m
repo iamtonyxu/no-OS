@@ -3,9 +3,9 @@ clear all;
 clc;
 
 Fs = 30.72e6;
-Fc = 3.84e6;
+Fc = 3.84e6/1;
 L = 4096;
-Amp = 0.6;
+Amp = 0.5;
 t = 1/Fs*(0:L-1);
 
 %% generate signal

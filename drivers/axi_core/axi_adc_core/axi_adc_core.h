@@ -220,6 +220,9 @@ void axi_adc_idelay_set(struct axi_adc *adc,
 int32_t axi_adc_delay_set(struct axi_adc *adc,
 			  uint32_t no_of_lanes,
 			  uint32_t delay);
+/** Get input/output delay primitive for specific interface line */
+uint32_t axi_adc_delay_get(struct axi_adc *adc,
+			   uint32_t lane);
 /** Calibrate Delay using specific PN sequence */
 int32_t axi_adc_delay_calibrate(struct axi_adc *core,
 				uint32_t no_of_lanes,

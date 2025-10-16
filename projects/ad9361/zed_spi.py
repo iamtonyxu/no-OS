@@ -1,7 +1,7 @@
 import serial
 import time
 
-COM_PORT = 'COM4'
+COM_PORT = 'COM3'
 BAUD_RATE = 115200
 MESSAGE_LEN = 10
 
@@ -136,7 +136,7 @@ def download_waveformfile(data_file = 'waveform.txt'):
     data_i, data_q = read_iq_data(data_file)
     download_waveform(data_i, data_q)
 
-def read_capture(cap_size = 1024, file_path = 'cap_data.txt'):  
+def read_capture(cap_size = 1024, file_path = 'c:/tmp/cap_data.txt'):  
     if cap_size > 16384:
         raise ValueError("capture length cannot be larger than 16384")
 
@@ -202,14 +202,17 @@ ser = serial.Serial(COM_PORT, BAUD_RATE, timeout=1)
 ser.isOpen()
 
 ## example: spi_write, spi_read
-spi_write(0, 0x20212223, 0x30313233)
-spi_read(1, 0x20212223)
+spi_read(0, 0x06) # Rx Clock & Data Delay, default = 0xE0
+spi_read(0, 0x07) # Tx Clock & Data Delay, default = 0xA0
+
+#spi_write(0, 0x06, 0xe0)
+
 
 ## example: download_waveformfile
 #download_waveformfile()
 
 ## example: save capture data
-#read_capture()
+read_capture()
 
 
 ser.close()
