@@ -49,6 +49,8 @@
 #endif
 #endif
 
+#include "main_eth.h"
+
 /* defined by each RAW mode application */
 void print_app_header();
 int start_application();

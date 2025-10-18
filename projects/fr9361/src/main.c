@@ -40,6 +40,7 @@
 
 int main()
 {
+	fr9361_hw_init();
 #if FR_COMM_UART
 	return main_uart();
 #else

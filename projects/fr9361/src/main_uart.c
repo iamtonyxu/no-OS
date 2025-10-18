@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "common_para.h"
-
+#include "main_uart.h"
 
 /******************************************************************************/
 /************************ Function Definitions ********************************/
@@ -15,112 +14,6 @@ void parse_spi_command(struct no_os_spi_desc *spi);
 /******************************************************************************/
 int main_uart(void)
 {
-	int32_t status = -1;
-	uint8_t spi_wrdata = 0, spi_rddata = 0;
-
-	Xil_ICacheEnable();
-	Xil_DCacheEnable();
-
-	printf("\nHello from ZYNQ...\n");
-
-	no_os_gpio_get(&gpio_desc_resetb, &gpio_resetb);
-
-	//fr9361_reset
-	if(gpio_desc_resetb)
-	{
-		no_os_gpio_direction_output(gpio_desc_resetb, 0);
-		no_os_gpio_set_value(gpio_desc_resetb, 0); // DMM to check resetb = 0
-		no_os_mdelay(1);
-		no_os_gpio_set_value(gpio_desc_resetb, 1);// DMM to check resetb = 1
-		no_os_mdelay(1);
-	}
-
-	// spi init
-	if(no_os_spi_init(spi_desc, &spi_param) != 0)
-	{
-		status = -2;
-		printf("\nfr9361 spi init failed, status = %d\n", status);
-	}
-
-	// spi hook
-	spi_hook(*spi_desc);
-
-	AD9361_WR(0x900, 0x07);
-	no_os_mdelay(1);
-	AD9361_WR(0x904, 0xA4);
-	no_os_mdelay(1);
-
-	spi_rddata = AD9361_RD(0x615);
-	spi_wrdata = 0x5a;
-	AD9361_WR(0x615, spi_wrdata);
-	spi_rddata = AD9361_RD(0x615);
-	if(spi_rddata != spi_wrdata)
-	{
-		printf("spi access error, addr=0x615, wrdata=0x%x, rddata=0x%x\n", spi_wrdata, spi_rddata);
-		return -1;
-	}
-
-	// fr9361 init
-	module_debug_onoff(&g_phy_obj[0], 0xFFF); // enable debug info print
-    status = fr936x_init(&g_phy_obj[0], &g_phy_config[0]);
-    if (status < 0)
-    {
-        printf("chip init failed!\n");
-        return status;
-    }
-
-    // tx_dmac init
-	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
-	if (status < 0) {
-		printf("axi_dmac_init tx init error: %"PRIi32"\n", status);
-		return status;
-	}
-
-	// rx dmac init
-	status = axi_dmac_init(&rx_dmac, &rx_dmac_init);
-	if (status < 0) {
-		printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
-		return status;
-	}
-
-  	/* dac init */
-	axi_dac_init(tx_dac, &tx_dac_init);
-
-	/* adc init */
-	axi_adc_init(rx_adc, &rx_adc_init);
-
-	/* set data selection */
-	axi_dac_set_datasel(*tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
-
-	/* load custom data */
-  	axi_dac_load_custom_data_v2(*tx_dac, sine_lut_iq, sine_lut_iq,
-  				 	 	 	 NO_OS_ARRAY_SIZE(sine_lut_iq),
-							 (uintptr_t)dac_buffer);
-
-  	Xil_DCacheFlush();
-
-	/* Transfer the data. */
-	axi_dmac_transfer_start(tx_dmac, &transfer);
-
-	/* Flush cache data. */
-	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer, sizeof(sine_lut_iq));
-
-	no_os_mdelay(1000);
-
-	/* Read the data from the ADC DMA. */
-	axi_dmac_transfer_start(rx_dmac, &read_transfer);
-
-	/* Wait until transfer finishes */
-	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0) {
-		printf("failed to read rx data, timeout: %d\n", status);
-		return status;
-	}
-	Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
-	printf("DMA_EXAMPLE: address=%#lx samples=%lu channels=%u bits=%lu\n",
-		   (uintptr_t)adc_buffer, NO_OS_ARRAY_SIZE(adc_buffer), rx_adc_init.num_channels,
-		   8 * sizeof(adc_buffer[0]));
-
 
 	// parse api command
 	while(1)

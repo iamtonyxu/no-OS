@@ -65,7 +65,6 @@ void print_app_header()
 
 void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 {
-	struct no_os_uart_desc *uart_desc;
 #define MAX_SIZE (16384*4*2)
 	uint32_t bytes_number = 10;
 	int32_t error = 0;
@@ -100,7 +99,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			(((char *)p->payload)[8] << 1*8) | ((char *)p->payload)[9];
 			if(((char *)p->payload)[0] == 0x5A)
 			{
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rSPI Write\n\rWrite addr = 0x%x, value = 0x%x\n\r", spi_addr, spi_data);
 				return;
 #else
@@ -109,12 +108,12 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			}
 			else if(((char *)p->payload)[0] == 0x5B)
 			{
-#if 0
-				// spi read
-				spi_data = AD9361_RD(spi_addr);
-#else
+#if LWIP_DEBUG
 				xil_printf("\n\rSPI Read\n\rRead addr = 0x%x, value = 0x%x\n\r", spi_addr, spi_data);
 				spi_data = 0xa1b2c3e4;
+#else
+				// spi read
+				spi_data = AD9361_RD(spi_addr);
 #endif
 				// send data
 				((char *)p->payload)[6] = (spi_data >> 3*8) & 0xff;
@@ -126,7 +125,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			else if(((char *)p->payload)[0] == 0x5C)
 			{
 				bytes_number = (((char *)p->payload)[1] << 2*8) | (((char *)p->payload)[2] << 1*8) | (((char *)p->payload)[3] << 0*8);
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rTX DMA transimit\n\rbytes_number = %d\n\r", bytes_number);
 				p->len = 1;
 				return;
@@ -167,7 +166,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			else if(((char *)p->payload)[0] == 0x5D)
 			{
 				int32_t status = -1;
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rRX DMA Read\n\r");
 				for (int i = 0; i < ADC_BUFFER_SAMPLES * ADC_CHANNELS; i++) {
 					adc_buffer[i] = i % 65536;
@@ -201,7 +200,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			else if(((char *)p->payload)[0] == 0x60)
 			{
 				chan = ((char *)p->payload)[1];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rRX RSSI GET\n\rchan = %d\n\r", chan);
 				int rssi = 0x12345678;
 				// read rx power: rx_rssi_get
@@ -221,7 +220,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 				chan = ((char *)p->payload)[1];
 				short on = ((char *)p->payload)[2];
 				long freq = (((char *)p->payload)[3] << 3*8) | (((char *)p->payload)[4] << 2*8) | (((char *)p->payload)[5] << 1*8) | ((char *)p->payload)[6];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rTX TONE\n\rChan = %d, on = %d, Freq = %ld\n\r", chan, on, freq);
 				return;
 #else
@@ -235,7 +234,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 				chan = ((char *)p->payload)[1];
 				RX_MGC_GAIN_ENUM tb = (RX_MGC_GAIN_ENUM)((char *)p->payload)[2];
 				unsigned char val = ((char *)p->payload)[3];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rRX GAIN\n\rChan = %d, Table = %d, Gain = %d\n\r", chan, tb, val);
 				return;
 #else
@@ -247,7 +246,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 			{
 				//set debug option: module_debug_onoff
 				unsigned long en = (((char *)p->payload)[1] << 3*8) | (((char *)p->payload)[2] << 2*8) | (((char *)p->payload)[3] << 1*8) | ((char *)p->payload)[4];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rDEBUG OPTION\n\rEnable = 0x%x\n\r", en);
 				return;
 #else
@@ -260,7 +259,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 				//read sxtrx_lock_status
 				short dir = ((char *)p->payload)[1];
 				int voltage = 0;
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rLOCK STATUS\n\rDir = %d\n\r", dir);
 				short lock = 0x55AA;
 				voltage = 0x12345678;
@@ -287,7 +286,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 										( (unsigned long long)((char *)p->payload)[5] << 0*8);
 				unsigned char gain = ((char *)p->payload)[6];
 				short immed = ((char *)p->payload)[7];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rTX ATTEN\n\rChan = %d, Flo = %lld, Gain = %d, Immed = %d\n\r", chan, flo, gain, immed);
 				return;
 #else
@@ -300,7 +299,7 @@ void parse_command(struct tcp_pcb *tpcb, struct pbuf *p)
 				//set_tx_dig_atten
 				chan = ((char *)p->payload)[1];
 				unsigned short index = (((char *)p->payload)[2] << 1*8) | ((char *)p->payload)[3];
-#if 1
+#if LWIP_DEBUG
 				xil_printf("\n\rTX DIG ATTEN\n\rChan = %d, Index = %d\n\r", chan, index);
 				return;
 #else

@@ -28,6 +28,9 @@
 /******************************************************************************/
 /************************ Micro-Definitions ***********************************/
 /******************************************************************************/
+
+#define LWIP_DEBUG				0
+
 #define SPI_DEVICE_ID			XPAR_PS7_SPI_0_DEVICE_ID
 #define SPI_CS                  0
 #define SPI_OPS					&xil_spi_ops
@@ -51,6 +54,11 @@
 #define CF_AD9361_RX_DMA_BASEADDR	XPAR_AXI_DMAC_0_BASEADDR
 #define CF_AD9361_TX_DMA_BASEADDR	XPAR_AXI_DMAC_1_BASEADDR
 
+
+/******************************************************************************/
+/************************ global variable declaration**************************/
+/******************************************************************************/
+
 extern struct xil_spi_init_param xil_spi_param;
 extern struct xil_gpio_init_param xil_gpio_param;
 extern struct no_os_spi_init_param	spi_param;
@@ -70,5 +78,11 @@ extern struct axi_dmac_init tx_dmac_init;
 extern struct axi_dmac *tx_dmac;
 extern struct axi_dma_transfer transfer;
 extern struct axi_dma_transfer read_transfer;
+
+/******************************************************************************/
+/************************ global function declaration**************************/
+/******************************************************************************/
+
+int fr9361_hw_init(void);
 
 #endif

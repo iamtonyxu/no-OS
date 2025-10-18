@@ -1,5 +1,7 @@
-#ifndef _MAIN_FR_H
-#define _MAIN_FR_H
+#ifndef _MAIN_ETH_H
+#define _MAIN_ETH_H
+
+#include "common_para.h"
 
 int main_eth(void);
 
