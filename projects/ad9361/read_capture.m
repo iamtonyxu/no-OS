@@ -1,7 +1,6 @@
-function [capData] = read_capture(serialCOM, waitSecond)
+function [rx0, rx1] = read_capture(serialCOM, capSize, waitSecond)
 HEAD = 0x5D;
 baudRate = 115200;
-capSize = 4096;
 
 serialCOM = upper(serialCOM);
 freeports = serialportlist("available");
@@ -13,8 +12,13 @@ else
 end
 
 if nargin < 2
+    capSize = 1024;
+    waitSecond = 5;
+elseif nargin < 3
     waitSecond = 5;
 end
+
+capSize = capSize * 2; % rx0, rx1
 
 device = serialport(serialCOM, baudRate, "Timeout", 10);
 
@@ -56,10 +60,12 @@ for i = 1:length(signal_i)
     end
 end
 
-capData = (signal_i + 1j*signal_q)./2^15;
+capData = signal_i + 1j*signal_q;
+rx0 = capData(1:2:end).';
+rx1 = capData(2:2:end).';
 
 %%
-if 1
+if 0
 Fs = 245.76e6;
 FFT_Length = capSize;
 f = Fs*(0:(FFT_Length/2))/FFT_Length;

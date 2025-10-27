@@ -104,6 +104,7 @@ char file_name[32] = "TEST0.BIN";
 /******************************************************************************/
 /************************ Variables Definitions *******************************/
 /******************************************************************************/
+const uint8_t ADC_SOURCE = 0u; // 0: adc; 1: dac
 
 #if defined(DMA_EXAMPLE) || defined(IIO_SUPPORT)
 uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
@@ -620,7 +621,7 @@ int main(void)
 	default_init_param.lvds_rx_onchip_termination_enable = 1;
 	default_init_param.full_port_enable = 0;
 	default_init_param.digital_interface_tune_fir_disable = 0;
-	//2r2t
+	//2t2r
 	tx_dac_init.num_channels = 4;
 	tx_dac_init.rate = 3;
 #else
@@ -702,7 +703,6 @@ int main(void)
 #endif
 
 	/* check data sel is adc */
-	const uint8_t ADC_SOURCE = 1u; // 0: adc; 1: dac
 	for(int ch = 0; ch < rx_adc_init.num_channels; ch++)
 	{
 		axi_adc_set_datasel(ad9361_phy->rx_adc, ch, ADC_SOURCE);

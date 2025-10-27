@@ -4,60 +4,91 @@ clc;
 
 MBit = 16;
 NFFT = 4096;
-data = load('C:\tmp\cap_data.txt');
+cfg_fs_bb = 30.72e6;
 
-% cap_data: 2t2r
-% I0(H, L), Q0(H, L)
-% I1, Q1
-% I0, Q0
-% I1, Q1
-% ...
-ch0_i = data(1:2:end, 1);
-ch0_q = data(1:2:end, 2);
-ch1_i = data(2:2:end, 1);
-ch1_q = data(2:2:end, 2);
-
-% for i = 1:length(ch0_i)
-%     ch0_i(i, 1) = swap_bytes(ch0_i(i, 1));
-%     ch0_q(i, 1) = swap_bytes(ch0_q(i, 1));
-%     ch1_i(i, 1) = swap_bytes(ch1_i(i, 1));
-%     ch1_q(i, 1) = swap_bytes(ch1_q(i, 1));
-% end
-
-for i = 1:length(ch0_i)
-    if ch0_i(i, 1) >= 2^(MBit-1)
-        ch0_i(i, 1) = -((2^MBit) - ch0_i(i, 1)); 
+%% capture data
+if 1
+    % read data from FPGA directly
+    serialport = "COM3";
+    capSize = 2048;
+    [rx0_waveform, rx1_waveform] = read_capture(serialport, capSize);
+else
+    % read data file
+    data = load('C:\tmp\cap_data.txt');
+    
+    % cap_data: 2t2r
+    % I0(H, L), Q0(H, L)
+    % I1, Q1
+    % I0, Q0
+    % I1, Q1
+    % ...
+    ch0_i = data(1:2:end, 1);
+    ch0_q = data(1:2:end, 2);
+    ch1_i = data(2:2:end, 1);
+    ch1_q = data(2:2:end, 2);
+    
+    % for i = 1:length(ch0_i)
+    %     ch0_i(i, 1) = swap_bytes(ch0_i(i, 1));
+    %     ch0_q(i, 1) = swap_bytes(ch0_q(i, 1));
+    %     ch1_i(i, 1) = swap_bytes(ch1_i(i, 1));
+    %     ch1_q(i, 1) = swap_bytes(ch1_q(i, 1));
+    % end
+    
+    for i = 1:length(ch0_i)
+        if ch0_i(i, 1) >= 2^(MBit-1)
+            ch0_i(i, 1) = -((2^MBit) - ch0_i(i, 1)); 
+        end
+        if ch0_q(i, 1) >= 2^(MBit-1)
+            ch0_q(i, 1) = -((2^MBit) - ch0_q(i, 1)); 
+        end
+        if ch1_i(i, 1) >= 2^(MBit-1)
+            ch1_i(i, 1) = -((2^MBit) - ch1_i(i, 1)); 
+        end
+        if ch1_q(i, 1) >= 2^(MBit-1)
+            ch1_q(i, 1) = -((2^MBit) - ch1_q(i, 1)); 
+        end    
     end
-    if ch0_q(i, 1) >= 2^(MBit-1)
-        ch0_q(i, 1) = -((2^MBit) - ch0_q(i, 1)); 
-    end
-    if ch1_i(i, 1) >= 2^(MBit-1)
-        ch1_i(i, 1) = -((2^MBit) - ch1_i(i, 1)); 
-    end
-    if ch1_q(i, 1) >= 2^(MBit-1)
-        ch1_q(i, 1) = -((2^MBit) - ch1_q(i, 1)); 
-    end    
+    
+    rx0_waveform = complex(ch0_i,ch0_q);
+    rx1_waveform = complex(ch1_i,ch1_q);
 end
 
-rx0 = ch0_i + 1i*ch0_q;
-rx1 = ch1_i + 1i*ch1_q;
+% figure;
+%% Plot time domain data
+subplot(2,2,1);
+plot(real(rx0_waveform));hold on; 
+plot(imag(rx0_waveform));
+% title('Time-domain');
+title('Rx0 Samples');
+legend('real', 'imag');
+hold off;
 
-%%
+subplot(2,2,2);
+plot(real(rx1_waveform));hold on; 
+plot(imag(rx1_waveform));
+% title('Time-domain');
+title('Rx1 Samples');
+legend('real', 'imag');
+hold off;
+
+
+%% FFT analysis
+nBits = 12;
+nHarmonics = 0;
+useHann = true;
+subplot(2,2,3);
+PlotFFT(rx0_waveform, nHarmonics, nBits, useHann, cfg_fs_bb);
+title('Rx0 Freq-domain');
+hold off;
+
+subplot(2,2,4);
+PlotFFT(rx1_waveform, nHarmonics, nBits, useHann, cfg_fs_bb);
+title('Rx1 Freq-domain');
+
+if 0
 figure;
-subplot(2,1,1);
-plot(real(rx0)); hold on
-plot(imag(rx0));
-title('rx0 in time domain');
-
-subplot(2,1,2);
-plot(real(rx1)); hold on
-plot(imag(rx1));
-title('rx1 in time domain');
-
-figure;
-plot(20*log10(abs(fftshift(fft(rx0, NFFT)/NFFT/2^15)))); hold on
-plot(20*log10(abs(fftshift(fft(rx1, NFFT)/NFFT/2^15))));
-legend('rx0', 'rx1');
-title('rx in freq domain');
-
-
+plot(ch0_i,'.--'); hold on
+plot(ch0_q,'.--');
+plot(ch1_i,'x--');
+plot(ch1_q,'x--');
+end
