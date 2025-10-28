@@ -556,7 +556,7 @@ struct ad9361_rf_phy *ad9361_phy_b;
 
 struct axi_tdd ad9361_tdd;
 struct axi_tdd_init ad9361_tdd_init = {
-	.base = AD9361_TDD_BASEADDR,
+	.base = AD9361_TDD_0_BASEADDR,
 	/* tdd configuration */
 	.tdd_enable = 1,
 	.tdd_secondary = 0,
