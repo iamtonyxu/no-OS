@@ -70,6 +70,7 @@
 #include "axi_dac_core.h"
 #include "axi_dmac.h"
 #include "no_os_error.h"
+#include "axi_tdd.h"
 
 #ifdef IIO_SUPPORT
 
@@ -553,6 +554,20 @@ struct ad9361_rf_phy *ad9361_phy;
 struct ad9361_rf_phy *ad9361_phy_b;
 #endif
 
+struct axi_tdd ad9361_tdd;
+struct axi_tdd_init ad9361_tdd_init = {
+	.base = AD9361_TDD_BASEADDR,
+	/* tdd configuration */
+	.tdd_enable = 1,
+	.tdd_secondary = 0,
+	.tdd_rx_only = 0,
+	.tdd_tx_only = 1,
+	.tdd_gated_tx_dmapath = 1,
+	.tdd_gated_rx_dmapath = 1,
+	.tdd_terminal_type = 0
+};
+
+
 void parse_spi_command(struct no_os_spi_desc *spi);
 
 /***************************************************************************//**
@@ -674,6 +689,25 @@ int main(void)
 		printf("axi_dmac_init rx init error: %"PRIi32"\n", status);
 		return status;
 	}
+
+	/* AXI TDD initialization */
+	status = axi_tdd_init(&ad9361_tdd, &ad9361_tdd_init);
+	if(status == 0)
+	{
+		printf("axi_tdd init successfully: tdd_version = 0x%x\n", ad9361_tdd.pcore_version);
+	}
+	else
+	{
+		printf("axi_tdd init error: tdd_version = 0x%x\n", ad9361_tdd.pcore_version);
+	}
+
+	// TDD operation test
+	for(int ii=0; ii<3; ii++)
+	{
+		axi_tdd_rx_only(&ad9361_tdd);
+		axi_tdd_tx_only(&ad9361_tdd);
+	}
+
 
 #ifndef AXI_ADC_NOT_PRESENT
 #if defined XILINX_PLATFORM || defined LINUX_PLATFORM || defined ALTERA_PLATFORM
