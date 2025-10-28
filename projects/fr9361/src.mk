@@ -44,6 +44,7 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
 	$(DRIVERS)/axi_core/axi_dac_core/axi_dac_core.c \
 	$(DRIVERS)/axi_core/axi_dmac/axi_dmac.c \
 	$(DRIVERS)/axi_core/axi_sysid/axi_sysid.c \
+	$(DRIVERS)/axi_core/axi_tdd/axi_tdd.c \
 	$(DRIVERS)/api/no_os_spi.c \
 	$(DRIVERS)/api/no_os_gpio.c \
 	$(DRIVERS)/api/no_os_uart.c \
@@ -128,7 +129,8 @@ INCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.h \
 	$(DRIVERS)/axi_core/axi_dac_core/axi_dac_core.h \
 	$(INCLUDE)/no_os_irq.h \
 	$(DRIVERS)/axi_core/axi_dmac/axi_dmac.h \
-	$(DRIVERS)/axi_core/axi_sysid/axi_sysid.h
+	$(DRIVERS)/axi_core/axi_sysid/axi_sysid.h \
+	$(DRIVERS)/axi_core/axi_tdd/axi_tdd.h
 ifeq (linux,$(strip $(PLATFORM)))
 CFLAGS += -DPLATFORM_MB
 INCS +=	$(PLATFORM_DRIVERS)/linux_spi.h \

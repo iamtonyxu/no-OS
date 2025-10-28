@@ -18,6 +18,7 @@
 #include "axi_adc_core.h"
 #include "axi_dac_core.h"
 #include "axi_dmac.h"
+#include "axi_tdd.h"
 //fr9361 custom header files
 #include "custom_cfg.h"
 #include "main_init.h"
@@ -48,6 +49,7 @@
 #define ADC_CHANNELS 			4
 #define RX_CORE_BASEADDR		XPAR_AXI_AD9361_0_BASEADDR
 #define TX_CORE_BASEADDR		(XPAR_AXI_AD9361_0_BASEADDR + 0x4000)
+#define AD9361_TDD_0_BASEADDR	(XPAR_AXI_AD9361_0_BASEADDR + 0x8000)
 #define CF_AD9361_RX_DMA_BASEADDR	XPAR_AXI_DMAC_0_BASEADDR
 #define CF_AD9361_TX_DMA_BASEADDR	XPAR_AXI_DMAC_1_BASEADDR
 
@@ -156,6 +158,19 @@ struct axi_dma_transfer read_transfer = {
 	.dest_addr = (uintptr_t)adc_buffer
 };
 
+struct axi_tdd ad9361_tdd;
+struct axi_tdd_init ad9361_tdd_init = {
+	.base = AD9361_TDD_0_BASEADDR,
+	/* tdd configuration */
+	.tdd_enable = 1,
+	.tdd_secondary = 0,
+	.tdd_rx_only = 0,
+	.tdd_tx_only = 1,
+	.tdd_gated_tx_dmapath = 1,
+	.tdd_gated_rx_dmapath = 1,
+	.tdd_terminal_type = 0
+};
+
 /******************************************************************************/
 /************************ Function Definitions ********************************/
 /******************************************************************************/
@@ -212,6 +227,26 @@ int main(void)
 	{
 		printf("spi access error, addr=0x615, wrdata=0x%x, rddata=0x%x\n", spi_wrdata, spi_rddata);
 		return -1;
+	}
+#endif
+
+#if 1
+	/* AXI TDD initialization */
+	status = axi_tdd_init(&ad9361_tdd, &ad9361_tdd_init);
+	if(status == 0)
+	{
+		printf("axi_tdd init successfully: tdd_version = 0x%x\n", ad9361_tdd.pcore_version);
+	}
+	else
+	{
+		printf("axi_tdd init error: tdd_version = 0x%x\n", ad9361_tdd.pcore_version);
+	}
+
+	// TDD operation test
+	for(int ii=0; ii<3; ii++)
+	{
+		axi_tdd_rx_only(&ad9361_tdd);
+		axi_tdd_tx_only(&ad9361_tdd);
 	}
 #endif
 
