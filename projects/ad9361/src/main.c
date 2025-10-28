@@ -250,7 +250,7 @@ AD9361_InitParam default_init_param = {
 	0,		// qec_tracking_slow_mode_enable *** adi,qec-tracking-slow-mode-enable
 	/* ENSM Control */
 	0,		//ensm_enable_pin_pulse_mode_enable *** adi,ensm-enable-pin-pulse-mode-enable
-	0,		//ensm_enable_txnrx_control_enable *** adi,ensm-enable-txnrx-control-enable
+	1,		//ensm_enable_txnrx_control_enable *** adi,ensm-enable-txnrx-control-enable
 	/* LO Control */
 	2400000000UL,	//rx_synthesizer_frequency_hz *** adi,rx-synthesizer-frequency-hz
 	2400000000UL,	//tx_synthesizer_frequency_hz *** adi,tx-synthesizer-frequency-hz
@@ -554,17 +554,46 @@ struct ad9361_rf_phy *ad9361_phy;
 struct ad9361_rf_phy *ad9361_phy_b;
 #endif
 
-struct axi_tdd ad9361_tdd;
-struct axi_tdd_init ad9361_tdd_init = {
+axi_tdd ad9361_tdd;
+axi_tdd_initParam ad9361_tdd_init = {
 	.base = AD9361_TDD_0_BASEADDR,
 	/* tdd configuration */
-	.tdd_enable = 1,
-	.tdd_secondary = 0,
-	.tdd_rx_only = 0,
-	.tdd_tx_only = 1,
-	.tdd_gated_tx_dmapath = 1,
-	.tdd_gated_rx_dmapath = 1,
-	.tdd_terminal_type = 0
+	.config.tdd_enable = 1,
+	.config.tdd_secondary = 0,
+	.config.tdd_rx_only = 0,
+	.config.tdd_tx_only = 1,
+	.config.tdd_gated_tx_dmapath = 1,
+	.config.tdd_gated_rx_dmapath = 1,
+	.config.tdd_terminal_type = 0,
+
+	.config.tdd_burst_count = 0,
+	.config.tdd_counter_init = 0,
+	.config.tdd_frame_length = 0,
+
+	.config.tdd_vco_rx_on_1 = 0,
+	.config.tdd_vco_rx_off_1 = 0,
+	.config.tdd_vco_tx_on_1 = 0,
+	.config.tdd_vco_tx_off_1 = 0,
+	.config.tdd_rx_on_1 = 0,
+	.config.tdd_rx_off_1 = 0,
+	.config.tdd_tx_on_1 = 0,
+	.config.tdd_tx_off_1 = 0,
+	.config.tdd_rx_dp_on_1 = 0,
+	.config.tdd_rx_dp_off_1 = 0,
+	.config.tdd_tx_dp_on_1 = 0,
+	.config.tdd_tx_dp_off_1 = 0,
+	.config.tdd_vco_rx_on_2 = 0,
+	.config.tdd_vco_rx_off_2 = 0,
+	.config.tdd_vco_tx_on_2 = 0,
+	.config.tdd_vco_tx_off_2 = 0,
+	.config.tdd_rx_on_2 = 0,
+	.config.tdd_rx_off_2 = 0,
+	.config.tdd_tx_on_2 = 0,
+	.config.tdd_tx_off_2 = 0,
+	.config.tdd_rx_dp_on_2 = 0,
+	.config.tdd_rx_dp_off_2 = 0,
+	.config.tdd_tx_dp_on_2 = 0,
+	.config.tdd_tx_dp_off_2 = 0
 };
 
 
@@ -700,14 +729,14 @@ int main(void)
 	{
 		printf("axi_tdd init error: tdd_version = 0x%x\n", ad9361_tdd.pcore_version);
 	}
-
+#if 0
 	// TDD operation test
 	for(int ii=0; ii<3; ii++)
 	{
 		axi_tdd_rx_only(&ad9361_tdd);
 		axi_tdd_tx_only(&ad9361_tdd);
 	}
-
+#endif
 
 #ifndef AXI_ADC_NOT_PRESENT
 #if defined XILINX_PLATFORM || defined LINUX_PLATFORM || defined ALTERA_PLATFORM
