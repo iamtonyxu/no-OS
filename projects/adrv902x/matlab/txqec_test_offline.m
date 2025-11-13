@@ -1,15 +1,15 @@
 close all;
 clc;
 
-Plot_Enable = false;
+Plot_Enable = true;
 
 %% Test Configuration
-gain = 0.79;          % Gain error
-phase_deg = 3.01;     % Phase error (degree)
+gain = 0.8;           % Gain error
+phase_deg = -2.5;     % Phase error (degree)
 SNR_dB = 60;          % SNR in dB
 Fs = 245.76e6;        % Sampling frequency
                       % Tone frequencies, [+f1, -f1, +f2, -f2, ...]
-Fc = [10e6, -10e6, 20e6, -20e6, 30e6, -30e6, 40e6, -40e6];
+Fc = [10e6, -10e6, 20e6, -20e6, 30e6, -30e6, 40e6, -40e6, 50e6, -50e6];
 txIQRateHz = 122.88e6; % TX IQ rate
 L = 4096*1;            % Signal length
 Amp = 0.5;            % Amplitude of single tone
@@ -20,6 +20,10 @@ fprintf("gain_set = %.3f, phase_set = %.3f\n", gain, phase_deg);
 % Define gdFilterData for wideband filter calculation
 FilterData = struct('freq', [], 'corrData', []);
 gdFilterData = repmat(FilterData, numel(Fc), 1);
+
+% define estQec structure to hold estimated gain and phase
+estQec = struct('estGain', [], 'estPhase', []);
+estQecArray = repmat(estQec, numel(Fc), 1);
 
 %% Run Simulation for each tone frequency
 for idx = 1:numel(Fc)
@@ -41,7 +45,7 @@ for idx = 1:numel(Fc)
     rx_aligned = Amp * (cos(2*pi*Fc(idx)*t) + gain * 1j * sin(2*pi*Fc(idx)*t + phase_rad)) + noise;
 
     % Plot signals in frequency domain
-    if Plot_Enable
+    if 0
         plot_signal_in_freq_domain([tu_aligned; rx_aligned], Fs, L, "capture signal with simulation");
     end
 
@@ -51,12 +55,34 @@ for idx = 1:numel(Fc)
     %tu_aligned = round(2^(ADC_Bits-1) * tu_aligned / max(abs(tu_aligned))); 
     %rx_aligned = round(2^(ADC_Bits-1) * rx_aligned / max(abs(rx_aligned)));
 
-    [txqec, estVariance, corrData] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned);
+    [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned);
     fprintf("txqec.gain = %.4f, txqec.phase = %.4f\n", txqec.gain, txqec.phase);
+    estQecArray(idx).estGain = debugInfo.estGain;
+    estQecArray(idx).estPhase = debugInfo.estPhase;
 
     % collect correlation data for wideband filter calculation
     gdFilterData(idx).freq = Fc(idx)/txIQRateHz;
     gdFilterData(idx).corrData = corrData;
+end
+
+% plot estimated gain and phase for each tone
+if Plot_Enable
+    figure;
+    subplot(2,1,1);
+    stem(Fc/1e6, [estQecArray.estGain], 'filled'); hold on;
+    stem(Fc/1e6, [estQecArray.estGain]- gain, 'filled');
+    title('Estimated Gain Error per Tone');
+    xlabel('Frequency (MHz)');
+    ylabel('Estimated Gain');
+    grid on;
+
+    subplot(2,1,2);
+    stem(Fc/1e6, [estQecArray.estPhase], 'filled'); hold on;
+    stem(Fc/1e6, [estQecArray.estPhase]-phase_deg, 'filled');
+    title('Estimated Phase Error per Tone');
+    xlabel('Frequency (MHz)');
+    ylabel('Estimated Phase (degrees)');
+    grid on;
 end
 
 %% Estimate Wideband filter

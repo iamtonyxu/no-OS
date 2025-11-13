@@ -1,4 +1,4 @@
-function [txqec, estVariance, corrData] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned, txqec_pre)
+function [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned, txqec_pre)
     % Init value
     % Device            |   ADRV9009    |   ADRV9026    |   
     % Init_Phase        |   512         |   1024        |
@@ -8,6 +8,7 @@ function [txqec, estVariance, corrData] = txqecInit_FindChannelEstimate(tu_align
     % PARAM_ADJ_SCALE   |   0.5         |   0.5         |
     % PHS_SCALE_FACTOR  |   [0.3, 3.0]  |   [0.8, 1.2]  |
     % GAIN_SCALE_FACTOR |   [1.0, 1.0]  |   [0.8, 1.2]  |
+    OPTION = 0; % 0: original method to calculate b/c, otherwise, bugfix
 
     INITIAL_PHASE_VALUE = 512;
     INITIAL_GAIN_VALUE = 0x4000;
@@ -59,11 +60,13 @@ end
     % (signal too small or u nearly identical to v)
     if (det*det) >= 1e6
         a = (out.zu * out.vv - out.zv * out.uv) / det;
-        %b = (out.yu * out.vv - out.yv * out.uv) / det; % wrong!
-        %c = (-out.zu * out.uv + out.zv * out.uu) / det;% wrong!
-        c = (out.yu * out.vv - out.yv * out.uv) / det;
-        b = (-out.zu * out.uv + out.zv * out.uu) / det;
-
+        if OPTION == 0
+            b = (out.yu * out.vv - out.yv * out.uv) / det; % wrong!
+            c = (-out.zu * out.uv + out.zv * out.uu) / det;% wrong!
+        else
+            c = (out.yu * out.vv - out.yv * out.uv) / det;
+            b = (-out.zu * out.uv + out.zv * out.uu) / det;
+        end
         d = (-out.yu * out.uv + out.yv * out.uu) / det;
     else
         a = 0; b = 0; c = 0; d = 0;
@@ -78,9 +81,11 @@ end
         gain_correction = sqrt((a*a + b*b) / (c*c + d*d)) - (1+delta_gain);
         phase_correction =  -(a*c + b*d) / (a*d - b*c);
         %phase_correction =  -(a*c + b*d) / (a*a + b*b); % optional
-    
+
+        debugInfo = struct("estGain", 1/(gain_correction+1), "estPhase", -phase_correction*180/pi);
+
         fprintf("gain_est = %.3f, phase_est = %.3f\n", ...
-            1/(gain_correction+1), -phase_correction*180/pi);
+            debugInfo.estGain, debugInfo.estPhase);
 
         % Estimate model variance, lower is better
         % Estimated model variance = 2 *(Cuu + Cvv) / ((a^2 + b^2) * (Cuu * Cvv - Cuv^2))
