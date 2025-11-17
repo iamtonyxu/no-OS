@@ -39,7 +39,7 @@ message = [HEAD, uint8(chan), gain1Bytes, gain2Bytes, gain3Bytes, gain4Bytes, ga
 
 write(device, message, "uint8");
 
-fprintf("set_txqec gain[2] = 0x%04X, phase = 0x%04X, gd(1) = 0x%04X, gd(2) = 0x%04X\n", ...
-    gain(2), phase, gd(1), gd(2));
+fprintf("set_txqec gain[3] = 0x%04X, phase = 0x%04X, gd(1) = 0x%04X, gd(2) = 0x%04X\n", ...
+    gain(3), phase, gd(1), gd(2));
 
 end

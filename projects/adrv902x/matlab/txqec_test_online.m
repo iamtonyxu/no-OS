@@ -3,13 +3,13 @@ clear all;
 clc;
 
 %% Test Configuration
-offline_sim = 1; % 0: real-time debugging; 1: offline simulation
+offline_sim = 0; % 0: real-time debugging; 1: offline simulation
 waveform_type = 0; % 0: tone; 1: nb signal; 2: chirp; 3: DDS; 4: PN15
 
 enable_pathdelay_est = 0;
 skip_download_waveform = 0;
-debug_info = 0;
-serial_port = "COM7";
+debug_info = 1;
+serial_port = "COM4";
 
 % signal generate
 Fs = 245.76e6;
@@ -74,6 +74,7 @@ else
         % select DDS
         set_dac_datasel(serial_port, datasel, tone_freq, tone_scale);
     end
+
 end
 
 %% set path delay (Debug)
@@ -195,12 +196,12 @@ txqec.gain = INITIAL_GAIN_VALUE;
 txqec.phase = INITIAL_PHASE_VALUE;
 txqec.gd = zeros(1,2);
 if offline_sim == 0
-    set_txqec_phase_gain_gd(serial_port, chan, txqec.gain(end), txqec.phase(end), good_gd);
+    set_txqec_phase_gain_gd(serial_port, chan, [0,0,txqec.gain(end),0,0], txqec.phase(end), good_gd);
 end
 
 %% iterations
 precesion_array = 0;
-for iter = 1:3
+for iter = 1:1
     % capture data and sync
 
     close all
@@ -227,6 +228,7 @@ for iter = 1:3
         figure;
         plot(real(tu_aligned),'.-'); hold on
         plot(real(rx_aligned .* std(tu_aligned)/std(rx_aligned)),'.--');
+        title("tu vs orx aligned");
     end
     plot_signal_in_freq_domain([cap_tu; cap_rx], Fs, cap_size, sprintf("updates=%d",updates-1));
 
@@ -292,7 +294,7 @@ for iter = 1:3
     
         % program txqec hw
         if offline_sim == 0
-            set_txqec_phase_gain_gd(serial_port, chan, txqec.gain(end), txqec.phase(end), txqec.gd);
+            set_txqec_phase_gain_gd(serial_port, chan, [0,0,txqec.gain(end),0,0], txqec.phase(end), txqec.gd);
         end
         updates = updates + 1;
         fprintf("txqec updates = %d\n", updates);
