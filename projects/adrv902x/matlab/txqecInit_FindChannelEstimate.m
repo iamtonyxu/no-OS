@@ -8,15 +8,15 @@ function [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstima
     % PARAM_ADJ_SCALE   |   0.5         |   0.5         |
     % PHS_SCALE_FACTOR  |   [0.3, 3.0]  |   [0.8, 1.2]  |
     % GAIN_SCALE_FACTOR |   [1.0, 1.0]  |   [0.8, 1.2]  |
-    OPTION = 0; % 0: original method to calculate b/c, otherwise, bugfix
+    OPTION = 1; % 0: original method to calculate b/c, otherwise, bugfix
 
     INITIAL_PHASE_VALUE = 512;
     INITIAL_GAIN_VALUE = 0x4000;
     TXQEC_GAIN_SCALE = 15400;
     TXQEC_PHASE_SCALE = 84883;
     PARAM_ADJ_SCALE = 0.5;
-    gain_scale_factor = 1;
-    phase_scale_factor = 1;
+    gain_scale_factor = 0.3;
+    phase_scale_factor = 0.8;
 
     lo_ghz = 3.55; % GHz
     delta_gain = 0.00;%0.002;
@@ -31,7 +31,7 @@ function [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstima
     z = real(rx_aligned); y = imag(rx_aligned);
     numSamples = length(tu_aligned);
 
-if 1
+if 0
     u = u - mean(u); v = v - mean(v);
     z = z - mean(z); y = y - mean(y);
 
@@ -73,7 +73,7 @@ end
     end
     
     precision = (out.uu + out.vv) * (a * a + b * b);
-    fprintf("det = %.3f, precision = %.3f\n", det, precision);
+    fprintf("det = %.3e, precision = %d\n", det, precision);
 
     % Check if the precision in our calculation is 'good' enough
     % Compute the quadrature error correction adjustment
@@ -92,8 +92,8 @@ end
         estVariance  = 2.0 * (out.uu + out.vv);
         estVariance = estVariance / ((a * a) + (b * b));
         estVariance = estVariance / ((out.uu * out.vv) - (out.uv * out.uv));
-        %fprintf("estVariance = %.6e\n", estVariance);
-        fprintf("estVariance = %.6e\n", estVariance/(2^(16*2))); % normalized to ADC full scale
+        estVariance = estVariance/(2^(16*2)); % normalized to ADC full scale
+        fprintf("estVariance = %.6e\n", estVariance);
 
         % Scale to code words        
         txqec_adj_gain_scale_factor = TXQEC_GAIN_SCALE * gain_scale_factor;
