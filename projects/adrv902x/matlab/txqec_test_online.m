@@ -3,7 +3,7 @@ clear all;
 clc;
 
 %% Test Configuration
-offline_sim = 1; % 0: real-time debugging; 1: offline simulation
+offline_sim = 0; % 0: real-time debugging; 1: offline simulation
 waveform_type = 0; % 0: tone; 1: nb signal; 2: chirp; 3: DDS; 4: PN15
 
 enable_pathdelay_est = 0;
@@ -28,7 +28,6 @@ TXQEC_GAIN_SCALE = 15400;
 TXQEC_PHASE_SCALE = 84883;
 PARAM_ADJ_SCALE = 0.5;
 varianceThres = 80*1e-13;
-maxNumEstLoops = 20;
 
 %% generate waveform
 if offline_sim == 1
@@ -205,6 +204,9 @@ if offline_sim == 0
 end
 
 %% iterations
+convergeGainCntPass = 2;
+convergedGainCnt = 0;
+maxNumEstLoops = 10;
 for iter = 1:maxNumEstLoops
     % capture data and sync
     if offline_sim == 0
@@ -238,20 +240,39 @@ for iter = 1:maxNumEstLoops
     end
 
     % channel estimation
-    [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned);
+    [estTxqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstimate(tu_aligned, rx_aligned);
     % print txqec.gain and txqec.phase as debug info
     fprintf("Estimated txqec parameters:\n");
-    fprintf("txqec.gain = %d, txqec.phase = %d\n", txqec.gain(end), txqec.phase(end));
+    fprintf("txqec.gain = %d, txqec.phase = %d\n", estTxqec.gain(end), estTxqec.phase(end));
+
+    % exit if estVariance cannot meet the requirement
+    if(estVariance > varianceThres)
+        continue;
+    end
 
     % program txqec hw
+    txqec.gain(end+1) = estTxqec.gain;
+    txqec.phase(end+1) = estTxqec.phase;
     if offline_sim == 0
-        set_txqec_phase_gain_gd(serial_port, chan, [0,0,txqec.gain(end),0,0], txqec.phase(end), txqec.gd);
+        if txqec.gain(end) ~= txqec.gain(end-1)
+            set_txqec_phase_gain_gd(serial_port, chan, ...
+                [good_gain(1), good_gain(2),txqec.gain(end),good_gain(4),good_gain(5)],...
+                txqec.phase(end), ...
+                txqec.gd);
+%             set_txqec_phase_gain_gd(serial_port, chan, ...
+%                 [0, 0,txqec.gain(end),0,0],...
+%                 txqec.phase(end), ...
+%                 txqec.gd);
+            updates = updates + 1;
+            fprintf("txqec updates = %d\n", updates);
+        else
+            convergedGainCnt = convergedGainCnt + 1;
+            if convergedGainCnt >= convergeGainCntPass
+                break;
+            end
+        end
     end
-    updates = updates + 1;
-    fprintf("txqec updates = %d\n", updates);
 
-    % exit if estVariance meets the requirement
-    if(estVariance < varianceThres)
-        break;
-    end
+
+
 end

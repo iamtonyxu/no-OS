@@ -57,7 +57,7 @@ if response(1) == HEAD
     gd(1) = int16(uint32(response(16)) + uint32(response(15))*2^8);
     gd(2) = int16(uint32(response(18)) + uint32(response(17))*2^8);
     fprintf("get txqec gain[2] = 0x%04X, phase = 0x%04X, gd(0) = 0x%04X, gd(1) = 0x%04X\n",...
-        gain(2), phase, gd(1), gd(2));
+        gain(3), phase, gd(1), gd(2));
 else
    phase = [];
    gain = [];

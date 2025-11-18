@@ -8,14 +8,14 @@ function [txqec, estVariance, corrData, debugInfo] = txqecInit_FindChannelEstima
     % PARAM_ADJ_SCALE   |   0.5         |   0.5         |
     % PHS_SCALE_FACTOR  |   [0.3, 3.0]  |   [0.8, 1.2]  |
     % GAIN_SCALE_FACTOR |   [1.0, 1.0]  |   [0.8, 1.2]  |
-    OPTION = 1; % 0: original method to calculate b/c, otherwise, bugfix
+    OPTION = 0; % 0: original method to calculate b/c, otherwise, bugfix
 
     INITIAL_PHASE_VALUE = 512;
     INITIAL_GAIN_VALUE = 0x4000;
     TXQEC_GAIN_SCALE = 15400;
     TXQEC_PHASE_SCALE = 84883;
     PARAM_ADJ_SCALE = 0.5;
-    gain_scale_factor = 0.3;
+    gain_scale_factor = 1;
     phase_scale_factor = 0.8;
 
     lo_ghz = 3.55; % GHz
