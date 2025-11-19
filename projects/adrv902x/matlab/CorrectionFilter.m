@@ -1,6 +1,6 @@
 function [filterCoeffs] = CorrectionFilter(state, hqVal)
     TXQEC_NUM_STATE_VARS = 3;
-    TXQEC_INITIAL_GAIN_Q_FLOAT = 1; % here set to 1 since hpVal is already factored in
+    TXQEC_INITIAL_GAIN_Q_FLOAT = 0x4000;
     len = TXQEC_NUM_STATE_VARS - 1;
     
     filterCoeffs = struct('I', zeros(1, 2*len + 1), 'Q', zeros(1, 2*len + 1));

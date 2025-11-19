@@ -34,7 +34,9 @@ for i = 1:numel(state.beta)
 end
 
 %% Calculate Correction Filter Coefficients
-corrFilterCoeffs = CorrectionFilter(state, corrGain);
+INITIAL_GAIN_VALUE = 16384;% 0x4000
+qFilter = double(corrGain) / double(INITIAL_GAIN_VALUE);
+corrFilterCoeffs = CorrectionFilter(state, qFilter);
 % printf corrFilterCoeffs as debug info
 fprintf("Calculated Correction Filter Coefficients (Q):\n");
 len = (numel(corrFilterCoeffs.Q) - 1) / 2;

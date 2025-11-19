@@ -4,14 +4,14 @@ clc;
 Plot_Enable = true;
 
 %% Test Configuration
-gain = 0.8;           % Gain error
-phase_deg = -2.5;     % Phase error (degree)
+gain = 0.8;           % Gain error(gain > 0)
+phase_deg = 2.0;      % Phase error (degree)
 SNR_dB = 60;          % SNR in dB
 Fs = 245.76e6;        % Sampling frequency
                       % Tone frequencies, [+f1, -f1, +f2, -f2, ...]
 Fc = [10e6, -10e6, 20e6, -20e6, 30e6, -30e6, 40e6, -40e6, 50e6, -50e6];
-txIQRateHz = 122.88e6; % TX IQ rate
-L = 4096*1;            % Signal length
+txIQRateHz = Fs;      % TX IQ rate
+L = 4096*4;            % Signal length
 Amp = 0.5;            % Amplitude of single tone
 ADC_Bits = 16;        % ADC bits affects varThreshold
 
@@ -50,7 +50,7 @@ for idx = 1:numel(Fc)
     end
 
     % Channel estimation
-    %rx_aligned = std(tu_aligned)/std(rx_aligned)*rx_aligned; % No impact on est phase/gain
+    rx_aligned = std(tu_aligned)/std(rx_aligned)*rx_aligned; % No impact on est phase/gain
     % convert float to integer 
     %tu_aligned = round(2^(ADC_Bits-1) * tu_aligned / max(abs(tu_aligned))); 
     %rx_aligned = round(2^(ADC_Bits-1) * rx_aligned / max(abs(rx_aligned)));
@@ -88,3 +88,5 @@ end
 %% Estimate Wideband filter
 % Call the function to calculate the wideband filter
 [corrFilterCoeffs] = CalcWidebandFlt(gdFilterData, txqec.gain);
+fprintf('txqec.gain = %d\n', txqec.gain);
+fprintf('sum(corrFilterCoeffs.Q) = %d\n', sum(corrFilterCoeffs.Q));
