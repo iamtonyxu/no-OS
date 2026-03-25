@@ -51,6 +51,7 @@
 #include "txqec.h"
 #include "txqec_hw.h"
 #include "txqec_init_cal.h"
+#include "txlol_hw.h"
 
 char file_name[32] = "TEST0.BIN";
 
@@ -676,6 +677,9 @@ void parse_spi_command(void *devHalInfo)
 	uint32_t enableMask = 0u;
 	uint32_t txqec_param_mask = 0x0Fu;
 
+	// for txlol test
+	iq_int16_t dc_offset;
+
 	error = no_os_uart_init(&uart_desc, &uart_param);
 
 	if(error == 0)
@@ -1155,6 +1159,22 @@ void parse_spi_command(void *devHalInfo)
 						wr_data[i + 5] = (errCode >> (8 * (4 - i))) & 0xff;
 					}
 					no_os_uart_write(uart_desc, wr_data, bytes_number);
+				case 0x82: //get txlol dc offset
+					txlol_hw_get_correction(devHalInfo, &dc_offset, chan);
+					wr_data[2] = (dc_offset.i >> 8) & 0xff;
+					wr_data[3] = (dc_offset.i >> 0) & 0xff;
+
+					wr_data[4] = (dc_offset.q >> 8) & 0xff;
+					wr_data[5] = (dc_offset.q >> 0) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+				case 0x83: //set txlol dc offset
+					int16_t wr_i = (wr_data[2] << 8) +  wr_data[3];
+					int16_t wr_q = (wr_data[4] << 8) +  wr_data[5];
+					dc_offset.i = wr_i;
+					dc_offset.q = wr_q;
+					txlol_hw_set_correction(devHalInfo, &dc_offset, chan);
+					break;
 				default:
 					/* do nothing */
 					printf("Invalid command.\n");
