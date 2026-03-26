@@ -85,11 +85,11 @@ else
     waveform = waveform .* 2^DacBits;
     tx = repmat(waveform(:), cap_size / length(waveform), 1);
     %tx = tx + complex(setLeakage.lolI, setLeakage.lolQ);
-    orx = txlol_model(tx, setPhs, setGain);
-    if debug_info
-        fprintf('offline txlol model: gain = %.4f, phase = %.2f deg\n', ...
-                setGain, setPhs * 180 / pi);
-    end
+    lol_i = 30; lol_q  = 20;
+    fprintf("sim: set_lol_i = %.4f, set_lol_q = %.2f deg\n", lol_i, lol_q);
+    leakage = ones(length(tx),1) * (lol_i + 1j*lol_q);
+    orx = txlol_model(tx, setPhs, setGain) + txlol_model(leakage, setPhs, setGain);
+
 end
 
 % plot tx and orx in time-domain
@@ -131,6 +131,7 @@ txlol_hw_outputs.RxDcDiffQ = sum(imag(orx) .* (imag(orx) > 0) * 1 + imag(orx) .*
 txlol_hw_outputs.RxDcDiffSqI = sum((real(orx) .* (real(orx) > 0) * PerturbScaler + real(orx) .* (real(orx) < 0) * -PerturbScaler).^2);
 txlol_hw_outputs.RxDcDiffSqQ = sum((imag(orx) .* (imag(orx) > 0) * PerturbScaler + imag(orx) .* (imag(orx) < 0) * -PerturbScaler).^2);
 
+disp("txlol_hw_outputs:");
 disp(txlol_hw_outputs);
 
 %% ProcessEngineResults 
@@ -167,13 +168,13 @@ curTx = txlol_status.TxPerturb;
 txlol_state.gainPt = txlol_state.gainPt / curTx / 2;
 txlol_state.phsPt = atan2(txlol_status.RxDcDiffQ, txlol_status.RxDcDiffI);
 
-fprintf('estGain = %.4f, estPhs = %.2f deg\n', txlol_state.gainPt, txlol_state.phsPt*180/pi);
+fprintf('sim: estGain = %.4f, estPhs = %.2f deg\n', txlol_state.gainPt, txlol_state.phsPt*180/pi);
 
 %% channel estimation and correction
 dc_offset_est = struct('i', int16(0), 'q', int16(0));
 
 cosPhs = cos(txlol_state.phsPt);
-sinPhs = sin(txlol_state.gainPt);
+sinPhs = sin(txlol_state.phsPt);
 accGain = txlol_state.gainPt;
 
 txlol_state.lolI = txlol_status.rxAverageDCI * cosPhs - txlol_status.rxAverageDCQ * sinPhs;
@@ -181,6 +182,8 @@ txlol_state.lolQ = txlol_status.rxAverageDCI * sinPhs + txlol_status.rxAverageDC
 
 txlol_state.lolI = txlol_state.lolI / accGain;
 txlol_state.lolQ = txlol_state.lolQ / accGain;
+
+fprintf("sim: est_lol_i = %.4f, est_lol_q = %.2f deg\n", txlol_state.lolI, txlol_state.lolQ);
 
 return;
 %% verify txlol correction
