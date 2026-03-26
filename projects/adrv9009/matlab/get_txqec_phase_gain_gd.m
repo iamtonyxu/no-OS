@@ -41,6 +41,7 @@ response = read(device, 10, 'uint8');
 %response = [HEAD, 0u, (int16)gain, (int16)phase, (int16)gd[0], (int16)gd[1]];
 if response(1) == HEAD
     gd = zeros(1,2);
+    % TODO: typecast(uint16(response(4)) + uint16(response(3))*2^8, 'int16')?
     gain = int16(uint32(response(4)) + uint32(response(3))*2^8);
     phase = int16(uint32(response(6)) + uint32(response(5))*2^8);
     gd(1) = int16(uint32(response(8)) + uint32(response(7))*2^8);

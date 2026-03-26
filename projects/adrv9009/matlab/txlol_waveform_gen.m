@@ -59,6 +59,7 @@ function [waveform, iData, qData, info] = txlol_waveform_gen(varargin)
 
     iData = iPn + perturbation;
     qData = qPn;
+    %qData = qPn + perturbation;
 
     iData = localClipToDac(iData, fullScale);
     qData = localClipToDac(qData, fullScale);

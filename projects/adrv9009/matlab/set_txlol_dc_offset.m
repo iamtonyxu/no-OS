@@ -19,8 +19,8 @@ end
 
 device = serialport(serialCOM, baudRate, "Timeout", 3);
 
-iBytes = typecast(swapbytes(uint16(dc_offset.i)), 'uint8');% big-endian
-qBytes = typecast(swapbytes(uint16(dc_offset.q)), 'uint8');% big-endian
+iBytes = typecast(swapbytes(int16(dc_offset.i)), 'uint8');% big-endian
+qBytes = typecast(swapbytes(int16(dc_offset.q)), 'uint8');% big-endian
 gdBytes = typecast(swapbytes(uint32(0)), 'uint8');% big-endian
 
 message = [HEAD, uint8(0), iBytes, qBytes, gdBytes];

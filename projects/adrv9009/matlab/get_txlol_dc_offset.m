@@ -29,9 +29,9 @@ response = read(device, 10, 'uint8');
 
 %response = [HEAD, 0u, (int16)dc_offset.i, (int16)dc_offset.q, zeros(1,4,'uint8')];
 if response(1) == HEAD
-    dc_offset.i = int16(uint32(response(4)) + uint32(response(3))*2^8);
-    dc_offset.q = int16(uint32(response(6)) + uint32(response(5))*2^8);
-    fprintf("get txlol dc_offset = 0x%04X, 0x%04X\n", dc_offset.i, dc_offset.q);
+    dc_offset.i = typecast(uint16(response(4)) + uint16(response(3))*2^8, 'int16');
+    dc_offset.q = typecast(uint16(response(6)) + uint16(response(5))*2^8, 'int16');
+    fprintf("get txlol dc_offset = (%d, %d)\n", dc_offset.i, dc_offset.q);
 else
    dc_offset.i = int16(0);
    dc_offset.q = int16(0);
