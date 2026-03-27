@@ -5,17 +5,26 @@ clc;
 %% Test Configuration
 % cap_tx channel is fixed for now, which is tx0
 option = 0; % 0: perturbation method; 1: sweep method
-offline_sim = 1; % 0: online; 1: offline
+offline_sim = 1; % 0: online; 1: offline; 2: capture data
 Fs = 491.52e6; % Hz
-NumSamples = 4096;
+cap_size = 16384; % 16k samples
 PnPowerDb = -50; % dB
 PerturbScaler = 128; % fixed
 DacBits = 14; % bits
-debug_info = 1;
-serial_port = "COM3";
+serial_port = "COMx"; % Uart port
+
+if ~offline_sim
+    serial_port = "COM3";
+elseif offline_sim == 1
+    setPhs = 3 / 180 * pi; % 3 degree
+    setGain = 0.85; % -3.4 dB
+    lol_i = randi([-30, 30]); lol_q = randi([-30, 30]); % dc leakage
+    fprintf("sim: setGain = %.4f, setPhs = %.2f deg\n", setGain, setPhs*180/pi);
+    fprintf("sim: set_lol_i = %.4f, set_lol_q = %.2f deg\n", lol_i, lol_q);
+end
 
 % generate waveform of PN and perturbation
-[waveform, iData, qData, info] = txlol_waveform_gen('NumSamples', NumSamples, ...
+[waveform, iData, qData, info] = txlol_waveform_gen('NumSamples', 4096, ...
                                                     'PnPowerDb', PnPowerDb, ...
                                                     'PerturbScaler', PerturbScaler, ...
                                                     'DacBits', DacBits, ...
@@ -35,17 +44,17 @@ end
 
 %% read txlol dc offset
 if ~offline_sim
-    dc_offset_fw = get_txlol_dc_offset(serial_port);
+    dc_offset_get = get_txlol_dc_offset(serial_port);
 else
-    dc_offset_fw = struct('i', int16(0), 'q', int16(0));
+    dc_offset_get = struct('i', int16(0), 'q', int16(0));
 end
 
 %% set txlol dc offset
 if ~offline_sim
-    dc_offset_fw1 = dc_offset_fw;
-    dc_offset_fw1.i = -50;
-    dc_offset_fw1.q = 603;
-    set_txlol_dc_offset(serial_port, dc_offset_fw1);
+    dc_offset_set = dc_offset_get;
+    dc_offset_set.i = -50;
+    dc_offset_set.q = 603;
+    set_txlol_dc_offset(serial_port, dc_offset_set);
 end
 
 %% download waveform to ADRV9009
@@ -59,7 +68,6 @@ end
 
 %% run the test and collect data
 if ~offline_sim
-    cap_size = 16384; % 16k samples
     [cap_orx, cap_tx] = read_capture(serial_port, 4096, 5); % dummy capture
     % loop capture for cap_size/4k times to get enough data for analysis
     for ii = 1:cap_size/4096
@@ -73,22 +81,18 @@ if ~offline_sim
         end
     end
     plot_signal_in_freq_domain([orx;tx], Fs, cap_size, "capture signals in freq domain");
-else
+elseif (offline_sim == 1)
     % for offline simulation, apply txlol model to tx and generate orx
-    setPhs = 3 / 180 * pi; % 3 degree
-    setGain = 0.85; % -3.4 dB
-%     setLeakage = struct('lolI', 10, ...
-%                         'lolQ', 20);
-
-    fprintf("sim: setGain = %.4f, setPhs = %.2f deg\n", setGain, setPhs*180/pi);
-    cap_size = 16384; % 16k samples
     waveform = waveform .* 2^DacBits;
     tx = repmat(waveform(:), cap_size / length(waveform), 1);
-    %tx = tx + complex(setLeakage.lolI, setLeakage.lolQ);
-    lol_i = 30; lol_q  = 20;
-    fprintf("sim: set_lol_i = %.4f, set_lol_q = %.2f deg\n", lol_i, lol_q);
+
     leakage = ones(length(tx),1) * (lol_i + 1j*lol_q);
     orx = txlol_model(tx, setPhs, setGain) + txlol_model(leakage, setPhs, setGain);
+else
+    % load capture data
+    load('capdata_wotxlol.mat');
+    tx = tx.' .* 2^DacBits;
+    orx = orx.' .* 2^DacBits;
 
 end
 
@@ -168,7 +172,10 @@ curTx = txlol_status.TxPerturb;
 txlol_state.gainPt = txlol_state.gainPt / curTx / 2;
 txlol_state.phsPt = atan2(txlol_status.RxDcDiffQ, txlol_status.RxDcDiffI);
 
-fprintf('sim: estGain = %.4f, estPhs = %.2f deg\n', txlol_state.gainPt, txlol_state.phsPt*180/pi);
+%txlol_state.phsPt = atan2(-txlol_status.RxDcDiffQ, txlol_status.RxDcDiffI);
+
+
+fprintf('estGain = %.4f, estPhs = %.2f deg\n', txlol_state.gainPt, txlol_state.phsPt*180/pi);
 
 %% channel estimation and correction
 dc_offset_est = struct('i', int16(0), 'q', int16(0));
@@ -183,9 +190,10 @@ txlol_state.lolQ = txlol_status.rxAverageDCI * sinPhs + txlol_status.rxAverageDC
 txlol_state.lolI = txlol_state.lolI / accGain;
 txlol_state.lolQ = txlol_state.lolQ / accGain;
 
-fprintf("sim: est_lol_i = %.4f, est_lol_q = %.2f deg\n", txlol_state.lolI, txlol_state.lolQ);
+fprintf("sim: est_lol_i = %.4f, est_lol_q = %.2f\n", txlol_state.lolI, txlol_state.lolQ);
 
 return;
+
 %% verify txlol correction
 Fc = 100e6; % Hz
 L = 4096; 
