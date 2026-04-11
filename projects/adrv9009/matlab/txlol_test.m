@@ -9,6 +9,7 @@ offline_sim = 1; % 0: online; 1: offline; 2: capture data
 Fs = 491.52e6; % Hz
 cap_size = 16384; % 16k samples
 PnPowerDb = -50; % dB
+PnNumSamples = 1024; % One +/-Pt set
 PerturbScaler = 128; % fixed
 DacBits = 14; % bits
 serial_port = "COMx"; % Uart port
@@ -24,7 +25,7 @@ elseif offline_sim == 1
 end
 
 % generate waveform of PN and perturbation
-[waveform, iData, qData, info] = txlol_waveform_gen('NumSamples', 4096, ...
+[waveform, iData, qData, info] = txlol_waveform_gen('NumSamples', PnNumSamples, ...
                                                     'PnPowerDb', PnPowerDb, ...
                                                     'PerturbScaler', PerturbScaler, ...
                                                     'DacBits', DacBits, ...
@@ -70,8 +71,8 @@ end
 if ~offline_sim
     [cap_orx, cap_tx] = read_capture(serial_port, 4096, 5); % dummy capture
     % loop capture for cap_size/4k times to get enough data for analysis
-    for ii = 1:cap_size/4096
-        [cap_orx, cap_tx] = read_capture(serial_port, 4096, 5);
+    for ii = 1:cap_size
+        [cap_orx, cap_tx] = read_capture(serial_port, cap_size, 5);
         if ii == 1
             orx = cap_orx;
             tx = cap_tx;
@@ -93,21 +94,29 @@ else
     load('capdata_wotxlol.mat');
     tx = tx.' .* 2^DacBits;
     orx = orx.' .* 2^DacBits;
-
 end
+
+%% sync and trim tx(x) and orx(y)
+x = tx; y = orx;
+[intDelay, fracDelay, yAligned, m] = CalDelayPhase(x, y);
+fprintf("intDelay = %d, fracDelay = %d\n", intDelay, fracDelay);
+
+acc_size = cap_size - PnNumSamples * 2;
+x_trim = x(1 : acc_size);
+y_trim = yAligned(1 : acc_size);
 
 % plot tx and orx in time-domain
 figure;
 subplot(2,1,1);
-plot(real(tx)); title('real(tx)');
+plot(real(x_trim)); title('real(tx)');
 subplot(2,1,2);
-plot(imag(tx)); title('imag(tx)');
+plot(imag(x_trim)); title('imag(tx)');
 
 figure;
 subplot(2,1,1);
-plot(real(orx)); title('real(rx)');
+plot(real(y_trim)); title('real(rx)');
 subplot(2,1,2);
-plot(imag(orx)); title('imag(orx)');
+plot(imag(y_trim)); title('imag(rx)');
 
 %% txlol hw engine: correlation and accumulation
 txlol_hw_outputs = struct('TxDcTotalI', double(0), ...
@@ -121,19 +130,19 @@ txlol_hw_outputs = struct('TxDcTotalI', double(0), ...
                           'RxDcDiffSqI', double(0), ...
                           'RxDcDiffSqQ', double(0));
 
-txlol_hw_outputs.TxDcTotalI = sum(real(tx));
-txlol_hw_outputs.TxDcTotalQ = sum(imag(tx));
-txlol_hw_outputs.ObsDcTotalI = sum(real(orx));
-txlol_hw_outputs.ObsDcTotalQ = sum(imag(orx));
-txlol_hw_outputs.TxPerturb = (PerturbScaler) * length(tx);
-txlol_hw_outputs.TxPerturbSq = (PerturbScaler^2) * length(tx);
+txlol_hw_outputs.TxDcTotalI = sum(real(x_trim));
+txlol_hw_outputs.TxDcTotalQ = sum(imag(x_trim));
+txlol_hw_outputs.ObsDcTotalI = sum(real(y_trim));
+txlol_hw_outputs.ObsDcTotalQ = sum(imag(y_trim));
+txlol_hw_outputs.TxPerturb = (PerturbScaler) * length(x_trim);
+txlol_hw_outputs.TxPerturbSq = (PerturbScaler^2) * length(x_trim);
 
 % 计算RxDcDiffI，当real(orx) > 0时， 将real(orx)的值乘以PerturbScaler并累加到RxDcDiffI中；当real(orx) < 0时，将real(orx)的值乘以-PerturbScaler并累加到RxDcDiffI中
-txlol_hw_outputs.RxDcDiffI = sum(real(orx) .* (real(orx) > 0) * 1 + real(orx) .* (real(orx) < 0) * (-1));
+txlol_hw_outputs.RxDcDiffI = sum(real(y_trim) .* (real(y_trim) > 0) * 1 + real(y_trim) .* (real(y_trim) < 0) * (-1));
 % 计算RxDcDiffQ，当imag(orx) > 0时， 将imag(orx)的值乘以PerturbScaler并累加到RxDcDiffQ中；当imag(orx) < 0时，将imag(orx)的值乘以-PerturbScaler并累加到RxDcDiffQ中
-txlol_hw_outputs.RxDcDiffQ = sum(imag(orx) .* (imag(orx) > 0) * 1 + imag(orx) .* (imag(orx) < 0) * (-1));
-txlol_hw_outputs.RxDcDiffSqI = sum((real(orx) .* (real(orx) > 0) * PerturbScaler + real(orx) .* (real(orx) < 0) * -PerturbScaler).^2);
-txlol_hw_outputs.RxDcDiffSqQ = sum((imag(orx) .* (imag(orx) > 0) * PerturbScaler + imag(orx) .* (imag(orx) < 0) * -PerturbScaler).^2);
+txlol_hw_outputs.RxDcDiffQ = sum(imag(y_trim) .* (imag(y_trim) > 0) * 1 + imag(y_trim) .* (imag(y_trim) < 0) * (-1));
+txlol_hw_outputs.RxDcDiffSqI = sum((real(y_trim) .* (real(y_trim) > 0) * PerturbScaler + real(y_trim) .* (real(y_trim) < 0) * -PerturbScaler).^2);
+txlol_hw_outputs.RxDcDiffSqQ = sum((imag(y_trim) .* (imag(y_trim) > 0) * PerturbScaler + imag(y_trim) .* (imag(y_trim) < 0) * -PerturbScaler).^2);
 
 disp("txlol_hw_outputs:");
 disp(txlol_hw_outputs);
@@ -151,7 +160,7 @@ txlol_status = struct('txAverageDCI', double(0), ...
                           'ObsDcTotalI', double(0), ...
                           'ObsDcTotalQ', double(0));
 
-avDCScale = 1 / cap_size;
+avDCScale = 1 / acc_size;
 txlol_status.txAverageDCI = txlol_hw_outputs.TxDcTotalI * avDCScale;
 txlol_status.txAverageDCQ = txlol_hw_outputs.TxDcTotalQ * avDCScale;
 txlol_status.rxAverageDCI = txlol_hw_outputs.ObsDcTotalI * avDCScale;
@@ -190,7 +199,7 @@ txlol_state.lolQ = txlol_status.rxAverageDCI * sinPhs + txlol_status.rxAverageDC
 txlol_state.lolI = txlol_state.lolI / accGain;
 txlol_state.lolQ = txlol_state.lolQ / accGain;
 
-fprintf("sim: est_lol_i = %.4f, est_lol_q = %.2f\n", txlol_state.lolI, txlol_state.lolQ);
+fprintf("est_lol_i = %.4f, est_lol_q = %.2f\n", txlol_state.lolI, txlol_state.lolQ);
 
 return;
 
