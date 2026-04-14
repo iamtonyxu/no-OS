@@ -27,6 +27,6 @@ message = [HEAD, uint8(0), iBytes, qBytes, gdBytes];
 
 write(device, message, "uint8");
 
-fprintf("set_txlol dc_offset = 0x%04X, 0x%04X\n", dc_offset.i, dc_offset.q);
+fprintf("set_txlol dc_offset = %d, %d\n", dc_offset.i, dc_offset.q);
 
 end

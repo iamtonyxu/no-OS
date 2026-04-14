@@ -60,7 +60,8 @@ for i = 1:length(signal_i)
     end
 end
 
-capData = (signal_i + 1j*signal_q)./2^15;
+%capData = (signal_i + 1j*signal_q)./2^15;
+capData = (signal_i + 1j*signal_q);
 
 %% Debug: read capBuf
 if  1
@@ -90,7 +91,9 @@ for i = 1:length(signal_i)
     end
 end
 
-capTu = (signal_i + 1j*signal_q)./2^15;
+%capTu = (signal_i + 1j*signal_q)./2^15;
+capTu = (signal_i + 1j*signal_q);
+
 end
 
 %%
