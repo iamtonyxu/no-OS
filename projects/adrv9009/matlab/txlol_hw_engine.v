@@ -38,7 +38,8 @@ module txlol_hw_engine #(
 
     localparam [1:0] ST_IDLE     = 2'd0;
     localparam [1:0] ST_RUN      = 2'd1;
-    localparam [1:0] ST_FINALIZE = 2'd2;
+    localparam [1:0] ST_DRAIN    = 2'd2;
+    localparam [1:0] ST_FINALIZE = 2'd3;
 
     reg [1:0] state;
 
@@ -71,18 +72,46 @@ module txlol_hw_engine #(
     reg signed [ACC_W-1:0] batch_obs_sq_i_acc;
     reg signed [ACC_W-1:0] batch_obs_sq_q_acc;
 
+    reg                     perturb_sq_vld_s0;
+    reg                     perturb_sq_vld_s1;
+    reg                     perturb_sq_vld_s2;
+    reg                     perturb_sq_vld_s3;
+    reg        [CFG_W-1:0]  perturb_sq_op_s0;
+    reg        [(2*CFG_W)-1:0] perturb_sq_res_s1;
+    reg        [(2*CFG_W)-1:0] perturb_sq_res_s2;
+    reg        [(2*CFG_W)-1:0] perturb_sq_res_s3;
+
+    reg                     sample_sq_vld_s0;
+    reg                     sample_sq_vld_s1;
+    reg                     sample_sq_vld_s2;
+    reg                     sample_sq_vld_s3;
+    reg signed [SAMPLE_W-1:0] sample_obs_i_op_s0;
+    reg signed [SAMPLE_W-1:0] sample_obs_q_op_s0;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_i_sq_s1;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_q_sq_s1;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_i_sq_s2;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_q_sq_s2;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_i_sq_s3;
+    reg        [(2*SAMPLE_W)-1:0] sample_obs_q_sq_s3;
+
+    reg                     batch_sq_vld_s0;
+    reg                     batch_sq_vld_s1;
+    reg                     batch_sq_vld_s2;
+    reg                     batch_sq_vld_s3;
+    reg signed [ACC_W-1:0]  batch_obs_i_op_s0;
+    reg signed [ACC_W-1:0]  batch_obs_q_op_s0;
+    reg signed [(2*ACC_W)-1:0] batch_obs_i_sq_s1;
+    reg signed [(2*ACC_W)-1:0] batch_obs_q_sq_s1;
+    reg signed [(2*ACC_W)-1:0] batch_obs_i_sq_s2;
+    reg signed [(2*ACC_W)-1:0] batch_obs_q_sq_s2;
+    reg signed [(2*ACC_W)-1:0] batch_obs_i_sq_s3;
+    reg signed [(2*ACC_W)-1:0] batch_obs_q_sq_s3;
+
     wire signed [ACC_W-1:0] tx_i_ext;
     wire signed [ACC_W-1:0] tx_q_ext;
     wire signed [ACC_W-1:0] obs_i_ext;
     wire signed [ACC_W-1:0] obs_q_ext;
     wire signed [ACC_W-1:0] perturb_amp_ext;
-    wire signed [(2*SAMPLE_W)-1:0] obs_i_sq_full;
-    wire signed [(2*SAMPLE_W)-1:0] obs_q_sq_full;
-    wire signed [(2*CFG_W)-1:0]    perturb_sq_full;
-
-    wire signed [ACC_W-1:0] obs_i_sq_ext;
-    wire signed [ACC_W-1:0] obs_q_sq_ext;
-    wire signed [ACC_W-1:0] perturb_sq_ext;
 
     wire                     in_guard_low;
     wire                     in_guard_high;
@@ -95,20 +124,21 @@ module txlol_hw_engine #(
     wire signed [ACC_W-1:0] batch_obs_q_next;
     wire signed [ACC_W-1:0] batch_obs_sq_i_next;
     wire signed [ACC_W-1:0] batch_obs_sq_q_next;
+    wire                     launch_perturb_sq;
+    wire                     launch_sample_sq;
+    wire                     launch_batch_sq;
+    wire                     square_pipes_empty;
+    wire signed [ACC_W-1:0] perturb_sq_pipe_out;
+    wire signed [ACC_W-1:0] sample_obs_i_sq_pipe_out;
+    wire signed [ACC_W-1:0] sample_obs_q_sq_pipe_out;
+    wire signed [ACC_W-1:0] batch_obs_i_sq_pipe_out;
+    wire signed [ACC_W-1:0] batch_obs_q_sq_pipe_out;
 
     assign tx_i_ext       = {{(ACC_W-SAMPLE_W){tx_i[SAMPLE_W-1]}}, tx_i};
     assign tx_q_ext       = {{(ACC_W-SAMPLE_W){tx_q[SAMPLE_W-1]}}, tx_q};
     assign obs_i_ext      = {{(ACC_W-SAMPLE_W){obs_i[SAMPLE_W-1]}}, obs_i};
     assign obs_q_ext      = {{(ACC_W-SAMPLE_W){obs_q[SAMPLE_W-1]}}, obs_q};
     assign perturb_amp_ext = {{(ACC_W-CFG_W){1'b0}}, perturb_amp_l};
-
-    assign obs_i_sq_full  = obs_i * obs_i;
-    assign obs_q_sq_full  = obs_q * obs_q;
-    assign perturb_sq_full = perturb_amp_l * perturb_amp_l;
-
-    assign obs_i_sq_ext   = {{(ACC_W-(2*SAMPLE_W)){1'b0}}, obs_i_sq_full};
-    assign obs_q_sq_ext   = {{(ACC_W-(2*SAMPLE_W)){1'b0}}, obs_q_sq_full};
-    assign perturb_sq_ext = {{(ACC_W-(2*CFG_W)){1'b0}}, perturb_sq_full};
 
     assign in_guard_low          = (sample_idx < guard_samples_l);
     assign in_guard_high         = (sample_idx >= (samples_per_batch_l - guard_samples_l));
@@ -122,8 +152,19 @@ module txlol_hw_engine #(
                                    (cfg_samples_per_batch > (cfg_guard_samples << 1));
     assign batch_obs_i_next      = batch_obs_i_acc + (sample_in_valid_region ? obs_i_ext : {ACC_W{1'b0}});
     assign batch_obs_q_next      = batch_obs_q_acc + (sample_in_valid_region ? obs_q_ext : {ACC_W{1'b0}});
-    assign batch_obs_sq_i_next   = batch_obs_sq_i_acc + (sample_in_valid_region ? obs_i_sq_ext : {ACC_W{1'b0}});
-    assign batch_obs_sq_q_next   = batch_obs_sq_q_acc + (sample_in_valid_region ? obs_q_sq_ext : {ACC_W{1'b0}});
+    assign batch_obs_sq_i_next   = batch_obs_sq_i_acc;
+    assign batch_obs_sq_q_next   = batch_obs_sq_q_acc;
+    assign launch_perturb_sq     = (state == ST_RUN) && sample_valid && sample_in_valid_region && batch_is_valid;
+    assign launch_sample_sq      = launch_perturb_sq && sq_mode_sample_l;
+    assign launch_batch_sq       = (state == ST_RUN) && sample_valid && last_sample_in_batch && batch_is_valid && !sq_mode_sample_l;
+    assign square_pipes_empty    = ~(perturb_sq_vld_s0 | perturb_sq_vld_s1 | perturb_sq_vld_s2 | perturb_sq_vld_s3 |
+                                     sample_sq_vld_s0  | sample_sq_vld_s1  | sample_sq_vld_s2  | sample_sq_vld_s3  |
+                                     batch_sq_vld_s0   | batch_sq_vld_s1   | batch_sq_vld_s2   | batch_sq_vld_s3);
+    assign perturb_sq_pipe_out   = {{(ACC_W-(2*CFG_W)){1'b0}}, perturb_sq_res_s3};
+    assign sample_obs_i_sq_pipe_out = {{(ACC_W-(2*SAMPLE_W)){1'b0}}, sample_obs_i_sq_s3};
+    assign sample_obs_q_sq_pipe_out = {{(ACC_W-(2*SAMPLE_W)){1'b0}}, sample_obs_q_sq_s3};
+    assign batch_obs_i_sq_pipe_out  = batch_obs_i_sq_s3[ACC_W-1:0];
+    assign batch_obs_q_sq_pipe_out  = batch_obs_q_sq_s3[ACC_W-1:0];
 
     task clear_active_accumulators;
     begin
@@ -155,6 +196,45 @@ module txlol_hw_engine #(
     end
     endtask
 
+    task clear_square_pipelines;
+    begin
+        perturb_sq_vld_s0 <= 1'b0;
+        perturb_sq_vld_s1 <= 1'b0;
+        perturb_sq_vld_s2 <= 1'b0;
+        perturb_sq_vld_s3 <= 1'b0;
+        perturb_sq_op_s0  <= {CFG_W{1'b0}};
+        perturb_sq_res_s1 <= {(2*CFG_W){1'b0}};
+        perturb_sq_res_s2 <= {(2*CFG_W){1'b0}};
+        perturb_sq_res_s3 <= {(2*CFG_W){1'b0}};
+
+        sample_sq_vld_s0   <= 1'b0;
+        sample_sq_vld_s1   <= 1'b0;
+        sample_sq_vld_s2   <= 1'b0;
+        sample_sq_vld_s3   <= 1'b0;
+        sample_obs_i_op_s0 <= {SAMPLE_W{1'b0}};
+        sample_obs_q_op_s0 <= {SAMPLE_W{1'b0}};
+        sample_obs_i_sq_s1 <= {(2*SAMPLE_W){1'b0}};
+        sample_obs_q_sq_s1 <= {(2*SAMPLE_W){1'b0}};
+        sample_obs_i_sq_s2 <= {(2*SAMPLE_W){1'b0}};
+        sample_obs_q_sq_s2 <= {(2*SAMPLE_W){1'b0}};
+        sample_obs_i_sq_s3 <= {(2*SAMPLE_W){1'b0}};
+        sample_obs_q_sq_s3 <= {(2*SAMPLE_W){1'b0}};
+
+        batch_sq_vld_s0   <= 1'b0;
+        batch_sq_vld_s1   <= 1'b0;
+        batch_sq_vld_s2   <= 1'b0;
+        batch_sq_vld_s3   <= 1'b0;
+        batch_obs_i_op_s0 <= {ACC_W{1'b0}};
+        batch_obs_q_op_s0 <= {ACC_W{1'b0}};
+        batch_obs_i_sq_s1 <= {(2*ACC_W){1'b0}};
+        batch_obs_q_sq_s1 <= {(2*ACC_W){1'b0}};
+        batch_obs_i_sq_s2 <= {(2*ACC_W){1'b0}};
+        batch_obs_q_sq_s2 <= {(2*ACC_W){1'b0}};
+        batch_obs_i_sq_s3 <= {(2*ACC_W){1'b0}};
+        batch_obs_q_sq_s3 <= {(2*ACC_W){1'b0}};
+    end
+    endtask
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state      <= ST_IDLE;
@@ -172,6 +252,7 @@ module txlol_hw_engine #(
             sample_idx          <= {CFG_W{1'b0}};
             batch_sign          <= 1'b0;
             clear_active_accumulators();
+            clear_square_pipelines();
             TxDcTotalI <= {ACC_W{1'b0}};
             TxDcTotalQ <= {ACC_W{1'b0}};
             ObsDcTotalI <= {ACC_W{1'b0}};
@@ -186,6 +267,41 @@ module txlol_hw_engine #(
             ObsDcLastQ <= {ACC_W{1'b0}};
         end else begin
             done <= 1'b0;
+
+            perturb_sq_vld_s3 <= perturb_sq_vld_s2;
+            perturb_sq_vld_s2 <= perturb_sq_vld_s1;
+            perturb_sq_vld_s1 <= perturb_sq_vld_s0;
+            perturb_sq_vld_s0 <= launch_perturb_sq;
+            perturb_sq_res_s3 <= perturb_sq_res_s2;
+            perturb_sq_res_s2 <= perturb_sq_res_s1;
+            perturb_sq_res_s1 <= perturb_sq_op_s0 * perturb_sq_op_s0;
+            perturb_sq_op_s0  <= perturb_amp_l;
+
+            sample_sq_vld_s3   <= sample_sq_vld_s2;
+            sample_sq_vld_s2   <= sample_sq_vld_s1;
+            sample_sq_vld_s1   <= sample_sq_vld_s0;
+            sample_sq_vld_s0   <= launch_sample_sq;
+            sample_obs_i_sq_s3 <= sample_obs_i_sq_s2;
+            sample_obs_q_sq_s3 <= sample_obs_q_sq_s2;
+            sample_obs_i_sq_s2 <= sample_obs_i_sq_s1;
+            sample_obs_q_sq_s2 <= sample_obs_q_sq_s1;
+            sample_obs_i_sq_s1 <= sample_obs_i_op_s0 * sample_obs_i_op_s0;
+            sample_obs_q_sq_s1 <= sample_obs_q_op_s0 * sample_obs_q_op_s0;
+            sample_obs_i_op_s0 <= obs_i;
+            sample_obs_q_op_s0 <= obs_q;
+
+            batch_sq_vld_s3   <= batch_sq_vld_s2;
+            batch_sq_vld_s2   <= batch_sq_vld_s1;
+            batch_sq_vld_s1   <= batch_sq_vld_s0;
+            batch_sq_vld_s0   <= launch_batch_sq;
+            batch_obs_i_sq_s3 <= batch_obs_i_sq_s2;
+            batch_obs_q_sq_s3 <= batch_obs_q_sq_s2;
+            batch_obs_i_sq_s2 <= batch_obs_i_sq_s1;
+            batch_obs_q_sq_s2 <= batch_obs_q_sq_s1;
+            batch_obs_i_sq_s1 <= batch_obs_i_op_s0 * batch_obs_i_op_s0;
+            batch_obs_q_sq_s1 <= batch_obs_q_op_s0 * batch_obs_q_op_s0;
+            batch_obs_i_op_s0 <= batch_obs_i_next;
+            batch_obs_q_op_s0 <= batch_obs_q_next;
 
             case (state)
                 ST_IDLE: begin
@@ -203,8 +319,10 @@ module txlol_hw_engine #(
                         if (!cfg_ok) begin
                             cfg_error <= 1'b1;
                             valid <= 1'b0;
+                            clear_square_pipelines();
                         end else begin
                             clear_active_accumulators();
+                            clear_square_pipelines();
                             batch_idx  <= {CFG_W{1'b0}};
                             sample_idx <= {CFG_W{1'b0}};
                             batch_sign <= cfg_start_sign;
@@ -215,65 +333,96 @@ module txlol_hw_engine #(
                 end
 
                 ST_RUN: begin
+                    busy <= 1'b1;
                     if (abort) begin
                         busy  <= 1'b0;
                         valid <= 1'b0;
+                        clear_square_pipelines();
                         state <= ST_IDLE;
-                    end else if (sample_valid) begin
-                        tx_dc_total_i_acc  <= tx_dc_total_i_acc + tx_i_ext;
-                        tx_dc_total_q_acc  <= tx_dc_total_q_acc + tx_q_ext;
-                        obs_dc_total_i_acc <= obs_dc_total_i_acc + obs_i_ext;
-                        obs_dc_total_q_acc <= obs_dc_total_q_acc + obs_q_ext;
-                        obs_dc_last_i_acc  <= obs_i_ext;
-                        obs_dc_last_q_acc  <= obs_q_ext;
-
-                        if (sample_in_valid_region && batch_is_valid) begin
-                            tx_perturb_acc    <= tx_perturb_acc + perturb_amp_ext;
-                            tx_perturb_sq_acc <= tx_perturb_sq_acc + perturb_sq_ext;
-                            if (sq_mode_sample_l) begin
-                                rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc + obs_i_sq_ext;
-                                rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc + obs_q_sq_ext;
-                            end
+                    end else begin
+                        if (perturb_sq_vld_s3) begin
+                            tx_perturb_sq_acc <= tx_perturb_sq_acc + perturb_sq_pipe_out;
+                        end
+                        if (sample_sq_vld_s3) begin
+                            rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc + sample_obs_i_sq_pipe_out;
+                            rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc + sample_obs_q_sq_pipe_out;
+                        end
+                        if (batch_sq_vld_s3) begin
+                            rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc + batch_obs_i_sq_pipe_out;
+                            rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc + batch_obs_q_sq_pipe_out;
                         end
 
-                        if (last_sample_in_batch) begin
-                            if (batch_is_valid) begin
-                                if (batch_sign) begin
-                                    rx_dc_diff_i_acc <= rx_dc_diff_i_acc + batch_obs_i_next;
-                                    rx_dc_diff_q_acc <= rx_dc_diff_q_acc + batch_obs_q_next;
-                                end else begin
-                                    rx_dc_diff_i_acc <= rx_dc_diff_i_acc - batch_obs_i_next;
-                                    rx_dc_diff_q_acc <= rx_dc_diff_q_acc - batch_obs_q_next;
-                                end
-                                if (!sq_mode_sample_l) begin
-                                    rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc +
-                                                           batch_obs_i_next * batch_obs_i_next;
-                                    rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc +
-                                                           batch_obs_q_next * batch_obs_q_next;
-                                end
+                        if (sample_valid) begin
+                            tx_dc_total_i_acc  <= tx_dc_total_i_acc + tx_i_ext;
+                            tx_dc_total_q_acc  <= tx_dc_total_q_acc + tx_q_ext;
+                            obs_dc_total_i_acc <= obs_dc_total_i_acc + obs_i_ext;
+                            obs_dc_total_q_acc <= obs_dc_total_q_acc + obs_q_ext;
+                            obs_dc_last_i_acc  <= obs_i_ext;
+                            obs_dc_last_q_acc  <= obs_q_ext;
+
+                            if (sample_in_valid_region && batch_is_valid) begin
+                                tx_perturb_acc <= tx_perturb_acc + perturb_amp_ext;
                             end
 
-                            if (last_batch_in_capture) begin
-                                batch_obs_i_acc    <= {ACC_W{1'b0}};
-                                batch_obs_q_acc    <= {ACC_W{1'b0}};
-                                batch_obs_sq_i_acc <= {ACC_W{1'b0}};
-                                batch_obs_sq_q_acc <= {ACC_W{1'b0}};
-                                state <= ST_FINALIZE;
+                            if (last_sample_in_batch) begin
+                                if (batch_is_valid) begin
+                                    if (batch_sign) begin
+                                        rx_dc_diff_i_acc <= rx_dc_diff_i_acc + batch_obs_i_next;
+                                        rx_dc_diff_q_acc <= rx_dc_diff_q_acc + batch_obs_q_next;
+                                    end else begin
+                                        rx_dc_diff_i_acc <= rx_dc_diff_i_acc - batch_obs_i_next;
+                                        rx_dc_diff_q_acc <= rx_dc_diff_q_acc - batch_obs_q_next;
+                                    end
+                                end
+
+                                if (last_batch_in_capture) begin
+                                    batch_obs_i_acc    <= {ACC_W{1'b0}};
+                                    batch_obs_q_acc    <= {ACC_W{1'b0}};
+                                    batch_obs_sq_i_acc <= {ACC_W{1'b0}};
+                                    batch_obs_sq_q_acc <= {ACC_W{1'b0}};
+                                    state <= ST_DRAIN;
+                                end else begin
+                                    batch_idx  <= batch_idx + {{(CFG_W-1){1'b0}},1'b1};
+                                    sample_idx <= {CFG_W{1'b0}};
+                                    batch_sign <= ~batch_sign;
+                                    batch_obs_i_acc    <= {ACC_W{1'b0}};
+                                    batch_obs_q_acc    <= {ACC_W{1'b0}};
+                                    batch_obs_sq_i_acc <= {ACC_W{1'b0}};
+                                    batch_obs_sq_q_acc <= {ACC_W{1'b0}};
+                                end
                             end else begin
-                                batch_idx  <= batch_idx + {{(CFG_W-1){1'b0}},1'b1};
-                                sample_idx <= {CFG_W{1'b0}};
-                                batch_sign <= ~batch_sign;
-                                batch_obs_i_acc    <= {ACC_W{1'b0}};
-                                batch_obs_q_acc    <= {ACC_W{1'b0}};
-                                batch_obs_sq_i_acc <= {ACC_W{1'b0}};
-                                batch_obs_sq_q_acc <= {ACC_W{1'b0}};
+                                batch_obs_i_acc    <= batch_obs_i_next;
+                                batch_obs_q_acc    <= batch_obs_q_next;
+                                batch_obs_sq_i_acc <= batch_obs_sq_i_next;
+                                batch_obs_sq_q_acc <= batch_obs_sq_q_next;
+                                sample_idx <= sample_idx + {{(CFG_W-1){1'b0}},1'b1};
                             end
-                        end else begin
-                            batch_obs_i_acc    <= batch_obs_i_next;
-                            batch_obs_q_acc    <= batch_obs_q_next;
-                            batch_obs_sq_i_acc <= batch_obs_sq_i_next;
-                            batch_obs_sq_q_acc <= batch_obs_sq_q_next;
-                            sample_idx <= sample_idx + {{(CFG_W-1){1'b0}},1'b1};
+                        end
+                    end
+                end
+
+                ST_DRAIN: begin
+                    busy <= 1'b1;
+                    if (abort) begin
+                        busy  <= 1'b0;
+                        valid <= 1'b0;
+                        clear_square_pipelines();
+                        state <= ST_IDLE;
+                    end else begin
+                        if (perturb_sq_vld_s3) begin
+                            tx_perturb_sq_acc <= tx_perturb_sq_acc + perturb_sq_pipe_out;
+                        end
+                        if (sample_sq_vld_s3) begin
+                            rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc + sample_obs_i_sq_pipe_out;
+                            rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc + sample_obs_q_sq_pipe_out;
+                        end
+                        if (batch_sq_vld_s3) begin
+                            rx_dc_diff_sq_i_acc <= rx_dc_diff_sq_i_acc + batch_obs_i_sq_pipe_out;
+                            rx_dc_diff_sq_q_acc <= rx_dc_diff_sq_q_acc + batch_obs_q_sq_pipe_out;
+                        end
+
+                        if (square_pipes_empty) begin
+                            state <= ST_FINALIZE;
                         end
                     end
                 end
