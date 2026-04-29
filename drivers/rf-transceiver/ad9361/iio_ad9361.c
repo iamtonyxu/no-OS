@@ -6,41 +6,31 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <sys/types.h>
 #include <inttypes.h>
@@ -51,10 +41,6 @@
 #include "ad9361_api.h"
 #include "no_os_util.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /**
  * Calibration modes.
@@ -87,10 +73,6 @@ static const char * const ad9361_agc_modes[] =
  * State machine modes.
  */
 extern const char *ad9361_ensm_states[12];
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * @brief get_rf_port_select().
@@ -185,7 +167,7 @@ static int get_rssi(void *device, char *buf, uint32_t len,
 					       rssi_db_x_1000 / 1000, rssi_db_x_1000 % 1000);
 	} else {
 		struct rf_rssi rssi = {0};
-		ret = ad9361_get_rx_rssi (ad9361_phy, channel->ch_num, &rssi);
+		ret = ad9361_get_rx_rssi(ad9361_phy, channel->ch_num, &rssi);
 		return ret < 0 ? ret : sprintf(buf, "%"PRIu32".%02"PRIu32" dB",
 					       rssi.symbol / rssi.multiplier, rssi.symbol % rssi.multiplier);
 	}
@@ -305,9 +287,9 @@ static int get_filter_fir_en(void *device, char *buf, uint32_t len,
 	int ret;
 
 	if (channel->ch_out)
-		ret = ad9361_get_tx_fir_en_dis (ad9361_phy, &en_dis);
+		ret = ad9361_get_tx_fir_en_dis(ad9361_phy, &en_dis);
 	else
-		ret = ad9361_get_rx_fir_en_dis (ad9361_phy, &en_dis);
+		ret = ad9361_get_rx_fir_en_dis(ad9361_phy, &en_dis);
 	if (ret < 0)
 		return ret;
 
@@ -328,7 +310,7 @@ static int get_sampling_frequency(void *device, char *buf, uint32_t len,
 {
 	struct ad9361_rf_phy *ad9361_phy = (struct ad9361_rf_phy *)device;
 	uint32_t sampling_freq_hz;
-	int ret = ad9361_get_rx_sampling_freq (ad9361_phy, &sampling_freq_hz);
+	int ret = ad9361_get_rx_sampling_freq(ad9361_phy, &sampling_freq_hz);
 
 	if (ret < 0)
 		return ret;
@@ -666,10 +648,10 @@ static int get_voltage_filter_fir_en(void *device, char *buf, uint32_t len,
 	uint8_t en_dis_tx, en_dis_rx;
 	int ret;
 
-	ret = ad9361_get_tx_fir_en_dis (ad9361_phy, &en_dis_tx);
+	ret = ad9361_get_tx_fir_en_dis(ad9361_phy, &en_dis_tx);
 	if (ret < 0)
 		return ret;
-	ret = ad9361_get_rx_fir_en_dis (ad9361_phy, &en_dis_rx);
+	ret = ad9361_get_rx_fir_en_dis(ad9361_phy, &en_dis_rx);
 	if (ret < 0)
 		return ret;
 
@@ -973,7 +955,7 @@ static int set_sampling_frequency(void *device, char *buf, uint32_t len,
 {
 	struct ad9361_rf_phy *ad9361_phy = (struct ad9361_rf_phy *)device;
 	uint32_t sampling_freq_hz = no_os_str_to_uint32(buf);
-	int ret = ad9361_set_rx_sampling_freq (ad9361_phy, sampling_freq_hz);
+	int ret = ad9361_set_rx_sampling_freq(ad9361_phy, sampling_freq_hz);
 
 	if (ret < 0)
 		return ret;
@@ -1039,9 +1021,9 @@ static int set_filter_fir_en(void *device, char *buf, uint32_t len,
 		return en_dis;
 	en_dis = en_dis ? 1 : 0;
 	if (channel->ch_out)
-		ret = ad9361_set_tx_fir_en_dis (ad9361_phy, en_dis);
+		ret = ad9361_set_tx_fir_en_dis(ad9361_phy, en_dis);
 	else
-		ret = ad9361_set_rx_fir_en_dis (ad9361_phy, en_dis);
+		ret = ad9361_set_rx_fir_en_dis(ad9361_phy, en_dis);
 
 	if (ret < 0)
 		return ret;
@@ -1240,12 +1222,12 @@ static int set_frequency(void *device, char *buf, uint32_t len,
 
 	switch (channel->ch_num) {
 	case 0:
-		ret = no_os_clk_set_rate(ad9361_phy, ad9361_phy->ref_clk_scale[RX_RFPLL],
-					 ad9361_to_clk(lo_freq_hz));
+		ret = clk_set_rate(ad9361_phy, ad9361_phy->ref_clk_scale[RX_RFPLL],
+				   ad9361_to_clk(lo_freq_hz));
 		break;
 	case 1:
-		ret = no_os_clk_set_rate(ad9361_phy, ad9361_phy->ref_clk_scale[TX_RFPLL],
-					 ad9361_to_clk(lo_freq_hz));
+		ret = clk_set_rate(ad9361_phy, ad9361_phy->ref_clk_scale[TX_RFPLL],
+				   ad9361_to_clk(lo_freq_hz));
 		break;
 	default:
 		ret = -EINVAL;
@@ -1319,10 +1301,10 @@ static int set_voltage_filter_fir_en(void *device, char *buf, uint32_t len,
 	int8_t en_dis = no_os_str_to_int32(buf) ? 1 : 0;
 	int ret;
 
-	ret = ad9361_set_tx_fir_en_dis (ad9361_phy, en_dis);
+	ret = ad9361_set_tx_fir_en_dis(ad9361_phy, en_dis);
 	if (ret < 0)
 		return ret;
-	ret = ad9361_set_rx_fir_en_dis (ad9361_phy, en_dis);
+	ret = ad9361_set_rx_fir_en_dis(ad9361_phy, en_dis);
 	if (ret < 0)
 		return ret;
 
@@ -1386,7 +1368,7 @@ static int get_trx_rate_governor(void *device, char *buf, uint32_t len,
 {
 	struct ad9361_rf_phy *ad9361_phy = (struct ad9361_rf_phy *)device;
 	uint32_t rate_governor;
-	int ret = ad9361_get_trx_rate_gov (ad9361_phy, &rate_governor);
+	int ret = ad9361_get_trx_rate_gov(ad9361_phy, &rate_governor);
 
 	if (ret < 0)
 		return ret;
@@ -1678,9 +1660,9 @@ static int set_trx_rate_governor(void *device, char *buf, uint32_t len,
 	int ret = 0;
 
 	if (!strcmp(buf, "nominal"))
-		ad9361_set_trx_rate_gov (ad9361_phy, 1);
+		ad9361_set_trx_rate_gov(ad9361_phy, 1);
 	else if (!strcmp(buf, "highest_osr"))
-		ad9361_set_trx_rate_gov (ad9361_phy, 0);
+		ad9361_set_trx_rate_gov(ad9361_phy, 0);
 	else
 		ret =  -ENOENT;
 
@@ -1758,9 +1740,9 @@ static int set_calib_mode(void *device, char *buf, uint32_t len,
 	val = 0;
 
 	if (!strcmp(buf, "auto")) {
-		ret = ad9361_set_tx_auto_cal_en_dis (ad9361_phy, 1);
+		ret = ad9361_set_tx_auto_cal_en_dis(ad9361_phy, 1);
 	} else if (!strcmp(buf, "manual")) {
-		ad9361_set_tx_auto_cal_en_dis (ad9361_phy, 0);
+		ad9361_set_tx_auto_cal_en_dis(ad9361_phy, 0);
 	} else if (!strncmp(buf, "tx_quad", 7)) {
 		ret = sscanf(buf, "tx_quad %"PRIi32, &arg);
 		if (ret != 1)

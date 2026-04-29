@@ -1,10 +1,9 @@
-Evaluating AD7616 on SDP-K1
-===========================
+AD7616 no-OS Example Project on SDP-K1
+======================================
 
-Contents
---------
+.. no-os-doxygen::
 
-.. contents:: Table of Contents
+.. contents::
     :depth: 3
 
 Supported Evaluation Boards

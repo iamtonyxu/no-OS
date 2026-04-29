@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0
 /**
 * Copyright 2015 - 2023 Analog Devices Inc.
 * Released under the ADRV9025 API license, for more information.
 * see the "LICENSE.txt" file in this zip file.
 */
 
-#include "stream_image_6E3E00EFB74FE7D465FA88A171B81B8F.h"
+#include "ADRV9025_stream_image.h"
 #include "ActiveUtilInit_profile.h"
 #include "ActiveUseCase_profile.h"
 #include "ADRV9025_TxAttenTable.h"
@@ -584,45 +583,6 @@ int32_t no_os_image_page_get(void *devHalCfg, const char *ImagePath,
 	return ADI_COMMON_ERR_OK;
 }
 
-int32_t no_os_rx_gain_table_entry_get(void *devHalCfg,
-				      const char *rxGainTablePath,
-				      uint16_t lineCount, uint8_t *gainIndex, uint8_t *rxFeGain,
-				      uint8_t *tiaControl, uint8_t *adcControl, uint8_t *extControl,
-				      uint16_t *phaseOffset, int16_t *digGain)
-{
-	if (!strcmp(rxGainTablePath, "ADRV9025_RxGainTable.csv")) {
-		if (lineCount > sizeof(ADRV9025_RxGainTable) / sizeof(struct
-				ADRV9025_RxGainTableEntry))
-			return -EINVAL;
-
-		*gainIndex = ADRV9025_RxGainTable[lineCount].gainIndex;
-		*rxFeGain = ADRV9025_RxGainTable[lineCount].rxFeGain;
-		*tiaControl = ADRV9025_RxGainTable[lineCount].tiaControl;
-		*adcControl = ADRV9025_RxGainTable[lineCount].adcControl;
-		*extControl = ADRV9025_RxGainTable[lineCount].extControl;
-		*phaseOffset = ADRV9025_RxGainTable[lineCount].phaseOffset;
-		*digGain = ADRV9025_RxGainTable[lineCount].digGain;
-	} else
-		return -EINVAL;
-
-	return 7; /* return the number of filled elements (emulate sscanf return value) */
-}
-
-int32_t no_os_tx_atten_table_entry_get(void *devHalCfg,
-				       const char *txAttenTablePath, uint16_t lineCount, uint16_t *attenIndex,
-				       uint8_t *txAttenHp, uint16_t *txAttenMult)
-{
-	if (lineCount > sizeof(ADRV9025_TxAttenTable) / sizeof(struct
-			ADRV9025_TxAttenTableEntry))
-		return -EINVAL;
-
-	*attenIndex = ADRV9025_TxAttenTable[lineCount].attenIndex;
-	*txAttenHp = ADRV9025_TxAttenTable[lineCount].txAttenHp;
-	*txAttenMult = ADRV9025_TxAttenTable[lineCount].txAttenMult;
-
-	return 3; /* return the number of filled elements (emulate sscanf return value) */
-}
-
 /*
  * Function pointer assignment for default configuration
  */
@@ -687,17 +647,8 @@ int32_t (*adi_hal_ArmImagePageGet)(void *devHalCfg, const char *ImagePath,
 				   uint32_t pageIndex, uint32_t pageSize, uint8_t *rdBuff) = no_os_image_page_get;
 int32_t (*adi_hal_StreamImagePageGet)(void *devHalCfg, const char *ImagePath,
 				      uint32_t pageIndex, uint32_t pageSize, uint8_t *rdBuff) = no_os_image_page_get;
-int32_t (*adi_hal_RxGainTableEntryGet)(void *devHalCfg,
-				       const char *rxGainTablePath, uint16_t lineCount, uint8_t *gainIndex,
-				       uint8_t *rxFeGain,
-				       uint8_t *tiaControl, uint8_t *adcControl, uint8_t *extControl,
-				       uint16_t *phaseOffset, int16_t *digGain) = no_os_rx_gain_table_entry_get;
-int32_t (*adi_hal_TxAttenTableEntryGet)(void *devHalCfg,
-					const char *txAttenTablePath, uint16_t lineCount, uint16_t *attenIndex,
-					uint8_t *txAttenHp,
-					uint16_t *txAttenMult) = no_os_tx_atten_table_entry_get;
 
-long int ftell (FILE *stream)
+long int ftell(FILE *stream)
 {
 	return profile.ptr - profile.start;
 }
@@ -709,14 +660,15 @@ FILE* __fopen(const char * filename, const char *mode)
 	char *temp;
 
 	if (!strcmp(filename, "ActiveUseCase.profile")) {
-		temp = (char *)no_os_malloc((strlen(json_profile_active_use_case)+1)*sizeof(
+		temp = (char *)no_os_malloc((strlen(json_profile_active_use_case) + 1) * sizeof(
 						    char));
 		strcpy(temp, json_profile_active_use_case);
 		profile.data = temp;
 		profile.start = profile.ptr = profile.data;
 		profile.end = profile.start + strlen(profile.data);
 	} else if (!strcmp(filename, "ActiveUtilInit.profile")) {
-		temp = (char *)no_os_malloc((strlen(json_profile_active_util_init)+1)*sizeof(
+		temp = (char *)no_os_malloc((strlen(json_profile_active_util_init) + 1) *
+					    sizeof(
 						    char));
 		strcpy(temp, json_profile_active_util_init);
 		profile.data = temp;

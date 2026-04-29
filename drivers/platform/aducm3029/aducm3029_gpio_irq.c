@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <errno.h>
 #include <drivers/gpio/adi_gpio.h>
@@ -56,10 +46,6 @@
 #include "no_os_util.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
-
 /**
  * @brief Call the user defined callback when a read/write operation completed.
  * @param ctx:		ADuCM3029 specific descriptor for the GPIO device
@@ -75,7 +61,7 @@ static void aducm_gpio_callback(void *ctx, uint32_t event, void *pins)
 	uint16_t *pinints = pins;
 
 	while (*pinints) {
-		key.irq_id = no_os_find_first_set_bit((uint32_t)*pinints);
+		key.irq_id = no_os_find_first_set_bit((uint32_t) * pinints);
 		if (key.irq_id == 32)
 			break;
 		*pinints &= ~NO_OS_BIT(key.irq_id);
@@ -398,7 +384,7 @@ static int aducm_gpio_irq_enable(struct no_os_irq_ctrl_desc *desc,
 		return -EINVAL;
 
 	if (desc->irq_ctrl_id == ADUCM_XINT_SOFT_CTRL) {
-		if(irq_id > ADI_XINT_EVENT_INT3)
+		if (irq_id > ADI_XINT_EVENT_INT3)
 			return -EINVAL;
 
 		ret = no_os_list_read_find(extra->actions, (void **)&action,
@@ -406,7 +392,7 @@ static int aducm_gpio_irq_enable(struct no_os_irq_ctrl_desc *desc,
 		if (ret)
 			return -ENODEV;
 
-		switch(action->trig_lv) {
+		switch (action->trig_lv) {
 		case NO_OS_IRQ_LEVEL_LOW:
 			return adi_xint_EnableIRQ(irq_id, ADI_XINT_IRQ_LOW_LEVEL);
 		case NO_OS_IRQ_LEVEL_HIGH:
@@ -445,7 +431,7 @@ static int aducm_gpio_irq_disable(struct no_os_irq_ctrl_desc *desc,
 		return -EINVAL;
 
 	if (desc->irq_ctrl_id == ADUCM_XINT_SOFT_CTRL) {
-		if(irq_id > ADI_XINT_EVENT_INT3)
+		if (irq_id > ADI_XINT_EVENT_INT3)
 			return -EINVAL;
 		return adi_xint_DisableIRQ(irq_id);
 	}
@@ -512,7 +498,7 @@ static int aducm_gpio_irq_set_priority(struct no_os_irq_ctrl_desc *desc,
 	switch (desc->irq_ctrl_id) {
 	case ADUCM_XINT_SOFT_CTRL:
 		/* available values for irq-id are 0-3 equivalent to ADI_XINT_EVENT_INT0-ADI_XINT_EVENT_INT3 */
-		switch(irq_id) {
+		switch (irq_id) {
 		case ADI_XINT_EVENT_INT0:
 			NVIC_SetPriority(XINT_EVT0_IRQn, priority_level);
 			break;

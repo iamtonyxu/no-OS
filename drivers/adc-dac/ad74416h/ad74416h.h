@@ -5,52 +5,38 @@
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef _AD74416H_H
 #define _AD74416H_H
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include "stdint.h"
 #include "stdbool.h"
 #include "no_os_spi.h"
 #include "no_os_gpio.h"
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 #define AD74416H_N_CHANNELS             4
 
@@ -133,7 +119,7 @@
 #define AD74416H_CH_FUNC_SETUP_MSK		NO_OS_GENMASK(3, 0)
 
 /* AD74416H_ADC_CONFIG */
-#define AD74416H_ADC_CONV_RATE_MSK		NO_OS_GENMASK(10, 8)
+#define AD74416H_ADC_CONV_RATE_MSK		NO_OS_GENMASK(11, 8)
 #define AD74416H_ADC_CONV_RANGE_MSK		NO_OS_GENMASK(6, 4)
 #define AD74416H_CONV_MUX_MSK			NO_OS_GENMASK(2, 0)
 
@@ -158,6 +144,8 @@
 #define AD74416H_ALARM_DEG_PERIOD_MSK		NO_OS_BIT(12)
 #define AD74VOUT_4W_EN_MSK			NO_OS_BIT(11)
 #define AD74416H_WAIT_LDAC_CMD_MSK		NO_OS_BIT(10)
+#define AD74416H_VIOUT_DRV_EN_DLY		NO_OS_BIT(9)
+#define AD74416H_HART_COMPL_SETTLED		NO_OS_BIT(8)
 #define AD74416H_VOUT_RANGE_MSK			NO_OS_BIT(7)
 #define AD74416H_SLEW_EN_MSK			NO_OS_GENMASK(6, 5)
 #define AD74416H_SLEW_LIN_STEP_MSK		NO_OS_GENMASK(4, 3)
@@ -193,8 +181,8 @@
 #define AD74416H_DAC_ACTIVE_MSK			NO_OS_GENMASK(15, 0)
 
 /** ADC_CONV_CTRL Register */
-#define AD74416H_ADC_RDY_CTRL_MSK		NO_OS_BIT(12)
-#define AD74416H_CONV_RATE_DIAG_MSK		NO_OS_GENMASK(11, 10)
+#define AD74416H_ADC_RDY_CTRL_MSK		NO_OS_BIT(13)
+#define AD74416H_CONV_RATE_DIAG_MSK		NO_OS_GENMASK(12, 10)
 #define AD74416H_CONV_SEQ_MSK			NO_OS_GENMASK(9, 8)
 #define AD74416H_DIAG_EN_MSK(x)			(NO_OS_BIT(x) << 4)
 #define AD74416H_CH_EN_MSK(x)			NO_OS_BIT(x)
@@ -248,7 +236,6 @@
 #define AD74416H_TEMP_ALERT_MSK			NO_OS_BIT(4)
 #define AD74416H_SPI_ERR_MSK			NO_OS_BIT(3)
 #define AD74416H_SUPPLY_ERR_MSK			NO_OS_BIT(2)
-#define AD74416H_WDT_RESET_OCCURRED_MSK		NO_OS_BIT(1)
 #define AD74416H_RESET_OCCURRED_MSK		NO_OS_BIT(0)
 
 /** LIVE_STATUS Register */
@@ -304,6 +291,7 @@
 #define AD74416H_CAL_MEM_ERR_MSK		NO_OS_BIT(0)
 
 /* AD74416H CHANNEL_ALERT_STATUS Register */
+#define AD74416H_VIOUT_SHUTDOWN_MSK		NO_OS_BIT(6)
 #define AD74416H_ANALOG_IO_OC_MSK		NO_OS_BIT(5)
 #define AD74416H_ANALOG_IO_SC_MSK		NO_OS_BIT(4)
 #define AD74416H_DO_TIMEOUT_MSK			NO_OS_BIT(3)
@@ -369,8 +357,8 @@
 #define AD74416H_TDR_MSK			NO_OS_GENMASK(7, 0)
 
 /* AD74416H HART_FCRn Register */
-#define AD74416H_TFTRIG_MSK			NO_OS_GENMASK(11, 8)
-#define AD74416H_RFTRIG_MSK			NO_OS_GENMASK(6, 3)
+#define AD74416H_TFTRIG_MSK			NO_OS_GENMASK(12, 8)
+#define AD74416H_RFTRIG_MSK			NO_OS_GENMASK(7, 3)
 #define AD74416H_TFCLR_MSK			NO_OS_BIT(2)
 #define AD74416H_RFCLR_MSK			NO_OS_BIT(1)
 #define AD74416H_FIFOEN_MSK			NO_OS_BIT(0)
@@ -379,10 +367,10 @@
 #define AD74416H_RTS_MSK			NO_OS_BIT(0)
 
 /* AD74416H HART_RFCn Register */
-#define AD74416H_RFC_MSK			NO_OS_GENMASK(4, 0)
+#define AD74416H_RFC_MSK			NO_OS_GENMASK(5, 0)
 
 /* AD74416H HART_TFCn Register */
-#define AD74416H_TFC_MSK			NO_OS_GENMASK(4, 0)
+#define AD74416H_TFC_MSK			NO_OS_GENMASK(5, 0)
 
 /* AD74416H HART_CONFIGn Register */
 #define AD74416H_CD_EXTD_QUAL_MSK		NO_OS_BIT(13)
@@ -427,10 +415,6 @@
 #define AD74416H_DAC_RESOLUTION			16
 #define AD74414H_DAC_RESOLUTION			14
 #define AD74116H_CONV_TIME_US			1000000
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /**
  * @brief Supported device ids.
@@ -487,13 +471,27 @@ enum ad74416h_adc_range {
  * @brief Conversion configuration values.
  */
 enum ad74416h_adc_rate {
-	AD74416H_10SPS_50_60HZ_HART_REJECTION,
-	AD74416H_20SPS_50_60HZ_REJECTION,
-	AD74416H_1K2SPS,
-	AD74416H_4K8SPS,
-	AD74416H_9K6SPS,
-	AD74416H_19K2SPS,
-	AD74416H_200SPS_HART_REJECTION,
+	AD74416H_10SPS_50_60HZ_HART_REJECTION = 0,
+	AD74416H_20SPS_50_60HZ_REJECTION = 1,
+	AD74416H_20SPS_50_60HZ_HART_REJECTION = 2,
+	AD74416H_200SPS_HART_REJECTION = 4,
+	AD74416H_200SPS_SIGN_HART_REJECTION = 6,
+	AD74416H_1K2SPS = 8,
+	AD74416H_1K2SPS_HART_REJECTION = 9,
+	AD74416H_4K8SPS = 12,
+	AD74416H_9K6SPS = 13,
+};
+
+/**
+ * @brief Diagnostics conversion configuration values.
+ */
+enum ad74416h_diag_rate {
+	AD74416H_DIAG_20SPS_50_60HZ_REJECTION,
+	AD74416H_DIAG_20SPS_50_60HZ_HART_REJECTION,
+	AD74416H_DIAG_1K2SPS_HART_REJECTION,
+	AD74416H_DIAG_4K8SPS,
+	AD74416H_DIAG_9K6SPS,
+	AD74416H_DIAG_19K2SPS,
 };
 
 /**
@@ -640,10 +638,6 @@ struct ad74416h_desc {
 	struct ad74416h_channel_config channel_configs[AD74416H_N_CHANNELS];
 	struct no_os_gpio_desc *reset_gpio;
 };
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /** Converts a millivolt value in the corresponding DAC 13 bit code */
 int ad74416h_dac_voltage_to_code(struct ad74416h_desc *, int32_t,

@@ -6,36 +6,30 @@
 ********************************************************************************
  * Copyright 2016(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef AD7616_H_
 #define AD7616_H_
@@ -49,9 +43,6 @@
 #include "clk_axi_clkgen.h"
 #endif
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 /* AD7616 CORE */
 #define AD7616_REG_PCORE_VERSION		0x400
 #define AD7616_REG_ID					0x404
@@ -114,9 +105,6 @@
 /* AD7616_REG_PWM */
 #define AD7616_TRIGGER_PULSE_WIDTH_NS	        50
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 enum ad7616_mode {
 	AD7616_SW,
 	AD7616_HW,
@@ -246,9 +234,6 @@ struct ad7616_sequencer_layer {
 	enum ad7616_ch ch_b;
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /* SPI read from device. */
 int32_t ad7616_read(struct ad7616_dev *dev,
 		    uint8_t reg_addr,

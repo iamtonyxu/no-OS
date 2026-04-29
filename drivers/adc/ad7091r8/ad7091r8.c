@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2024(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include <stdlib.h>
@@ -180,8 +174,19 @@ int ad7091r8_spi_write_mask(struct ad7091r8_dev *dev,
 int ad7091r8_set_sleep_mode(struct ad7091r8_dev *dev,
 			    enum ad7091r8_sleep_mode mode)
 {
-	return ad7091r8_spi_write_mask(dev, AD7091R8_REG_CONF,
-				       REG_CONF_SLEEP_MODE_MASK, mode);
+	int ret;
+
+	if (!dev)
+		return -EINVAL;
+
+	ret = ad7091r8_spi_write_mask(dev, AD7091R8_REG_CONF,
+				      REG_CONF_SLEEP_MODE_MASK, mode);
+	if (ret)
+		return ret;
+
+	dev->sleep_mode = mode;
+
+	return 0;
 }
 
 /**
@@ -200,11 +205,11 @@ int ad7091r8_set_port(struct ad7091r8_dev *dev, enum ad7091r8_port port,
 	switch (port) {
 	case AD7091R8_GPO0:
 		mask = REG_CONF_GPO0_MASK;
-		val = no_os_field_get(REG_CONF_GPO0_MASK, value);
+		val = no_os_field_prep(REG_CONF_GPO0_MASK, value);
 		break;
 	case AD7091R8_GPO1:
 		mask = REG_CONF_GPO1_MASK;
-		val = no_os_field_get(REG_CONF_GPO1_MASK, value);
+		val = no_os_field_prep(REG_CONF_GPO1_MASK, value);
 		break;
 	default:
 		return -EINVAL;
@@ -411,6 +416,11 @@ int ad7091r8_init(struct ad7091r8_dev **device,
 	if (ret)
 		goto err_release_reset;
 
+	/* Set device sleep-mode */
+	ret = ad7091r8_set_sleep_mode(dev, init_param->sleep_mode);
+	if (ret)
+		goto err_release_reset;
+
 	/* Use external vref or enable internal vref */
 	dev->vref_mv = init_param->vref_mv;
 	if (!dev->vref_mv) {
@@ -420,7 +430,6 @@ int ad7091r8_init(struct ad7091r8_dev **device,
 			goto err_release_reset;
 	}
 
-	/* Device powers-up in normal mode */
 	*device = dev;
 
 	return 0;

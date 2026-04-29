@@ -1,11 +1,9 @@
-Evaluating the ADIS1657X Family
-===============================
+ADIS1657X Family no-OS Example Project
+======================================
 
+.. no-os-doxygen::
 
-Contents
---------
-
-.. contents:: Table of Contents
+.. contents::
     :depth: 3
 
 Supported Evaluation Boards

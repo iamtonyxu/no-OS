@@ -6,41 +6,31 @@
 ********************************************************************************
 * Copyright 2015-2019, 2023(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdbool.h>
 #include "ad7124.h"
@@ -473,7 +463,6 @@ uint8_t ad7124_compute_crc8(uint8_t * p_buf, uint8_t buf_size)
 /***************************************************************************//**
  * @brief Updates the CRC settings.
  * @param dev - The handler of the instance of the driver.
- * @return None.
 *******************************************************************************/
 void ad7124_update_crcsetting(struct ad7124_dev *dev)
 {
@@ -494,7 +483,6 @@ void ad7124_update_crcsetting(struct ad7124_dev *dev)
 /***************************************************************************//**
  * @brief Updates the device SPI interface settings.
  * @param dev - The handler of the instance of the driver.
- * @return None.
 *******************************************************************************/
 void ad7124_update_dev_spi_settings(struct ad7124_dev *dev)
 {
@@ -753,15 +741,16 @@ int ad7124_set_channel_status(struct ad7124_dev *device,
 			      bool channel_status)
 {
 	int ret;
+	uint16_t status;
 
 	if (channel_status)
-		channel_status = AD7124_CH_MAP_REG_CH_ENABLE;
+		status = AD7124_CH_MAP_REG_CH_ENABLE;
 	else
-		channel_status = 0x0U;
+		status = 0x0U;
 
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CH0_MAP_REG+chn_num,
-				   channel_status,
+				   AD7124_CH0_MAP_REG + chn_num,
+				   status,
 				   AD7124_CH_MAP_REG_CH_ENABLE);
 	if (ret)
 		return ret;
@@ -786,7 +775,7 @@ int ad7124_connect_analog_input(struct ad7124_dev *device,
 
 	/* Select the Positive Analog Input */
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CH0_MAP_REG+chn_num,
+				   AD7124_CH0_MAP_REG + chn_num,
 				   no_os_field_prep(AD7124_CHMAP_REG_AINPOS_MSK, analog_input.ainp),
 				   AD7124_CHMAP_REG_AINPOS_MSK);
 	if (ret)
@@ -794,7 +783,7 @@ int ad7124_connect_analog_input(struct ad7124_dev *device,
 
 	/* Select the Negative Analog Input */
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CH0_MAP_REG+chn_num,
+				   AD7124_CH0_MAP_REG + chn_num,
 				   no_os_field_prep(AD7124_CHMAP_REG_AINNEG_MSK, analog_input.ainm),
 				   AD7124_CHMAP_REG_AINNEG_MSK);
 	if (ret)
@@ -823,7 +812,7 @@ int ad7124_assign_setup(struct ad7124_dev *device,
 
 	/* Assign setup to the Channel Register. */
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CH0_MAP_REG+chn_num,
+				   AD7124_CH0_MAP_REG + chn_num,
 				   no_os_field_prep(AD7124_CHMAP_REG_SETUP_SEL_MSK, setup),
 				   AD7124_CHMAP_REG_SETUP_SEL_MSK);
 	if (ret)
@@ -855,13 +844,39 @@ int ad7124_set_polarity(struct ad7124_dev* device,
 		reg_data = 0x0U;
 
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CFG0_REG+setup_id,
+				   AD7124_CFG0_REG + setup_id,
 				   reg_data,
 				   AD7124_CFG_REG_BIPOLAR);
 	if (ret)
 		return ret;
 
 	device->setups[setup_id].bi_unipolar = bipolar;
+
+	return 0;
+}
+
+/***************************************************************************//**
+ * @brief Set the Magnitude of the Burnout Detect Current Source
+ * @param device - AD7124 Device Descriptor.
+ * @param burnout - Burnout current.
+ * @param setup_id - Setup ID (number).
+ * @return Returns 0 for success or negative error code otherwise.
+*****************************************************************************/
+int ad7124_set_burnout(struct ad7124_dev* device,
+		       enum ad7124_burnout burnout,
+		       uint8_t setup_id)
+{
+	int ret;
+
+	ret = ad7124_reg_write_msk(device,
+				   AD7124_CFG0_REG + setup_id,
+				   no_os_field_prep(AD7124_SETUP_CONF_REG_BURNOUT_MSK, burnout),
+				   AD7124_SETUP_CONF_REG_BURNOUT_MSK);
+
+	if (ret)
+		return ret;
+
+	device->setups[setup_id].burnout = burnout;
 
 	return 0;
 }
@@ -879,12 +894,13 @@ int ad7124_set_reference_source(struct ad7124_dev* device,
 				bool ref_en)
 {
 	int ret;
+	uint16_t status;
 
 	if (!device || ref_source >= MAX_REF_SOURCES)
 		return -EINVAL;
 
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CFG0_REG+setup_id,
+				   AD7124_CFG0_REG + setup_id,
 				   no_os_field_prep(AD7124_SETUP_CONF_REG_REF_SEL_MSK, ref_source),
 				   AD7124_SETUP_CONF_REG_REF_SEL_MSK);
 	if (ret)
@@ -893,15 +909,15 @@ int ad7124_set_reference_source(struct ad7124_dev* device,
 	device->setups[setup_id].ref_source = ref_source;
 
 	if (ref_en)
-		ref_en = AD7124_ADC_CTRL_REG_REF_EN;
+		status = AD7124_ADC_CTRL_REG_REF_EN;
 	else
-		ref_en = 0x0U;
+		status = 0x0U;
 
 	/* Enable the REF_EN Bit in case of Internal reference */
 	if (ref_source == INTERNAL_REF) {
 		ret = ad7124_reg_write_msk(device,
 					   AD7124_ADC_CTRL_REG,
-					   ref_en,
+					   status,
 					   AD7124_ADC_CTRL_REG_REF_EN);
 		if (ret)
 			return ret;
@@ -936,7 +952,7 @@ int ad7124_enable_buffers(struct ad7124_dev* device,
 		reg_val =  0;
 
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CFG0_REG+setup_id,
+				   AD7124_CFG0_REG + setup_id,
 				   reg_val,
 				   AD7124_AIN_BUF_MSK);
 	if (ret)
@@ -950,7 +966,7 @@ int ad7124_enable_buffers(struct ad7124_dev* device,
 		reg_val = 0;
 
 	ret = ad7124_reg_write_msk(device,
-				   AD7124_CFG0_REG+setup_id,
+				   AD7124_CFG0_REG + setup_id,
 				   reg_val,
 				   AD7124_REF_BUF_MSK);
 	if (ret)
@@ -958,6 +974,55 @@ int ad7124_enable_buffers(struct ad7124_dev* device,
 
 	device->setups[setup_id].ain_buff = inbuf_en;
 	device->setups[setup_id].ref_buff = refbuf_en;
+
+	return 0;
+}
+
+/***************************************************************************//**
+ * @brief Select the PGA Gain.
+ * @param device - AD7124 Device Descriptor.
+ * @param pga - PGA gain.
+ * @param setup_id - Setup ID (Number).
+ * @return Returns 0 for success or negative error code otherwise.
+******************************************************************************/
+int ad7124_set_pga(struct ad7124_dev* device,
+		   enum ad7124_pga pga,
+		   uint8_t setup_id)
+{
+	int ret;
+
+	ret = ad7124_reg_write_msk(device,
+				   AD7124_CFG0_REG + setup_id,
+				   no_os_field_prep(AD7124_SETUP_CONF_REG_PGA_MSK, pga),
+				   AD7124_SETUP_CONF_REG_PGA_MSK);
+
+	if (ret)
+		return ret;
+
+	device->setups[setup_id].pga = pga;
+
+	return 0;
+}
+
+/***************************************************************************//**
+ * @brief Select the Power Mode.
+ * @param device - AD7124 Device Descriptor.
+ * @param mode - ADC Power Mode.
+ * @return Returns 0 for success or negative error code otherwise.
+******************************************************************************/
+int ad7124_set_power_mode(struct ad7124_dev *device,
+			  enum ad7124_power_mode mode)
+{
+	int ret;
+
+	ret = ad7124_reg_write_msk(device,
+				   AD7124_ADC_CTRL_REG,
+				   no_os_field_prep(AD7124_POWER_MODE_MSK, mode),
+				   AD7124_POWER_MODE_MSK);
+	if (ret)
+		return ret;
+
+	device->power_mode = mode;
 
 	return 0;
 }
@@ -1007,24 +1072,47 @@ int32_t ad7124_setup(struct ad7124_dev **device,
 	ad7124_update_dev_spi_settings(dev);
 
 	dev->active_device = init_param->active_device;
-	dev->power_mode = init_param->power_mode;
 
 	/* Read ID register to identify the part. */
 	ret = ad7124_read_register(dev, &dev->regs[AD7124_ID_REG]);
 	if (ret)
 		goto error_spi;
+
 	if (dev->active_device == ID_AD7124_4) {
-		if (!(dev->regs[AD7124_ID_REG].value = AD7124_4_ID))
+		switch (dev->regs[AD7124_ID_REG].value) {
+		case AD7124_4_STD_ID:
+		case AD7124_4_B_GRADE_ID:
+		case AD7124_4_NEW_ID:
+			break;
+
+		default:
 			goto error_spi;
-	} else if (dev->active_device == ID_AD7124_8) {
-		if (!(dev->regs[AD7124_ID_REG].value = AD7124_8_ID))
+		}
+	}
+
+	else if (dev->active_device == ID_AD7124_8) {
+		switch (dev->regs[AD7124_ID_REG].value) {
+		case AD7124_8_STD_ID:
+		case AD7124_8_B_W_GRADE_ID:
+		case AD7124_8_NEW_ID:
+			break;
+
+		default:
 			goto error_spi;
+		}
 	}
 
 	for (setup_index = 0; setup_index < AD7124_MAX_SETUPS; setup_index++) {
 		ret = ad7124_set_polarity(dev,
 					  init_param->setups[setup_index].bi_unipolar,
 					  setup_index);
+		if (ret)
+			goto error_spi;
+
+		ret = ad7124_set_burnout(dev,
+					 init_param->setups[setup_index].burnout,
+					 setup_index);
+
 		if (ret)
 			goto error_spi;
 
@@ -1041,9 +1129,21 @@ int32_t ad7124_setup(struct ad7124_dev **device,
 					    setup_index);
 		if (ret)
 			goto error_spi;
+
+		ret = ad7124_set_pga(dev,
+				     init_param->setups[setup_index].pga,
+				     setup_index);
+
+		if (ret)
+			goto error_spi;
 	}
 
 	ret = ad7124_set_adc_mode(dev, init_param->mode);
+	if (ret)
+		goto error_spi;
+
+	ret = ad7124_set_power_mode(dev,
+				    init_param->power_mode);
 	if (ret)
 		goto error_spi;
 

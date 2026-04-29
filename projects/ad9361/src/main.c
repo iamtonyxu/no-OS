@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <inttypes.h>
 #include "app_config.h"
 #include "ad9361_api.h"
@@ -101,15 +92,11 @@ char file_name[32] = "TEST0.BIN";
 #include <string.h>
 #endif
 
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
-
 #if defined(DMA_EXAMPLE) || defined(IIO_SUPPORT)
-uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
+uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__((aligned(1024)));
 #endif
-uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((
-			aligned));
+uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((
+			aligned(1024)));
 
 #define AD9361_ADC_DAC_BYTES_PER_SAMPLE 2
 
@@ -597,6 +584,13 @@ int main(void)
 		tx_dac_init.rate = 1;
 		rx_adc_init.num_channels = 2;
 		rx_adc_init.num_slave_channels = 0;
+	} else {
+		if (!default_init_param.two_rx_two_tx_mode_enable) {
+			tx_dac_init.num_channels = 2;
+			tx_dac_init.rate = 1;
+			rx_adc_init.num_channels = 2;
+			rx_adc_init.num_slave_channels = 0;
+		}
 	}
 	if (AD9363A_DEVICE)
 		default_init_param.dev_sel = ID_AD9363A;
@@ -756,7 +750,7 @@ int main(void)
 	struct no_os_irq_ctrl_desc *irq_desc;
 
 	status = no_os_irq_ctrl_init(&irq_desc, &irq_init_param);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_global_enable(irq_desc);
@@ -770,16 +764,16 @@ int main(void)
 
 	status = no_os_irq_register_callback(irq_desc,
 					     AD9361_ADC_DMA_IRQ_INTR, &rx_dmac_callback);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_trigger_level_set(irq_desc,
 					     AD9361_ADC_DMA_IRQ_INTR, NO_OS_IRQ_LEVEL_HIGH);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_enable(irq_desc, AD9361_ADC_DMA_IRQ_INTR);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	samples = 2048;
@@ -798,11 +792,11 @@ int main(void)
 
 	status = no_os_irq_register_callback(irq_desc,
 					     AD9361_DAC_DMA_IRQ_INTR, &tx_dmac_callback);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	status = no_os_irq_enable(irq_desc, AD9361_DAC_DMA_IRQ_INTR);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #endif
 
@@ -835,7 +829,7 @@ int main(void)
 
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #else
 
@@ -844,7 +838,7 @@ int main(void)
 
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status < 0)
+	if (status < 0)
 		return status;
 #endif
 #ifdef XILINX_PLATFORM
@@ -867,11 +861,349 @@ int main(void)
 #endif
 #endif
 
+#ifdef IIO_SUPPORT
+#ifdef SYSID_BASEADDR
+	struct axi_sysid *sysid_core;
+	char *name = NULL;
+	struct axi_sysid_init_param sysid_init = {
+		.base = SYSID_BASEADDR,
+	};
+#endif
+
+	/**
+	 * iio application configurations.
+	 */
+	struct xil_uart_init_param platform_uart_init_par = {
+#ifdef XPAR_XUARTLITE_NUM_INSTANCES
+		.type = UART_PL,
+#else
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+#endif
+	};
+
+	struct no_os_uart_init_param iio_uart_ip = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+#ifdef SYSID_BASEADDR
+	status = axi_sysid_init(&sysid_core, &sysid_init);
+	if (status)
+		return status;;
+
+	name = axi_sysid_get_fpga_board(sysid_core);
+	if (!strcmp("zed", name))
+		iio_uart_ip.baud_rate = 115200;
+
+	status = axi_sysid_remove(sysid_core);
+	if (status)
+		return status;
+#endif
+
+	struct iio_app_desc *app;
+	struct iio_app_init_param app_init_param = { 0 };
+
+	/**
+	 * iio axi adc configurations.
+	 */
+	struct iio_axi_adc_init_param iio_axi_adc_init_par;
+#ifdef FMCOMMS5
+	struct iio_axi_adc_init_param iio_axi_adc_b_init_par;
+#endif
+
+	/**
+	 * iio axi dac configurations.
+	 */
+	struct iio_axi_dac_init_param iio_axi_dac_init_par;
+#ifdef FMCOMMS5
+	struct iio_axi_dac_init_param iio_axi_dac_b_init_par;
+#endif
+
+	/**
+	 * iio ad9361 configurations.
+	 */
+	struct iio_ad9361_init_param iio_ad9361_init_param;
+#ifdef FMCOMMS5
+	struct iio_ad9361_init_param iio_ad9361_b_init_param;
+#endif
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_adc_desc *iio_axi_adc_desc;
+#ifdef FMCOMMS5
+	struct iio_axi_adc_desc *iio_axi_adc_b_desc;
+#endif
+
+	/**
+	 * iio instance descriptor.
+	 */
+	struct iio_axi_dac_desc *iio_axi_dac_desc;
+#ifdef FMCOMMS5
+	struct iio_axi_dac_desc *iio_axi_dac_b_desc;
+#endif
+
+	/**
+	 * iio ad9361 instance descriptor.
+	 */
+	struct iio_ad9361_desc *iio_ad9361_desc;
+#ifdef FMCOMMS5
+	struct iio_ad9361_desc *iio_ad9361_b_desc;
+#endif
+
+	/**
+	 * iio devices corresponding to every device.
+	 */
+	struct iio_device *adc_dev_desc, *dac_dev_desc, *ad9361_dev_desc;
+#ifdef FMCOMMS5
+	struct iio_device *adc_b_dev_desc, *dac_b_dev_desc, *ad9361_b_dev_desc;
+#endif
+
+	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
+	if (status < 0)
+		return status;
+
+	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
+		.rx_adc = ad9361_phy->rx_adc,
+		.rx_dmac = rx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_invalidate_range = (void (*)(uint32_t,
+						     uint32_t))Xil_DCacheInvalidateRange
+#endif
+	};
+
+	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_adc_get_dev_descriptor(iio_axi_adc_desc, &adc_dev_desc);
+
+	struct iio_data_buffer read_buff = {
+		.buff = (void *)ADC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+#ifdef FMCOMMS5
+	iio_axi_adc_b_init_par = (struct iio_axi_adc_init_param) {
+		.rx_adc = ad9361_phy_b->rx_adc,
+	};
+
+	status = iio_axi_adc_init(&iio_axi_adc_b_desc, &iio_axi_adc_b_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_adc_get_dev_descriptor(iio_axi_adc_b_desc, &adc_b_dev_desc);
+#endif
+
+	iio_axi_dac_init_par = (struct iio_axi_dac_init_param) {
+		.tx_dac = ad9361_phy->tx_dac,
+		.tx_dmac = tx_dmac,
+#ifndef PLATFORM_MB
+		.dcache_flush_range = (void (*)(uint32_t, uint32_t))Xil_DCacheFlushRange,
+#endif
+	};
+
+	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_dac_get_dev_descriptor(iio_axi_dac_desc, &dac_dev_desc);
+
+	struct iio_data_buffer write_buff = {
+		.buff = (void *)DAC_DDR_BASEADDR,
+		.size = 0xFFFFFFFF,
+	};
+
+#ifdef FMCOMMS5
+	iio_axi_dac_b_init_par = (struct iio_axi_dac_init_param) {
+		.tx_dac = ad9361_phy_b->tx_dac,
+	};
+
+	status = iio_axi_dac_init(&iio_axi_dac_b_desc, &iio_axi_dac_b_init_par);
+	if (status < 0)
+		return status;
+	iio_axi_dac_get_dev_descriptor(iio_axi_dac_b_desc, &dac_b_dev_desc);
+#endif
+
+	iio_ad9361_init_param = (struct iio_ad9361_init_param) {
+		.ad9361_phy = ad9361_phy,
+	};
+
+	status = iio_ad9361_init(&iio_ad9361_desc, &iio_ad9361_init_param);
+	if (status < 0)
+		return status;
+	iio_ad9361_get_dev_descriptor(iio_ad9361_desc, &ad9361_dev_desc);
+
+#ifdef FMCOMMS5
+	iio_ad9361_b_init_param = (struct iio_ad9361_init_param) {
+		.ad9361_phy = ad9361_phy_b,
+	};
+
+	status = iio_ad9361_init(&iio_ad9361_b_desc, &iio_ad9361_b_init_param);
+	if (status < 0)
+		return status;
+	iio_ad9361_get_dev_descriptor(iio_ad9361_b_desc, &ad9361_b_dev_desc);
+#endif
+
+	struct iio_app_device devices[] = {
+		IIO_APP_DEVICE("cf-ad9361-lpc", iio_axi_adc_desc, adc_dev_desc, &read_buff, NULL, NULL),
+		IIO_APP_DEVICE("cf-ad9361-dds-core-lpc", iio_axi_dac_desc, dac_dev_desc, NULL, &write_buff, NULL),
+		IIO_APP_DEVICE("ad9361-phy", ad9361_phy, ad9361_dev_desc, NULL, NULL, NULL),
+#ifdef FMCOMMS5
+		IIO_APP_DEVICE("cf-ad9361-B", iio_axi_adc_b_desc, adc_b_dev_desc, &read_buff, NULL, NULL),
+		IIO_APP_DEVICE("cf-ad9361-dds-core-B", iio_axi_dac_b_desc, dac_b_dev_desc, NULL, &write_buff, NULL),
+		IIO_APP_DEVICE("ad9361-phy-B", ad9361_phy_b, ad9361_b_dev_desc, NULL, NULL, NULL)
+#endif
+	};
+
+	app_init_param.devices = devices;
+	app_init_param.nb_devices = NO_OS_ARRAY_SIZE(devices);
+	app_init_param.uart_init_params = iio_uart_ip;
+
+	status = iio_app_init(&app, app_init_param);
+	if (status)
+		return status;
+
+	iio_app_run(app);
+
+#endif // IIO_SUPPORT
+
 	printf("Done.\n");
 
-	while(1)
-	{
-		parse_spi_command(ad9361_phy->spi);
+#ifdef TDD_SWITCH_STATE_EXAMPLE
+	uint32_t ensm_mode;
+	struct no_os_gpio_init_param  gpio_init = {
+		.platform_ops = GPIO_OPS,
+		.extra = GPIO_PARAM
+	};
+	struct no_os_gpio_desc 	*gpio_enable_pin;
+	struct no_os_gpio_desc 	*gpio_txnrx_pin;
+	if (!ad9361_phy->pdata->fdd) {
+		if (ad9361_phy->pdata->ensm_pin_ctrl) {
+			gpio_init.number = GPIO_ENABLE_PIN;
+			status = no_os_gpio_get(&gpio_enable_pin, &gpio_init);
+			if (status != 0) {
+				printf("no_os_gpio_get() error: %"PRIi32"\n", status);
+				return status;
+			}
+			no_os_gpio_direction_output(gpio_enable_pin, 1);
+			gpio_init.number = GPIO_TXNRX_PIN;
+			status = no_os_gpio_get(&gpio_txnrx_pin, &gpio_init);
+			if (status != 0) {
+				printf("no_os_gpio_get() error: %"PRIi32"\n", status);
+				return status;
+			}
+			no_os_gpio_direction_output(gpio_txnrx_pin, 0);
+			no_os_udelay(10);
+			ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+			printf("TXNRX control - Alert: %s\n",
+			       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+			no_os_mdelay(1000);
+
+			if (ad9361_phy->pdata->ensm_pin_pulse_mode) {
+				while (1) {
+					no_os_gpio_set_value(gpio_txnrx_pin, 0);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX Pulse control - RX: %s\n",
+					       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX Pulse control - Alert: %s\n",
+					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_txnrx_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX Pulse control - TX: %s\n",
+					       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX Pulse control - Alert: %s\n",
+					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+					no_os_mdelay(1000);
+				}
+			} else {
+				while (1) {
+					no_os_gpio_set_value(gpio_txnrx_pin, 0);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX control - RX: %s\n",
+					       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					no_os_udelay(10);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX control - Alert: %s\n",
+					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_txnrx_pin, 1);
+					no_os_udelay(10);
+					no_os_gpio_set_value(gpio_enable_pin, 1);
+					no_os_udelay(10);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX control - TX: %s\n",
+					       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
+					no_os_mdelay(1000);
+
+					no_os_gpio_set_value(gpio_enable_pin, 0);
+					no_os_udelay(10);
+					ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+					printf("TXNRX control - Alert: %s\n",
+					       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+					no_os_mdelay(1000);
+				}
+			}
+		} else {
+			while (1) {
+				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_RX);
+				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+				printf("SPI control - RX: %s\n",
+				       ensm_mode == ENSM_MODE_RX ? "OK" : "Error");
+				no_os_mdelay(1000);
+
+				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_ALERT);
+				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+				printf("SPI control - Alert: %s\n",
+				       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+				no_os_mdelay(1000);
+
+				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_TX);
+				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+				printf("SPI control - TX: %s\n",
+				       ensm_mode == ENSM_MODE_TX ? "OK" : "Error");
+				no_os_mdelay(1000);
+
+				ad9361_set_en_state_machine_mode(ad9361_phy, ENSM_MODE_ALERT);
+				ad9361_get_en_state_machine_mode(ad9361_phy, &ensm_mode);
+				printf("SPI control - Alert: %s\n",
+				       ensm_mode == ENSM_MODE_ALERT ? "OK" : "Error");
+				no_os_mdelay(1000);
+			}
+		}
 	}
 
 	ad9361_remove(ad9361_phy);

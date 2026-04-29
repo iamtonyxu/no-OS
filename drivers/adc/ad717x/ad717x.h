@@ -8,52 +8,39 @@
 *******************************************************************************
 * Copyright 2015(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*****************************************************************************/
 
 #ifndef __AD717X_H__
 #define __AD717X_H__
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include "no_os_spi.h"
 #include "no_os_util.h"
 #include <stdbool.h>
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 /* Total Number of Setups in the AD717x-AD411x family */
 #define AD717x_MAX_SETUPS			8
 /* Maximum number of channels in the AD717x-AD411x family */
@@ -217,7 +204,7 @@ enum ad717x_odr {
 	sps_49 = 0x10,
 	sps_20 = 0x11,
 	sps_16 = 0x12,
-	sps_10 =0x13,
+	sps_10 = 0x13,
 	sps_5 = 0x14,
 	sps_2p5 = 0x15,
 	sps_1p25 = 0x16
@@ -316,10 +303,6 @@ typedef struct {
 	/* ADC Mode */
 	enum ad717x_mode mode;
 } ad717x_init_param;
-
-/*****************************************************************************/
-/***************** AD717X Register Definitions *******************************/
-/*****************************************************************************/
 
 /* AD717X Register Map */
 #define AD717X_COMM_REG       0x00
@@ -514,9 +497,6 @@ typedef struct {
 /* AD4116 ID */
 #define AD4116_ID_REG_VALUE   0x34D0
 
-/*****************************************************************************/
-/******************* AD717X Constants ****************************************/
-/*****************************************************************************/
 #define AD717X_CRC8_POLYNOMIAL_REPRESENTATION 0x07 /* x8 + x2 + x + 1 */
 /* Timeout for ADC Conversion */
 #define AD717X_CONV_TIMEOUT			10000
@@ -528,10 +508,6 @@ typedef struct {
 #define AD717X_ADCMODE_REG_MODE_MSK   		NO_OS_GENMASK(6,4)
 #define AD717X_SETUP_CONF_REG_REF_SEL_MSK	NO_OS_GENMASK(5,4)
 #define AD717x_ODR_MSK				NO_OS_GENMASK(4,0)
-
-/*****************************************************************************/
-/************************ Functions Declarations *****************************/
-/*****************************************************************************/
 
 /*! Retrieves a pointer to the register that matches the given address */
 ad717x_st_reg *AD717X_GetReg(ad717x_dev *device,

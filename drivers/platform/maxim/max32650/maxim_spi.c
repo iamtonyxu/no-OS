@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/************************* Include Files **************************************/
-/******************************************************************************/
 
 #include <stdlib.h>
 #include <errno.h>
@@ -61,9 +51,6 @@
 #define MAX_DELAY_SCLK	255
 #define NS_PER_US	1000
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 struct max_dma_spi_xfer_data {
 	struct no_os_spi_desc *spi;
 	struct no_os_dma_ch *tx_ch;
@@ -100,7 +87,7 @@ static void max_dma_xfer_cycle(struct no_os_dma_xfer_desc *old_xfer,
 	       no_os_dma_in_progress(max_spi_state->dma, data->tx_ch));
 
 	/* Wait for the SPI transfer to finish. */
-	while(spi->stat & 1);
+	while (spi->stat & 1);
 
 	if (!next_xfer) {
 		if (data->cb)
@@ -125,7 +112,6 @@ static void max_dma_xfer_cycle(struct no_os_dma_xfer_desc *old_xfer,
 /**
  * @brief Set the reqsel field of the cfg (DMA channel specific) register
  * @param desc - SPI descriptor
- * @return void
  */
 static void _max_dma_set_req(struct no_os_spi_desc *desc)
 {
@@ -164,11 +150,11 @@ static int32_t _max_spi_config_pins(struct no_os_spi_desc *desc)
 	mxc_gpio_cfg_t spi_pins;
 	mxc_gpio_cfg_t cs;
 
-	switch(desc->device_id) {
+	switch (desc->device_id) {
 	case 0:
 		spi_pins = gpio_cfg_spi0_1;
 
-		switch(desc->chip_select) {
+		switch (desc->chip_select) {
 		case 0:
 			cs = gpio_cfg_spi0_0;
 			break;
@@ -179,7 +165,7 @@ static int32_t _max_spi_config_pins(struct no_os_spi_desc *desc)
 	case 1:
 		spi_pins = gpio_cfg_spi1;
 
-		switch(desc->chip_select) {
+		switch (desc->chip_select) {
 		case 0:
 			cs = gpio_cfg_spi1_ss0;
 			break;
@@ -200,7 +186,7 @@ static int32_t _max_spi_config_pins(struct no_os_spi_desc *desc)
 	case 2:
 		spi_pins = gpio_cfg_spi2;
 
-		switch(desc->chip_select) {
+		switch (desc->chip_select) {
 		case 0:
 			cs = gpio_cfg_spi2_ss0;
 			break;
@@ -220,15 +206,15 @@ static int32_t _max_spi_config_pins(struct no_os_spi_desc *desc)
 	case 3:
 		spi_pins = gpio_cfg_spi3;
 
-		switch(desc->chip_select) {
+		switch (desc->chip_select) {
 		case 0:
-			cs = gpio_cfg_spi2_ss0;
+			cs = gpio_cfg_spi3_ss0;
 			break;
 		case 1:
-			cs = gpio_cfg_spi2_ss1;
+			cs = gpio_cfg_spi3_ss1;
 			break;
 		case 2:
-			cs = gpio_cfg_spi2_ss2;
+			cs = gpio_cfg_spi3_ss2;
 			break;
 		case 3:
 			cs = gpio_cfg_spi3_ss3;
@@ -253,7 +239,6 @@ static int32_t _max_spi_config_pins(struct no_os_spi_desc *desc)
  * @brief Set the closest first and last SCLK delays to what was requested
  * @param desc - SPI descriptor
  * @param msg - The message for which the delays will be set
- * @return void
  */
 static void _max_delay_config(struct no_os_spi_desc *desc,
 			      struct no_os_spi_msg *msg)
@@ -605,10 +590,10 @@ static int32_t max_config_dma_and_start(struct no_os_spi_desc *desc,
 		goto abort_rx_tx;
 
 	if (!is_async) {
-		while(!no_os_dma_is_completed(max_spi->dma, rx_ch) ||
-		      !no_os_dma_is_completed(max_spi->dma, tx_ch));
+		while (!no_os_dma_is_completed(max_spi->dma, rx_ch) ||
+		       !no_os_dma_is_completed(max_spi->dma, tx_ch));
 
-		while(spi->stat & 1);
+		while (spi->stat & 1);
 		/* End the transaction */
 		spi->ctrl0 &= ~MXC_F_SPI_CTRL0_START;
 		/* Disable the RX and TX FIFOs */
@@ -643,9 +628,9 @@ free_rx_ch_xfer:
  * @param len - Number of messages.
  * @return 0 in case of success, errno codes otherwise.
  */
-static int32_t max_spi_dma_transfer_sync(struct no_os_spi_desc *desc,
-		struct no_os_spi_msg *msgs,
-		uint32_t len)
+static int32_t max_spi_transfer_dma(struct no_os_spi_desc *desc,
+				    struct no_os_spi_msg *msgs,
+				    uint32_t len)
 {
 	return max_config_dma_and_start(desc, msgs, len, NULL, NULL, false);
 }
@@ -660,7 +645,7 @@ static int32_t max_spi_dma_transfer_sync(struct no_os_spi_desc *desc,
  * @param ctx - User defined parameter for the callback function.
  * @return 0 in case of success, errno codes otherwise.
  */
-static int32_t max_spi_dma_transfer_async(struct no_os_spi_desc *desc,
+static int32_t max_spi_transfer_dma_async(struct no_os_spi_desc *desc,
 		struct no_os_spi_msg *msgs,
 		uint32_t len,
 		void (*callback)(void *),
@@ -802,7 +787,7 @@ const struct no_os_spi_platform_ops max_spi_ops = {
 	.init = &max_spi_init,
 	.write_and_read = &max_spi_write_and_read,
 	.transfer = &max_spi_transfer,
-	.dma_transfer_sync = &max_spi_dma_transfer_sync,
-	.dma_transfer_async = &max_spi_dma_transfer_async,
+	.transfer_dma = &max_spi_transfer_dma,
+	.transfer_dma_async = &max_spi_transfer_dma_async,
 	.remove = &max_spi_remove
 };

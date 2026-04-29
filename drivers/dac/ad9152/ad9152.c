@@ -5,41 +5,32 @@
  ********************************************************************************
  * Copyright 2015-2016(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * - Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in
- * the documentation and/or other materials provided with the
- * distribution.
- * - Neither the name of Analog Devices, Inc. nor the names of its
- * contributors may be used to endorse or promote products derived
- * from this software without specific prior written permission.
- * - The use of this software may or may not infringe the patent rights
- * of one or more patent holders. This license does not release you
- * from the requirement that you obtain separate licenses from these
- * patent holders to use this software.
- * - Use of the software either in source or binary form, must be run
- * on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include "ad9152.h"
@@ -111,7 +102,7 @@ int32_t ad9152_setup(struct ad9152_dev **device,
 	ret = 0;
 
 	ad9152_spi_read(dev, REG_SPI_PRODIDL, &chip_id);
-	if(chip_id != AD9152_CHIP_ID) {
+	if (chip_id != AD9152_CHIP_ID) {
 		printf("AD9152: Invalid CHIP ID (0x%x)!\n", chip_id);
 		return -1;
 	}
@@ -124,75 +115,75 @@ int32_t ad9152_setup(struct ad9152_dev **device,
 
 	no_os_mdelay(4);
 
-	ad9152_spi_write(dev, 0x011, 0x00);	// dacs - power up everything
-	ad9152_spi_write(dev, 0x080, 0x00);	// clocks - power up everything
-	ad9152_spi_write(dev, 0x081, 0x00);	// sysref - power up/falling edge
+	ad9152_spi_write(dev, REG_PWRCNTRL0, 0x00);	// dacs - power up everything
+	ad9152_spi_write(dev, REG_CLKCFG0, 0x00);	// clocks - power up everything
+	ad9152_spi_write(dev, REG_SYSREF_ACTRL0,
+			 0x00);	// sysref - power up/falling edge
 
 	// digital data path
 
-	ad9152_spi_write(dev, 0x112, 0x00);	// interpolation (bypass)
-	ad9152_spi_write(dev, 0x110, 0x00);	// 2's complement
+	ad9152_spi_write(dev, REG_INTERP_MODE, 0x00);	// interpolation (bypass)
+	ad9152_spi_write(dev, REG_DATA_FORMAT, 0x00);	// 2's complement
 
 	// transport layer
 
-	ad9152_spi_write(dev, 0x200, 0x00);	// phy - power up
-	ad9152_spi_write(dev, 0x201, 0x00);	// phy - power up
-	ad9152_spi_write(dev, 0x230, 0x28);	// half-rate CDR
-	ad9152_spi_write(dev, 0x312, 0x20);	// half-rate CDR
-	ad9152_spi_write(dev, 0x300, 0x00);	// single link - link 0
-	ad9152_spi_write(dev, 0x450, 0x00);	// device id (0x400)
-	ad9152_spi_write(dev, 0x451, 0x00);	// bank id (0x401)
-	ad9152_spi_write(dev, 0x452, 0x04);	// lane-id (0x402)
-	ad9152_spi_write(dev, 0x453, 0x83);	// descrambling, 4 lanes
-	ad9152_spi_write(dev, 0x454, 0x00);	// octects per frame per lane (1)
-	ad9152_spi_write(dev, 0x455, 0x1f);	// mult-frame - framecount (32)
-	ad9152_spi_write(dev, 0x456, 0x01);	// no-of-converters (2)
-	ad9152_spi_write(dev, 0x457, 0x0f);	// no CS bits, 16bit dac
-	ad9152_spi_write(dev, 0x458, 0x2f);	// subclass 1, 16bits per sample
-	ad9152_spi_write(dev, 0x459,
+	ad9152_spi_write(dev, REG_MASTER_PD, 0x00);	// phy - power up
+	ad9152_spi_write(dev, REG_PHY_PD, 0x00);	// phy - power up
+	ad9152_spi_write(dev, REG_CDR_OPERATING_MODE_REG_0, 0x28);	// half-rate CDR
+	ad9152_spi_write(dev, REG_SYNCB_GEN_1, 0x20);	// half-rate CDR
+	ad9152_spi_write(dev, REG_GENERAL_JRX_CTRL_0, 0x00);	// single link - link 0
+	ad9152_spi_write(dev, REG_ILS_DID, 0x00);	// device id (0x400)
+	ad9152_spi_write(dev, REG_ILS_BID, 0x00);	// bank id (0x401)
+	ad9152_spi_write(dev, REG_ILS_LID0, 0x04);	// lane-id (0x402)
+	ad9152_spi_write(dev, REG_ILS_SCR_L, 0x83);	// descrambling, 4 lanes
+	ad9152_spi_write(dev, REG_ILS_F, 0x00);	// octects per frame per lane (1)
+	ad9152_spi_write(dev, REG_ILS_K, 0x1f);	// mult-frame - framecount (32)
+	ad9152_spi_write(dev, REG_ILS_M, 0x01);	// no-of-converters (2)
+	ad9152_spi_write(dev, REG_ILS_CS_N, 0x0f);	// no CS bits, 16bit dac
+	ad9152_spi_write(dev, REG_ILS_NP, 0x2f);	// subclass 1, 16bits per sample
+	ad9152_spi_write(dev, REG_ILS_S,
 			 0x20);	// jesd204b, 1 samples per converter per device
-	ad9152_spi_write(dev, 0x45a, 0x80);	// HD mode, no CS bits
-	ad9152_spi_write(dev, 0x45d, 0x49);	// check-sum of 0x450 to 0x45c
-	ad9152_spi_write(dev, 0x478, 0x01);	// ilas mf count
-	ad9152_spi_write(dev, 0x46c, 0x0f);	// enable deskew for all lanes
-	ad9152_spi_write(dev, 0x476, 0x01);	// frame - bytecount (1)
-	ad9152_spi_write(dev, 0x47d, 0x0f);	// enable all lanes
+	ad9152_spi_write(dev, REG_ILS_HD_CF, 0x80);	// HD mode, no CS bits
+	ad9152_spi_write(dev, REG_ILS_CHECKSUM, 0x49);	// check-sum of 0x450 to 0x45c
+	ad9152_spi_write(dev, REG_KVAL, 0x01);	// ilas mf count
+	ad9152_spi_write(dev, REG_LANEDESKEW, 0x0f);	// enable deskew for all lanes
+	ad9152_spi_write(dev, REG_CTRLREG1, 0x01);	// frame - bytecount (1)
+	ad9152_spi_write(dev, REG_LANEENABLE, 0x0f);	// enable all lanes
 
 	// physical layer
-	ad9152_spi_write(dev, 0x2a6, 0x08);
-	ad9152_spi_write(dev, 0x248, 0xaa);
-	ad9152_spi_write(dev, 0x2aa, 0xb7);	// jesd termination
-	ad9152_spi_write(dev, 0x2ab, 0x87);	// jesd termination
-	ad9152_spi_write(dev, 0x2a7, 0x01);	// input termination calibration
-	ad9152_spi_write(dev, 0x314, 0x01);	// pclk == qbd master clock
-	ad9152_spi_write(dev, 0x230, 0x28);	// cdr mode - halfrate, no division
-	ad9152_spi_write(dev, 0x206, 0x00);	// cdr reset
-	ad9152_spi_write(dev, 0x206, 0x01);	// cdr reset
-	ad9152_spi_write(dev, 0x289, 0x04);	// data-rate == 10Gbps
-	ad9152_spi_write(dev, 0x280, 0x01);	// enable serdes pll
-	ad9152_spi_write(dev, 0x280, 0x05);	// enable serdes calibration
+	ad9152_spi_write(dev, REG_JESD204B_TERM0, 0xb7);	// jesd termination
+	ad9152_spi_write(dev, REG_JESD204B_TERM1, 0x87);	// jesd termination
+	ad9152_spi_write(dev, REG_TERM_BLK1_CTRLREG0,
+			 0x01);	// input termination calibration
+	ad9152_spi_write(dev, REG_SERDES_SPI_REG, 0x01);	// pclk == qbd master clock
+	ad9152_spi_write(dev, REG_CDR_OPERATING_MODE_REG_0,
+			 0x28);	// cdr mode - halfrate, no division
+	ad9152_spi_write(dev, REG_CDR_RESET, 0x00);	// cdr reset
+	ad9152_spi_write(dev, REG_CDR_RESET, 0x01);	// cdr reset
+	ad9152_spi_write(dev, REG_REF_CLK_DIVIDER_LDO, 0x04);	// data-rate == 10Gbps
+	ad9152_spi_write(dev, REG_SYNTH_ENABLE_CNTRL, 0x01);	// enable serdes pll
+	ad9152_spi_write(dev, REG_SYNTH_ENABLE_CNTRL,
+			 0x05);	// enable serdes calibration
 	no_os_mdelay(20);
 
-	ad9152_spi_read(dev, 0x281, &pll_stat);
+	ad9152_spi_read(dev, REG_PLL_STATUS, &pll_stat);
 	if (pll_stat == 0) {
 		printf("AD9152: PLL is NOT locked!.\n");
 		ret = -1;
 	}
 
-	ad9152_spi_write(dev, 0x268, 0x62);	// equalizer
+	ad9152_spi_write(dev, REG_EQ_BIAS_REG, 0x62);	// equalizer
 
 
 	// data link layer
 
-	ad9152_spi_write(dev, 0x301, 0x01);	// subclass-1
-	ad9152_spi_write(dev, 0x304, 0x00);	// lmfc delay
-	ad9152_spi_write(dev, 0x306, 0x0a);	// receive buffer delay
-	ad9152_spi_write(dev, 0x03a, 0x01);	// sync-oneshot mode
-	ad9152_spi_write(dev, 0x03a, 0x81);	// sync-enable
-	ad9152_spi_write(dev, 0x03a, 0xc1);	// sysref-armed
-	ad9152_spi_write(dev, 0x300, 0x01);	// enable link
-
-	ad9152_spi_write(dev, 0x0e7, 0x30);	// turn off cal clock
+	ad9152_spi_write(dev, REG_GENERAL_JRX_CTRL_1, 0x01);	// subclass-1
+	ad9152_spi_write(dev, REG_LMFC_DELAY_0, 0x00);	// lmfc delay
+	ad9152_spi_write(dev, REG_LMFC_VAR_0, 0x0a);	// receive buffer delay
+	ad9152_spi_write(dev, REG_SYNC_CTRL, 0x01);	// sync-oneshot mode
+	ad9152_spi_write(dev, REG_SYNC_CTRL, 0x81);	// sync-enable
+	ad9152_spi_write(dev, REG_SYNC_CTRL, 0xc1);	// sysref-armed
+	ad9152_spi_write(dev, REG_GENERAL_JRX_CTRL_0, 0x01);	// enable link
 
 	*device = dev;
 
@@ -230,21 +221,21 @@ int32_t ad9152_short_pattern_test(struct ad9152_dev *dev,
 
 	for (dac = 0; dac < 2; dac++) {
 		for (sample = 0; sample < 4; sample++) {
-			ad9152_spi_write(dev, 0x32c,
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x00));
-			ad9152_spi_write(dev, 0x32e,
-					 (init_param.stpl_samples[dac][sample]>>8));
-			ad9152_spi_write(dev, 0x32d,
-					 (init_param.stpl_samples[dac][sample]>>0));
-			ad9152_spi_write(dev, 0x32c,
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_2,
+					 (init_param.stpl_samples[dac][sample] >> 8));
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_1,
+					 (init_param.stpl_samples[dac][sample] >> 0));
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x01));
-			ad9152_spi_write(dev, 0x32c,
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x03));
-			ad9152_spi_write(dev, 0x32c,
+			ad9152_spi_write(dev, REG_SHORT_TPL_TEST_0,
 					 ((sample << 4) | (dac << 2) | 0x01));
 			no_os_mdelay(1);
 
-			ad9152_spi_read(dev, 0x32f, &status);
+			ad9152_spi_read(dev, REG_SHORT_TPL_TEST_3, &status);
 			if ((status & 0x1) == 0x1)
 				printf("AD9152: short-pattern-test mismatch (%x, %d, %d, %x)!.\n",
 				       dac, sample,
@@ -252,7 +243,7 @@ int32_t ad9152_short_pattern_test(struct ad9152_dev *dev,
 				       status);
 		}
 	}
-	return(0);
+	return (0);
 }
 
 /***************************************************************************//**
@@ -270,7 +261,7 @@ int32_t ad9152_datapath_prbs_test(struct ad9152_dev *dev,
 	ret = 0;
 
 	if (init_param.interpolation == 1)
-		return(ret);
+		return (ret);
 
 	ad9152_spi_write(dev, REG_PRBS, ((init_param.prbs_type << 2) | 0x03));
 	ad9152_spi_write(dev, REG_PRBS, ((init_param.prbs_type << 2) | 0x01));
@@ -292,7 +283,7 @@ int32_t ad9152_datapath_prbs_test(struct ad9152_dev *dev,
 		ret = -1;
 	}
 
-	return(ret);
+	return (ret);
 }
 
 /***************************************************************************//**
@@ -332,6 +323,6 @@ int32_t ad9152_status(struct ad9152_dev *dev)
 		ret = -1;
 	}
 
-	return(ret);
+	return (ret);
 }
 

@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <stdlib.h>
 
@@ -68,10 +58,6 @@
 
 #warning SPI delays are not supported on the xilinx platform
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
-
 /**
  * @brief Initialize the hardware SPI peripherial
  *
@@ -88,7 +74,7 @@ static int32_t spi_init_pl(struct no_os_spi_desc *desc,
 	struct xil_spi_init_param	*xinit;
 
 	xdesc = (struct xil_spi_desc*)no_os_malloc(sizeof(struct xil_spi_desc));
-	if(!xdesc) {
+	if (!xdesc) {
 		no_os_free(xdesc);
 		return -1;
 	}
@@ -99,18 +85,18 @@ static int32_t spi_init_pl(struct no_os_spi_desc *desc,
 	xdesc->flags = xinit->flags;
 
 	xdesc->instance = (XSpi*)no_os_calloc(1, sizeof(XSpi));
-	if(!xdesc->instance)
+	if (!xdesc->instance)
 		goto pl_error;
 
 	xdesc->config = XSpi_LookupConfig(param->device_id);
-	if(xdesc->config == NULL)
+	if (xdesc->config == NULL)
 		goto pl_error;
 
 	ret = XSpi_CfgInitialize(xdesc->instance,
 				 xdesc->config,
 				 ((XSpi_Config*)xdesc->config)
 				 ->BaseAddress);
-	if(ret != 0)
+	if (ret != 0)
 		goto pl_error;
 
 	ret = XSpi_Initialize(xdesc->instance, param->device_id);
@@ -162,7 +148,7 @@ static int32_t spi_init_ps(struct no_os_spi_desc *desc,
 	uint32_t			input_clock = 0u;
 
 	xdesc = (struct xil_spi_desc*)no_os_malloc(sizeof(struct xil_spi_desc));
-	if(!xdesc) {
+	if (!xdesc) {
 		no_os_free(xdesc);
 		return -1;
 	}
@@ -173,18 +159,18 @@ static int32_t spi_init_ps(struct no_os_spi_desc *desc,
 	xdesc->flags = xinit->flags;
 
 	xdesc->instance = (XSpiPs*)no_os_malloc(sizeof(XSpiPs));
-	if(!xdesc->instance)
+	if (!xdesc->instance)
 		goto ps_error;
 
 	xdesc->config = XSpiPs_LookupConfig(param->device_id);
-	if(xdesc->config == NULL)
+	if (xdesc->config == NULL)
 		goto ps_error;
 
 	ret = XSpiPs_CfgInitialize(xdesc->instance,
 				   xdesc->config,
 				   ((XSpiPs_Config*)xdesc->config)
 				   ->BaseAddress);
-	if(ret != 0)
+	if (ret != 0)
 		goto ps_error;
 
 	switch (param->device_id) {
@@ -209,7 +195,7 @@ static int32_t spi_init_ps(struct no_os_spi_desc *desc,
 
 		// find the power of two just higher than div and
 		// store the exponent in prescaler
-		while(div) {
+		while (div) {
 			prescaler += 1;
 			div >>= 1u;
 		}
@@ -234,7 +220,7 @@ static int32_t spi_init_ps(struct no_os_spi_desc *desc,
 
 	ret = XSpiPs_SetClkPrescaler(xdesc->instance, prescaler);
 
-	if(ret != 0)
+	if (ret != 0)
 		goto ps_error;
 
 	return 0;
@@ -263,14 +249,14 @@ int32_t xil_spi_init(struct no_os_spi_desc **desc,
 	}
 
 	*desc = no_os_malloc(sizeof(**desc));
-	if(! *desc) {
+	if (! *desc) {
 		no_os_free(*desc);
 		return -1;
 	}
 
 	spi_type = param->extra;
 
-	if(!spi_type)
+	if (!spi_type)
 		goto init_error;
 
 	(*desc)->max_speed_hz = param->max_speed_hz;
@@ -316,19 +302,19 @@ int32_t xil_spi_remove(struct no_os_spi_desc *desc)
 
 	spi_type = desc->extra;
 
-	if(!spi_type)
+	if (!spi_type)
 		return -1;
 
-	switch (*spi_type ) {
+	switch (*spi_type) {
 	case SPI_PL:
 #ifdef XSPI_H
 		xdesc = desc->extra;
 
-		if(!xdesc)
+		if (!xdesc)
 			return -1;
 
 		ret = XSpi_Stop((XSpi *)(xdesc->instance));
-		if(ret != 0)
+		if (ret != 0)
 			goto error;
 #endif
 		break;
@@ -336,7 +322,7 @@ int32_t xil_spi_remove(struct no_os_spi_desc *desc)
 #ifdef XSPIPS_H
 		xdesc = desc->extra;
 
-		if(!xdesc)
+		if (!xdesc)
 			return -1;
 #endif
 		break;
@@ -349,7 +335,7 @@ error:
 		return -1;
 	}
 
-	if(xdesc)
+	if (xdesc)
 		no_os_free(xdesc->instance);
 	no_os_free(desc->extra);
 	no_os_free(desc);
@@ -379,7 +365,7 @@ int32_t xil_spi_write_and_read(struct no_os_spi_desc *desc,
 
 	spi_type = desc->extra;
 
-	if(!spi_type)
+	if (!spi_type)
 		return -1;
 
 	xdesc = desc->extra;

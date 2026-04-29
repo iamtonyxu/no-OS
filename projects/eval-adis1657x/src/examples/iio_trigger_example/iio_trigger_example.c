@@ -5,58 +5,40 @@
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "iio_trigger_example.h"
 #include "common_data.h"
 #include "no_os_print_log.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define DATA_BUFFER_SIZE 400
 
-/******************************************************************************/
-/************************ Variable Declarations ******************************/
-/******************************************************************************/
 uint8_t iio_data_buffer[DATA_BUFFER_SIZE * 13 * sizeof(int)];
 
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 /***************************************************************************//**
  * @brief IIO trigger example main execution.
  *
@@ -86,19 +68,19 @@ int iio_trigger_example_main()
 	ret = no_os_irq_set_priority(adis1657x_irq_desc, adis1657x_gpio_trig_ip.irq_id,
 				     1);
 	if (ret)
-		goto remove_irq_ctrl;
+		goto exit;
 
 	adis1657x_gpio_trig_ip.irq_ctrl = adis1657x_irq_desc;
 
 	/* Initialize hardware trigger */
 	ret = iio_hw_trig_init(&adis1657x_trig_desc, &adis1657x_gpio_trig_ip);
 	if (ret)
-		goto remove_irq_ctrl;
+		goto exit;
 
 	ret = adis1657x_iio_init(&adis1657x_iio_desc, &adis1657x_ip,
 				 adis1657x_trig_desc);
 	if (ret)
-		goto remove_trig;
+		goto exit;
 
 	/* List of devices */
 	struct iio_app_device iio_devices[] = {
@@ -125,7 +107,7 @@ int iio_trigger_example_main()
 
 	ret = iio_app_init(&app, app_init_param);
 	if (ret)
-		goto remove_iio_adis1657x;
+		goto exit;
 
 	/* Update the reference to iio_desc */
 	adis1657x_trig_desc->iio_desc = app->iio_desc;
@@ -134,13 +116,10 @@ int iio_trigger_example_main()
 
 	iio_app_remove(app);
 
-remove_iio_adis1657x:
-	adis1657x_iio_remove(adis1657x_iio_desc);
-remove_trig:
-	iio_hw_trig_remove(adis1657x_trig_desc);
-remove_irq_ctrl:
-	no_os_irq_ctrl_remove(adis1657x_irq_desc);
 exit:
+	adis1657x_iio_remove(adis1657x_iio_desc);
+	iio_hw_trig_remove(adis1657x_trig_desc);
+	no_os_irq_ctrl_remove(adis1657x_irq_desc);
 	if (ret)
 		pr_info("Error!\n");
 	return ret;

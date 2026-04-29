@@ -1,17 +1,3 @@
-include $(PROJECT)/src/platform/$(PLATFORM)/platform_src.mk
-include $(PROJECT)/src/examples/examples_src.mk
-
-SRCS += $(PROJECT)/src/platform/$(PLATFORM)/main.c
-
-INCS += $(PROJECT)/src/common/app_config.h
-INCS += $(PROJECT)/src/common/common_data.h
-SRCS += $(PROJECT)/src/common/common_data.c
-
-INCS += $(PROJECT)/src/platform/platform_includes.h
-
-INCS += $(PROJECT)/src/platform/$(PLATFORM)/parameters.h
-SRCS += $(PROJECT)/src/platform/$(PLATFORM)/parameters.c
-
 INCS += $(DRIVERS)/gyro/adxrs290/adxrs290.h
 SRCS += $(DRIVERS)/gyro/adxrs290/adxrs290.c
 
@@ -29,7 +15,8 @@ INCS += $(INCLUDE)/no_os_delay.h        \
         $(INCLUDE)/no_os_util.h         \
         $(INCLUDE)/no_os_units.h        \
         $(INCLUDE)/no_os_alloc.h        \
-        $(INCLUDE)/no_os_mutex.h
+        $(INCLUDE)/no_os_mutex.h         \
+        $(INCLUDE)/no_os_pwm.h
 
 SRCS += $(DRIVERS)/api/no_os_gpio.c     \
         $(NO-OS)/util/no_os_lf256fifo.c \
@@ -41,4 +28,5 @@ SRCS += $(DRIVERS)/api/no_os_gpio.c     \
         $(NO-OS)/util/no_os_list.c      \
         $(NO-OS)/util/no_os_util.c      \
         $(NO-OS)/util/no_os_alloc.c     \
+        $(DRIVERS)/api/no_os_pwm.c     \
 	$(NO-OS)/util/no_os_mutex.c

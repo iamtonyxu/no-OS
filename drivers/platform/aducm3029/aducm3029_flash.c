@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2021(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/************************* Include Files **************************************/
-/******************************************************************************/
 
 #include <drivers/flash/adi_flash.h>
 #include <drivers/dma/adi_dma.h>
@@ -51,10 +41,6 @@
 #include "no_os_error.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
-
 /**
  * @struct adicup_flash_dev
  * @brief Aducm3029 flash controller handler
@@ -65,13 +51,9 @@ struct adicup_flash_dev {
 	/** Necessary memory for DFP driver */
 	uint8_t dfp_memory[ADI_FEE_MEMORY_SIZE];
 	/** Buffer to read one flash page */
-	uint32_t temp_ptr[FLASH_PAGE_SIZE_WORDS] __attribute__ ((aligned (sizeof(
+	uint32_t temp_ptr[FLASH_PAGE_SIZE_WORDS] __attribute__((aligned(sizeof(
 				uint32_t))));
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * Initialize flash controller.
@@ -106,7 +88,7 @@ int32_t no_os_flash_init(struct no_os_flash_dev **device,
 	ret = adi_fee_Open(dev->id, adicup_extra->dfp_memory,
 			   ADI_FEE_MEMORY_SIZE,
 			   &adicup_extra->instance);
-	if(ret != ADI_FEE_SUCCESS)
+	if (ret != ADI_FEE_SUCCESS)
 		goto error_adicup;
 
 	*device = dev;
@@ -167,7 +149,7 @@ int32_t no_os_flash_clear_page(struct no_os_flash_dev *dev, int32_t page_no)
 
 	ret = adi_fee_PageErase(adicup_extra->instance, page_no, page_no,
 				&fee_hw_error);
-	if(ret != ADI_FEE_SUCCESS)
+	if (ret != ADI_FEE_SUCCESS)
 		return -1;
 
 	return 0;
@@ -201,7 +183,7 @@ int32_t no_os_flash_write_page(struct no_os_flash_dev *dev, int32_t page_no,
 
 	ret = adi_fee_Write(adicup_extra->instance, &transaction,
 			    &fee_hw_error);
-	if(ret != ADI_FEE_SUCCESS)
+	if (ret != ADI_FEE_SUCCESS)
 		return -1;
 
 	return 0;
@@ -236,13 +218,13 @@ static int32_t flash_read_then_write(struct no_os_flash_dev *dev,
 	/* Get the page number */
 	ret = adi_fee_GetPageNumber(adicup_extra->instance, flash_addr,
 				    &page_nr);
-	if(ret != ADI_FEE_SUCCESS)
+	if (ret != ADI_FEE_SUCCESS)
 		return -1;
 
 	/* First erase page */
 	ret = adi_fee_PageErase(adicup_extra->instance, page_nr, page_nr,
 				&fee_hw_error);
-	if(ret != ADI_FEE_SUCCESS)
+	if (ret != ADI_FEE_SUCCESS)
 		return -1;
 
 	return no_os_flash_write_page(dev, page_nr, adicup_extra->temp_ptr);

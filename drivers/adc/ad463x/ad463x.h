@@ -5,53 +5,40 @@
 ********************************************************************************
  * Copyright 2021(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef AD463X_H_
 #define AD463x_H_
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
-#include "spi_engine.h"
 #include "no_os_util.h"
+#include "spi_engine.h"
 #include "clk_axi_clkgen.h"
 #include "no_os_pwm.h"
 #include "no_os_gpio.h"
-
-/******************************************************************************/
-/********************** Macros and Types Declarations *************************/
-/******************************************************************************/
 
 /* Register addresses */
 #define AD463X_REG_INTERFACE_CONFIG_A	0x00
@@ -171,6 +158,25 @@ enum ad463x_id {
 	ID_AD4632_20,
 	/** AD4632-16 device */
 	ID_AD4632_16,
+	/** AD4030 device */
+	ID_AD4030,
+	/** ADAQ4224 device */
+	ID_ADAQ4224,
+};
+
+/**
+ * @enum ad463x_pgia_gain
+ * @brief Available pgia gains.
+ */
+enum ad463x_pgia_gain {
+	/** Vout/Vin = 0.33  */
+	AD463X_GAIN_0_33 = 0,
+	/** Vout/Vin = 0.56  */
+	AD463X_GAIN_0_56 = 1,
+	/** Vout/Vin = 2.22  */
+	AD463X_GAIN_2_22 = 2,
+	/** Vout/Vin = 6.67  */
+	AD463X_GAIN_6_67 = 3,
 };
 
 /**
@@ -182,6 +188,9 @@ struct ad463x_init_param {
 	struct no_os_spi_init_param *spi_init;
 	/** GPIO */
 	struct no_os_gpio_init_param *gpio_resetn;
+	struct no_os_gpio_init_param *gpio_cnv;
+	struct no_os_gpio_init_param *gpio_pgia_a0;
+	struct no_os_gpio_init_param *gpio_pgia_a1;
 	/** PWM */
 	struct no_os_pwm_init_param *trigger_pwm_init;
 	/** SPI module offload init */
@@ -202,8 +211,14 @@ struct ad463x_init_param {
 	uint8_t clock_mode;
 	/** Data Rate Mode */
 	uint8_t data_rate;
+	/** Reference voltage */
+	int32_t vref;
 	/** Output Mode */
 	uint8_t output_mode;
+	/** enable spi dma */
+	bool spi_dma_enable;
+	/** enable spi engine offload */
+	bool offload_enable;
 	/** Invalidate the Data cache for the given address range */
 	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
 };
@@ -217,6 +232,9 @@ struct ad463x_dev {
 	struct no_os_spi_desc *spi_desc;
 	/** GPIO */
 	struct no_os_gpio_desc *gpio_resetn;
+	struct no_os_gpio_desc *gpio_cnv;
+	struct no_os_gpio_desc *gpio_pgia_a0;
+	struct no_os_gpio_desc *gpio_pgia_a1;
 	/** PWM */
 	struct no_os_pwm_desc *trigger_pwm_desc;
 	/** SPI module offload init */
@@ -239,15 +257,26 @@ struct ad463x_dev {
 	uint8_t clock_mode;
 	/** Data Rate Mode */
 	uint8_t data_rate;
+	/** Reference voltage */
+	int32_t vref;
+	/** pgia index */
+	uint8_t pgia_idx;
+	/** available scales */
+	int32_t scale_table[4][2];
 	/** Output Mode */
 	uint8_t output_mode;
+	/** ADC precision in bits */
+	uint8_t real_bits_precision;
+	/** pgia availability */
+	bool has_pgia;
+	/** enable spi dma */
+	bool spi_dma_enable;
+	/** enable spi engine offload */
+	bool offload_enable;
 	/** Invalidate the Data cache for the given address range */
 	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
 };
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /** Read device register. */
 int32_t ad463x_spi_reg_read(struct ad463x_dev *dev,
 			    uint16_t reg_addr,
@@ -299,7 +328,21 @@ int32_t ad463x_read_data(struct ad463x_dev *dev,
 int32_t ad463x_init(struct ad463x_dev **device,
 		    struct ad463x_init_param *init_param);
 
+/** Calculate PGIA gain */
+int32_t ad463x_calc_pgia_gain(int32_t gain_int, int32_t gain_fract,
+			      int32_t vref,
+			      int32_t precision,
+			      enum ad463x_pgia_gain *gain_idx);
+
+/** Control PGIA gain */
+int32_t ad463x_set_pgia_gain(struct ad463x_dev *dev,
+			     enum ad463x_pgia_gain gain_idx);
+
 /** Free resources */
 int32_t ad463x_remove(struct ad463x_dev *dev);
+
+
+/** Enter configuration Register mode */
+int32_t ad463x_enter_config_mode(struct ad463x_dev *dev);
 
 #endif // AD463X_H_

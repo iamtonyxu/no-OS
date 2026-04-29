@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #ifndef SPI_ENGINE_PRIVATE_H
@@ -45,10 +39,6 @@
 
 #include "no_os_spi.h"
 #include "no_os_util.h"
-
-/******************************************************************************/
-/*************************** Spi Engine registers *****************************/
-/******************************************************************************/
 
 #define SPI_ENGINE_REG_VERSION			0x00
 #define SPI_ENGINE_REG_DATA_WIDTH		0x0C
@@ -65,9 +55,9 @@
 #define SPI_ENGINE_REG_SDI_DATA_FIFO		0xE8
 #define SPI_ENGINE_REG_SDI_DATA_FIFO_PEEK	0xEC
 
-/******************************************************************************/
-/************************ Spi Engine register parameters **********************/
-/******************************************************************************/
+/* Bit definitions for SPI_ENGINE_REG_DATA_WIDTH register */
+#define SPI_ENGINE_REG_NUM_OF_SDI_MSK		NO_OS_GENMASK(23, 16)
+#define SPI_ENGINE_REG_DATA_WIDTH_MSK		NO_OS_GENMASK(15, 0)
 
 #define SPI_ENGINE_INST_TRANSFER		0x00
 #define SPI_ENGINE_INST_ASSERT			0x01
@@ -90,13 +80,10 @@
 #define SPI_ENGINE_CONFIG_CPHA			NO_OS_BIT(0)
 #define SPI_ENGINE_CONFIG_CPOL			NO_OS_BIT(1)
 #define SPI_ENGINE_CONFIG_3WIRE			NO_OS_BIT(2)
+#define SPI_ENGINE_CONFIG_SDO_IDLE		NO_OS_BIT(3)
 #define SPI_ENGINE_VERSION_MAJOR(x) 		((x >> 16) & 0xff)
 #define SPI_ENGINE_VERSION_MINOR(x) 		((x >> 8) & 0xff)
 #define SPI_ENGINE_VERSION_PATCH(x) 		(x & 0xff)
-
-/******************************************************************************/
-/**************************** Spi Engine commands *****************************/
-/******************************************************************************/
 
 #define SPI_ENGINE_INSTRUCTION_TRANSFER_W	0x01
 #define SPI_ENGINE_INSTRUCTION_TRANSFER_R	0x02
@@ -133,10 +120,6 @@
 	SPI_ENGINE_CMD(SPI_ENGINE_INST_MISC, 				\
 			SPI_ENGINE_MISC_SYNC, 				\
 			(id))
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 typedef struct spi_engine_cmd_queue {
 	uint32_t	cmd;

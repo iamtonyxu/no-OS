@@ -6,41 +6,32 @@
 ********************************************************************************
  * Copyright 2016(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "spi_engine.h"
 #include "spi_engine_private.h"
@@ -49,9 +40,6 @@
 #include "no_os_alloc.h"
 #include "ad5766_core.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 const uint16_t sine_lut[512] = {
 	0x8000, 0x8192, 0x8324, 0x84b6, 0x8647, 0x87d9, 0x896a, 0x8afb,
 	0x8c8b, 0x8e1b, 0x8fab, 0x9139, 0x92c7, 0x9455, 0x95e1, 0x976d,
@@ -229,7 +217,7 @@ int32_t ad5766_core_setup(struct spi_engine_desc *eng_desc,
 			 SPI_ENGINE_CMD_ASSERT(1, (0xff ^ NO_OS_BIT(chip_select))));
 
 	spi_engine_write(eng_desc, SPI_ENGINE_REG_OFFLOAD_CMD_MEM(0),
-			 SPI_ENGINE_CMD_TRANSFER(1, size -1));
+			 SPI_ENGINE_CMD_TRANSFER(1, size - 1));
 
 	spi_engine_write(eng_desc, SPI_ENGINE_REG_OFFLOAD_CMD_MEM(0),
 			 SPI_ENGINE_CMD_SYNC(sync_id));
@@ -245,29 +233,29 @@ int32_t ad5766_core_setup(struct spi_engine_desc *eng_desc,
 	uint32_t phase_offset;
 
 	no_of_samples = sizeof(sine_lut) / sizeof(typeof(sine_lut[0]));
-	phase_offset = no_of_samples/16;
+	phase_offset = no_of_samples / 16;
 
 	for (index = 0; index < no_of_samples; index ++) {
 		Xil_Out16(core->dma_source_addr + (index_mem + 0)  * 2,
-			  sine_lut[(index + ( 0 * phase_offset)) % no_of_samples]);	// DAC0
+			  sine_lut[(index + (0 * phase_offset)) % no_of_samples]);	// DAC0
 		Xil_Out16(core->dma_source_addr + (index_mem + 1)  * 2,
-			  sine_lut[(index + ( 1 * phase_offset)) % no_of_samples]);	// DAC1
+			  sine_lut[(index + (1 * phase_offset)) % no_of_samples]);	// DAC1
 		Xil_Out16(core->dma_source_addr + (index_mem + 2)  * 2,
-			  sine_lut[(index + ( 2 * phase_offset)) % no_of_samples]);	// DAC2
+			  sine_lut[(index + (2 * phase_offset)) % no_of_samples]);	// DAC2
 		Xil_Out16(core->dma_source_addr + (index_mem + 3)  * 2,
-			  sine_lut[(index + ( 3 * phase_offset)) % no_of_samples]);	// DAC3
+			  sine_lut[(index + (3 * phase_offset)) % no_of_samples]);	// DAC3
 		Xil_Out16(core->dma_source_addr + (index_mem + 4)  * 2,
-			  sine_lut[(index + ( 4 * phase_offset)) % no_of_samples]);	// DAC4
+			  sine_lut[(index + (4 * phase_offset)) % no_of_samples]);	// DAC4
 		Xil_Out16(core->dma_source_addr + (index_mem + 5)  * 2,
-			  sine_lut[(index + ( 5 * phase_offset)) % no_of_samples]);	// DAC5
+			  sine_lut[(index + (5 * phase_offset)) % no_of_samples]);	// DAC5
 		Xil_Out16(core->dma_source_addr + (index_mem + 6)  * 2,
-			  sine_lut[(index + ( 6 * phase_offset)) % no_of_samples]);	// DAC6
+			  sine_lut[(index + (6 * phase_offset)) % no_of_samples]);	// DAC6
 		Xil_Out16(core->dma_source_addr + (index_mem + 7)  * 2,
-			  sine_lut[(index + ( 7 * phase_offset)) % no_of_samples]);	// DAC7
+			  sine_lut[(index + (7 * phase_offset)) % no_of_samples]);	// DAC7
 		Xil_Out16(core->dma_source_addr + (index_mem + 8)  * 2,
-			  sine_lut[(index + ( 8 * phase_offset)) % no_of_samples]);	// DAC8
+			  sine_lut[(index + (8 * phase_offset)) % no_of_samples]);	// DAC8
 		Xil_Out16(core->dma_source_addr + (index_mem + 9)  * 2,
-			  sine_lut[(index + ( 9 * phase_offset)) % no_of_samples]);	// DAC9
+			  sine_lut[(index + (9 * phase_offset)) % no_of_samples]);	// DAC9
 		Xil_Out16(core->dma_source_addr + (index_mem + 10) * 2,
 			  sine_lut[(index + (10 * phase_offset)) % no_of_samples]);	// DAC10
 		Xil_Out16(core->dma_source_addr + (index_mem + 11) * 2,

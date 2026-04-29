@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include <xil_printf.h>
 #include <xiic.h>
@@ -69,10 +60,6 @@
 
 #define HDMI_CALL_INTERVAL_MS 10
 
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
-
 static uint8_t    major_rev;      /* Major Release Number */
 static uint8_t    minor_rev;      /* Usually used for code-drops */
 static uint8_t    rc_rev;         /* Release Candidate Number */
@@ -80,10 +67,6 @@ static bool     driver_enable;
 static bool     last_enable;
 extern struct no_os_i2c_desc *i2c_handler;
 extern volatile uint32_t timer_counter_intr;
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 #if defined(XSCUTIMER_H)
 void timer_isr(void *instance)
@@ -100,7 +83,6 @@ void timer_isr(void *instance, uint8_t timer_nr)
  * @param [in] enable - true to enable the driver;
  *                      flase to disable the driver.
  *
- * @return void
  */
 void app_enable_driver(bool enable)
 {
@@ -118,7 +100,7 @@ static bool app_driver_enabled(void)
 {
 	if ((driver_enable && HAL_GetMBSwitchState()) != last_enable) {
 		last_enable = driver_enable && HAL_GetMBSwitchState();
-		DBG_MSG("APP: Driver %s\n\r", last_enable? "Enabled": "Disabled");
+		DBG_MSG("APP: Driver %s\n\r", last_enable ? "Enabled" : "Disabled");
 	}
 
 	return last_enable;
@@ -129,7 +111,6 @@ static bool app_driver_enabled(void)
  *
  * @param void
  *
- * @return void
  */
 static void app_print_revisions(void)
 {
@@ -150,7 +131,6 @@ static void app_print_revisions(void)
  *
  * @param void
  *
- * @return void
  */
 static void app_change_resolution(struct axi_clkgen *clk_gen_core)
 {
@@ -161,17 +141,17 @@ static void app_change_resolution(struct axi_clkgen *clk_gen_core)
 	char received_char;
 
 #if defined(_XPARAMETERS_PS_H_)
-	if(XUartPs_IsReceiveData(UART_BASEADDR)) {
+	if (XUartPs_IsReceiveData(UART_BASEADDR)) {
 #else
-	if(!XUartLite_IsReceiveEmpty(UART_BASEADDR)) {
+	if (!XUartLite_IsReceiveEmpty(UART_BASEADDR)) {
 #endif
 		received_char = inbyte();
-		if((received_char >= 0x30) && (received_char <= 0x36)) {
+		if ((received_char >= 0x30) && (received_char <= 0x36)) {
 			SetVideoResolution(clk_gen_core, (received_char - 0x30));
 			DBG_MSG("Resolution was changed to %s \r\n",
 				resolutions[received_char - 0x30]);
 		} else {
-			if((received_char != 0x0A) && (received_char != 0x0D)) {
+			if ((received_char != 0x0A) && (received_char != 0x0D)) {
 				SetVideoResolution(clk_gen_core, RESOLUTION_640x480);
 				DBG_MSG("Resolution was changed to %s \r\n", resolutions[0]);
 			}
@@ -210,20 +190,21 @@ static int32_t app_set_i2c_mux(struct no_os_i2c_desc *adv7511_i2c)
 	i2c_mux_init.slave_address = mux_addr;
 	i2c_mux_init.platform_ops = &xil_i2c_ops;
 	i2c_mux_init.extra = &i2c_mux_init_extra;
+	i2c_mux_init.device_id = XPAR_AXI_IIC_MAIN_DEVICE_ID;
 
 	mem_val = pca9548_setup;
 
 	ret = no_os_i2c_init(&i2c_mux, &i2c_mux_init);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	ret = no_os_i2c_write(i2c_mux, &pca9548_setup, byte_transfer_no, stop_bit);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	pca9548_setup = 0xdd;
 	ret = no_os_i2c_read(i2c_mux, &pca9548_setup, byte_transfer_no, stop_bit);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
-	if(pca9548_setup != mem_val)
+	if (pca9548_setup != mem_val)
 		return -1;
 	return no_os_i2c_remove(i2c_mux);
 
@@ -269,16 +250,16 @@ static int32_t hal_platform_init(struct no_os_i2c_desc **adv7511_i2c,
 	struct no_os_callback_desc cb_desc_temp;
 
 	ret = no_os_timer_init(timer_inst_ptr, timer_inits);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	xil_tmr = (*timer_inst_ptr)->extra;
 	ret = no_os_i2c_init(adv7511_i2c, adv7511_i2c_init);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	ps_i2c_extra = (*adv7511_i2c)->extra;
 
 	ret = no_os_irq_ctrl_init(gic_inst_ptr, gic_init);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	no_os_irq_global_enable(*gic_inst_ptr);
 #if defined(_XPARAMETERS_PS_H_)
@@ -291,18 +272,18 @@ static int32_t hal_platform_init(struct no_os_i2c_desc **adv7511_i2c,
 	ret = no_os_irq_register_callback(*gic_inst_ptr, timer_int_nr, &cb_desc_temp);
 	XTmrCtr_SetHandler(xil_tmr->instance, timer_isr, xil_tmr->instance);
 #endif
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	ret = no_os_irq_enable(*gic_inst_ptr, timer_int_nr);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	cb_desc_temp.callback = XIic_InterruptHandler;
 	cb_desc_temp.ctx = &ps_i2c_extra->instance;
 	ret = no_os_irq_register_callback(*gic_inst_ptr, i2c_int_nr, &cb_desc_temp);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	ret = no_os_irq_enable(*gic_inst_ptr, i2c_int_nr);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 
 	no_os_timer_start(*timer_inst_ptr);
@@ -316,8 +297,6 @@ static int32_t hal_platform_init(struct no_os_i2c_desc **adv7511_i2c,
 
 /**
  * Main function of the application.
- *
- * @param none
  *
  * @return 0 in case of success, non-zero error code otherwise
  */
@@ -347,6 +326,7 @@ int main()
 
 	adv7511_extra_i2c_init.device_id = XPAR_AXI_IIC_MAIN_DEVICE_ID;
 	adv7511_extra_i2c_init.type = IIC_PL;
+	adv7511_i2c_init.device_id = XPAR_AXI_IIC_MAIN_DEVICE_ID;
 	adv7511_i2c_init.max_speed_hz = 400000;
 	adv7511_i2c_init.slave_address = 0x39;
 	adv7511_i2c_init.platform_ops = &xil_i2c_ops;
@@ -389,10 +369,10 @@ int main()
 
 	ret = hal_platform_init(&adv7511_i2c, &adv7511_i2c_init, &timer_inst_ptr,
 				&timer_init, &gic_inst_ptr, &gic_init);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	ret = axi_clkgen_init(&clk_gen_core, &clk_gen_core_initial);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 	transmitter_link_clkgen(clk_gen_core);
 
@@ -411,8 +391,8 @@ int main()
 
 	start_count = HAL_GetCurrentMsCount();
 
-	while(1) {
-		if (ATV_GetElapsedMs (start_count, NULL) >= HDMI_CALL_INTERVAL_MS) {
+	while (1) {
+		if (ATV_GetElapsedMs(start_count, NULL) >= HDMI_CALL_INTERVAL_MS) {
 			start_count = HAL_GetCurrentMsCount();
 			if (app_driver_enabled())
 				ADIAPI_TransmitterMain();

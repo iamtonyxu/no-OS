@@ -5,41 +5,32 @@
 ********************************************************************************
 * Copyright 2022(c) Analog Devices, Inc.
 *
-* All rights reserved.
-*
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
-* - Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer.
-* - Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in
-* the documentation and/or other materials provided with the
-* distribution.
-* - Neither the name of Analog Devices, Inc. nor the names of its
-* contributors may be used to endorse or promote products derived
-* from this software without specific prior written permission.
-* - The use of this software may or may not infringe the patent rights
-* of one or more patent holders. This license does not release you
-* from the requirement that you obtain separate licenses from these
-* patent holders to use this software.
-* - Use of the software either in source or binary form, must be run
-* on or directly connected to an Analog Devices Inc. component.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
 * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include <sleep.h>
 #include <stdbool.h>
@@ -75,7 +66,7 @@
 #include "iio_app.h"
 #endif // IIO_SUPPORT
 
-static uint32_t adc_buffer[ADC_BUFFER_SIZE] __attribute__((aligned));
+static uint32_t adc_buffer[ADC_BUFFER_SIZE] __attribute__((aligned(1024)));
 
 int main()
 {
@@ -138,18 +129,18 @@ int main()
 	struct no_os_pwm_desc *axi_pwm;
 	struct axi_pwm_init_param axi_zed_pwm_init_trigger = {
 		.base_addr = XPAR_ODR_GENERATOR_BASEADDR,
-		.ref_clock_Hz = 96000000,
+		.ref_clock_Hz = 100000000,
 		.channel = 0
 	};
 	struct axi_pwm_init_param axi_zed_pwm_init_odr = {
 		.base_addr = XPAR_ODR_GENERATOR_BASEADDR,
-		.ref_clock_Hz = 96000000,
+		.ref_clock_Hz = 100000000,
 		.channel = 1
 	};
 	struct no_os_pwm_init_param axi_pwm_init_trigger = {
 		.period_ns = 1000,
 		.duty_cycle_ns = 1,
-		.phase_ns = 30,
+		.phase_ns = 45,
 		.platform_ops = &axi_pwm_ops,
 		.extra = &axi_zed_pwm_init_trigger
 	};
@@ -185,7 +176,7 @@ int main()
 	cn0561_init_param.pnd = true;
 	cn0561_init_param.spi_init_prm.chip_select = CN0561_SPI_CS;
 	cn0561_init_param.spi_init_prm.device_id = SPI_DEVICE_ID;
-	cn0561_init_param.spi_init_prm.max_speed_hz = 1000000;
+	cn0561_init_param.spi_init_prm.max_speed_hz = 10000000;
 	cn0561_init_param.spi_init_prm.mode = NO_OS_SPI_MODE_0;
 	cn0561_init_param.spi_init_prm.platform_ops = &xil_spi_ops;
 	cn0561_init_param.spi_init_prm.extra = (void *)&spi_engine_init_params;
@@ -233,7 +224,7 @@ int main()
 
 	spi_engine_offload_init_param.rx_dma_baseaddr = CN0561_DMA_BASEADDR;
 	spi_engine_offload_init_param.offload_config = OFFLOAD_RX_EN;
-	spi_engine_offload_init_param.dma_flags = &spi_eng_dma_flg;
+	spi_engine_offload_init_param.dma_flags = spi_eng_dma_flg;
 
 	ret = no_os_spi_init(&spi_eng_desc, &spi_eng_init_prm);
 	if (ret != 0)
@@ -313,18 +304,18 @@ int main()
 				  CN0561_FMC_SAMPLE_NO * CN0561_FMC_CH_NO *
 				  sizeof(uint32_t));
 
-	for(i = 0; i < CN0561_FMC_SAMPLE_NO; i++) {
+	for (i = 0; i < CN0561_FMC_SAMPLE_NO; i++) {
 		j = 0;
 		printf("%lu: ", i);
-		while(j < CN0561_FMC_CH_NO) {
-			adc_buffer[CN0561_FMC_CH_NO*i+j] &= 0xffffff00;
-			adc_buffer[CN0561_FMC_CH_NO*i+j] >>= 8;
-			data = lsb * (int32_t)adc_buffer[CN0561_FMC_CH_NO*i+j];
-			if(data > 4.095)
+		while (j < CN0561_FMC_CH_NO) {
+			adc_buffer[CN0561_FMC_CH_NO * i + j] &= 0xffffff00;
+			adc_buffer[CN0561_FMC_CH_NO * i + j] >>= 8;
+			data = lsb * (int32_t)adc_buffer[CN0561_FMC_CH_NO * i + j];
+			if (data > 4.095)
 				data = data - 8.192;
 			printf("CH%lu: 0x%08lx = %+1.5fV ", j,
-			       adc_buffer[CN0561_FMC_CH_NO*i+j], data);
-			if(j == (CN0561_FMC_CH_NO - 1))
+			       adc_buffer[CN0561_FMC_CH_NO * i + j], data);
+			if (j == (CN0561_FMC_CH_NO - 1))
 				printf("\n");
 			j++;
 		}

@@ -6,50 +6,37 @@
 *******************************************************************************
 * Copyright 2013(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
 *
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad5629r.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
 static const struct ad5629r_chip_info chip_info[] = {
 	[ID_AD5629R] = {
 		.resolution = 12,
@@ -72,11 +59,6 @@ static const struct ad5629r_chip_info chip_info[] = {
 		.communication = com_spi,
 	}
 };
-
-/******************************************************************************/
-/************************** Functions Definitions *****************************/
-/******************************************************************************/
-
 
 /***************************************************************************//**
  * @brief Initializes the communication with the device.
@@ -154,8 +136,6 @@ int32_t ad5629r_remove(struct ad5629r_dev *dev)
  * @param   function - command control bits;
  * @param   dac_n    - address of selected DAC;
  * @param   data     - data to be written in register.
- *
- * @return  readBack - value read from register.
 ******************************************************************************/
 void ad5629r_set_ctrl(struct ad5629r_dev *dev,
 		      uint8_t function,
@@ -164,7 +144,7 @@ void ad5629r_set_ctrl(struct ad5629r_dev *dev,
 {
 	uint8_t data_buff [ 4 ]   = {0, 0, 0, 0};
 
-	if(chip_info[dev->act_device].communication == com_spi) {
+	if (chip_info[dev->act_device].communication == com_spi) {
 		data = data & 0xFFFFF;
 
 		data_buff[0] = function;
@@ -196,8 +176,6 @@ void ad5629r_set_ctrl(struct ad5629r_dev *dev,
  * @param   function - command control bits.
  * @param   dac_n    - address of selected DAC;
  * @param   dac_value - data to be written in input register.
- *
- * @return  readBack - value read from register.
 ******************************************************************************/
 void ad5629r_set_input_reg(struct ad5629r_dev *dev,
 			   uint8_t function,
@@ -209,7 +187,7 @@ void ad5629r_set_input_reg(struct ad5629r_dev *dev,
 	dac_value = dac_value << (MAX_RESOLUTION -
 				  chip_info[dev->act_device].resolution);
 
-	if(chip_info[dev->act_device].communication == com_spi) {
+	if (chip_info[dev->act_device].communication == com_spi) {
 		dac_value = dac_value & 0xFFFF;
 
 		data_buff[0] = function;
@@ -238,8 +216,6 @@ void ad5629r_set_input_reg(struct ad5629r_dev *dev,
  * @param dev      - The device structure.
  * @param dac_value - Value to be written in register;
  * @param dac_n     - Address of selected DAC.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_write_reg_n(struct ad5629r_dev *dev,
 			 uint8_t dac_n,
@@ -256,8 +232,6 @@ void ad5629r_write_reg_n(struct ad5629r_dev *dev,
  *
  * @param dev  - The device structure.
  * @param dac_n - Address of selected DAC.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_update_dac_n(struct ad5629r_dev *dev,
 			  uint8_t dac_n)
@@ -275,8 +249,6 @@ void ad5629r_update_dac_n(struct ad5629r_dev *dev,
  * @param dev      - The device structure.
  * @param dac_value - Value to be written in register;
  * @param dac_n     - Address of selected DAC.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_write_reg_nupdate_all(struct ad5629r_dev *dev,
 				   uint8_t dac_n,
@@ -295,8 +267,6 @@ void ad5629r_write_reg_nupdate_all(struct ad5629r_dev *dev,
  * @param dev      - The device structure.
  * @param dac_value - Value to be written in register;
  * @param dac_n     - Address of selected DAC.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_write_reg_nupdate_n(struct ad5629r_dev *dev,
 				 uint8_t dac_n,
@@ -322,8 +292,6 @@ void ad5629r_write_reg_nupdate_n(struct ad5629r_dev *dev,
  *                          PWR_1K_TO_GND   - 1KOhm to GND;
  *                          PWR_100K_TO_GND - 100KOhms to GND;
  *                          PWR_3_STATE     - three-state.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_set_power_mode(struct ad5629r_dev *dev,
 			    uint8_t dac_sel,
@@ -349,8 +317,6 @@ void ad5629r_set_power_mode(struct ad5629r_dev *dev,
  *                              CLR_TO_MIDSCALE  - clears to 0x8000;
  *                              CLR_TO_FULLSCALE - clears to 0xFFFF;
  *                              CLR_NOOP         - no operation.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_load_clear_code_reg(struct ad5629r_dev *dev,
 				 uint8_t clear_value)
@@ -376,8 +342,6 @@ void ad5629r_load_clear_code_reg(struct ad5629r_dev *dev,
  *                                      is DAC A;
  *                          DAC_D_SEL | DAC_F_SEL | DAC_H_SEL - the selected DACs
  *                          to override the LDAC pin are: DAC D, DAC F and DAC H.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_load_ldac_reg(struct ad5629r_dev *dev,
 			   uint8_t dac_sel)
@@ -396,8 +360,6 @@ void ad5629r_load_ldac_reg(struct ad5629r_dev *dev,
  * @brief Makes a power-on reset.
  *
  * @param dev - The device structure.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_reset(struct ad5629r_dev *dev)
 {
@@ -414,8 +376,6 @@ void ad5629r_reset(struct ad5629r_dev *dev)
  * @param status - the status of internal reference.
  *                 Example: REF_ON  - the reference is on;
  *                          REF_OFF - the reference is off.
- *
- * @return none.
 *******************************************************************************/
 void ad5629r_set_ref(struct ad5629r_dev *dev,
 		     uint8_t status)

@@ -5,50 +5,40 @@
 ********************************************************************************
  * Copyright 2018(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef _NO_OS_UTIL_H_
 #define _NO_OS_UTIL_H_
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define NO_OS_BIT(x)	(1 << (x))
+
+#define NO_OS_BIT_ULL(x) ((uint64_t) 1 << (x))
 
 #define NO_OS_ARRAY_SIZE(x) \
 	(sizeof(x) / sizeof((x)[0]))
@@ -89,6 +79,12 @@
 		t = t >> (NO_OS_BITS_PER_LONG - (h + 1));		\
 		t;						\
 })
+#define NO_OS_GENMASK_ULL(h, l) ({						\
+		unsigned long long t = (unsigned long long)(~0ULL);	\
+		t = t << (64 - (h - l + 1));				\
+		t = t >> (64 - (h + 1));				\
+		t;							\
+})
 
 #define no_os_bswap_constant_32(x) \
 	((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
@@ -121,9 +117,8 @@
 #define no_os_bcd2bin(x)	(((x) & 0x0f) + ((x) >> 4) * 10)
 #define no_os_bin2bcd(x)	((((x) / 10) << 4) + (x) % 10)
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
+#define NO_OS_CONTAINER_OF(ptr, type, name) ((type *)((char *)(ptr) - offsetof(type, name)))
+
 /* Check if bit set */
 inline int no_os_test_bit(int pos, const volatile void * addr)
 {
@@ -132,6 +127,7 @@ inline int no_os_test_bit(int pos, const volatile void * addr)
 
 /* Find first set bit in word. */
 uint32_t no_os_find_first_set_bit(uint32_t word);
+uint64_t no_os_find_first_set_bit_u64(uint64_t word);
 /* Find last set bit in word. */
 uint32_t no_os_find_last_set_bit(uint32_t word);
 /* Locate the closest element in an array. */
@@ -140,13 +136,20 @@ uint32_t no_os_find_closest(int32_t val,
 			    uint32_t size);
 /* Shift the value and apply the specified mask. */
 uint32_t no_os_field_prep(uint32_t mask, uint32_t val);
+uint64_t no_os_field_prep_u64(uint64_t mask, uint64_t val);
 /* Get a field specified by a mask from a word. */
 uint32_t no_os_field_get(uint32_t mask, uint32_t word);
+/* Produce the maximum value representable by a field */
+uint32_t no_os_field_max(uint32_t mask);
+uint64_t no_os_field_max_u64(uint64_t mask);
+
 /* Log base 2 of the given number. */
 int32_t no_os_log_base_2(uint32_t x);
 /* Find greatest common divisor of the given two numbers. */
 uint32_t no_os_greatest_common_divisor(uint32_t a,
 				       uint32_t b);
+uint64_t no_os_greatest_common_divisor_u64(uint64_t a,
+		uint64_t b);
 /* Find lowest common multiple of the given two numbers. */
 uint32_t no_os_lowest_common_multiple(uint32_t a, uint32_t b);
 /* Calculate best rational approximation for a given fraction. */
@@ -156,6 +159,12 @@ void no_os_rational_best_approximation(uint32_t given_numerator,
 				       uint32_t max_denominator,
 				       uint32_t *best_numerator,
 				       uint32_t *best_denominator);
+void no_os_rational_best_approximation_u64(uint64_t given_numerator,
+		uint64_t given_denominator,
+		uint64_t max_numerator,
+		uint64_t max_denominator,
+		uint64_t *best_numerator,
+		uint64_t *best_denominator);
 /* Calculate the number of set bits (8-bit size). */
 unsigned int no_os_hweight8(uint8_t word);
 /* Calculate the number of set bits (16-bit size). */
@@ -198,6 +207,7 @@ int16_t no_os_sign_extend16(uint16_t value, int index);
 int32_t no_os_sign_extend32(uint32_t value, int index);
 uint64_t no_os_mul_u32_u32(uint32_t a, uint32_t b);
 uint64_t no_os_mul_u64_u32_shr(uint64_t a, uint32_t mul, unsigned int shift);
+uint64_t no_os_mul_u64_u32_div(uint64_t a, uint32_t mul, uint32_t divisor);
 
 bool no_os_is_big_endian(void);
 void no_os_memswap64(void *buf, uint32_t bytes, uint32_t step);

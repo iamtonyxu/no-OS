@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ********************************************************************************
  * @section mqqt_details MQTT description
  *   This file wrapps the MQTT eclipse paho client implementation from
@@ -106,16 +100,8 @@
 #ifndef MQTT_NOOS_CLIENT
 #define MQTT_NOOS_CLIENT
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
-
 #include <stdbool.h>
 #include "tcp_socket.h"
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /**
  * @enum mqtt_qos
@@ -156,11 +142,11 @@ struct mqtt_connect_config {
 	 */
 	uint16_t		keep_alive_ms;
 	/** Name the client will have */
-	int8_t			*client_name;
+	char			*client_name;
 	/** Username  */
-	int8_t			*username;
+	char			*username;
 	/** Password */
-	int8_t			*password;
+	char			*password;
 };
 
 /**
@@ -185,9 +171,9 @@ struct mqtt_message {
 	/** Quality of services */
 	enum mqtt_qos	qos;
 	/** Payload */
-	uint8_t		*payload;
+	char		*payload;
 	/** Length */
-	uint32_t	len;
+	size_t		len;
 	/** If set, a retained message will be sent. See MQTT documentation */
 	bool		retained;
 };
@@ -229,7 +215,7 @@ struct mqtt_init_param {
 	 * Callback to be called when a message is received from the broker
 	 * @param Message received from the broker.
 	 */
-	void			(*message_handler)(struct mqtt_message_data *);
+	void	(*message_handler)(struct mqtt_message_data *);
 };
 
 /**
@@ -237,10 +223,6 @@ struct mqtt_init_param {
  * @brief Reference to MQTT client
  */
 struct mqtt_desc;
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /* Init MQTT client */
 int32_t mqtt_init(struct mqtt_desc **desc,
@@ -256,13 +238,13 @@ int32_t mqtt_connect(struct mqtt_desc *desc,
 int32_t mqtt_disconnect(struct mqtt_desc *desc);
 
 /* Send publish to MQTT broker */
-int32_t mqtt_publish(struct mqtt_desc *desc, const int8_t* topic,
+int32_t mqtt_publish(struct mqtt_desc *desc, const char *topic,
 		     const struct mqtt_message* msg);
 /* Send subscribe to MQTT broker */
-int32_t mqtt_subscribe(struct mqtt_desc *desc, const int8_t *topic,
+int32_t mqtt_subscribe(struct mqtt_desc *desc, const char *topic,
 		       enum mqtt_qos qos, enum mqtt_qos *granted_qos_optional);
 /* Send unsubscribe to MQTT broker */
-int32_t mqtt_unsubscribe(struct mqtt_desc *desc, const int8_t* topic);
+int32_t mqtt_unsubscribe(struct mqtt_desc *desc, const char *topic);
 /* Allow messages to be received */
 int32_t mqtt_yield(struct mqtt_desc *desc, uint32_t timeout_ms);
 

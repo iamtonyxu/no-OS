@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include <errno.h>
@@ -48,6 +42,8 @@
 #include "no_os_delay.h"
 #include "no_os_util.h"
 
+#include "oa_tc6.h"
+
 #define ADIN1110_CRC_POLYNOMIAL	0x7
 
 NO_OS_DECLARE_CRC8_TABLE(_crc_table);
@@ -59,7 +55,7 @@ struct _adin1110_priv {
 
 static struct _adin1110_priv driver_data[2] = {
 	[ADIN1110] = {
-		.phy_id= ADIN1110_PHY_ID,
+		.phy_id = ADIN1110_PHY_ID,
 		.num_ports = 1,
 	},
 	[ADIN2111] = {
@@ -75,11 +71,13 @@ static struct _adin1110_priv driver_data[2] = {
  * @param data - register's value
  * @return 0 in case of success, negative error code otherwise
  */
-int adin1110_reg_write(struct adin1110_desc *desc, uint16_t addr, uint32_t data)
+static int adin1110_standard_spi_reg_write(struct adin1110_desc *desc,
+		uint16_t addr, uint32_t data)
 {
 	uint32_t header_len = ADIN1110_WR_HDR_SIZE;
 	struct no_os_spi_msg xfer = {
 		.tx_buff = desc->data,
+		.rx_buff = desc->data,
 		.bytes_number = ADIN1110_WR_FRAME_SIZE,
 		.cs_change = 1,
 	};
@@ -105,13 +103,35 @@ int adin1110_reg_write(struct adin1110_desc *desc, uint16_t addr, uint32_t data)
 }
 
 /**
+ * @brief Write a register's value
+ * @param desc - the device descriptor
+ * @param addr - register's address
+ * @param data - register's value
+ * @return 0 in case of success, negative error code otherwise
+ */
+int adin1110_reg_write(struct adin1110_desc *desc, uint16_t addr, uint32_t data)
+{
+	uint8_t mms = 0;
+
+	if (desc->oa_tc6_spi) {
+		if (addr >= 0x30)
+			mms = 1;
+
+		return oa_tc6_reg_write(desc->oa_desc, OA_MMS_REG(mms, addr), data);
+	}
+
+	return adin1110_standard_spi_reg_write(desc, addr, data);
+}
+
+/**
  * @brief Read a register's value
  * @param desc - the device descriptor
  * @param addr - register's address
  * @param data - register's value
  * @return 0 in case of success, negative error code otherwise
  */
-int adin1110_reg_read(struct adin1110_desc *desc, uint16_t addr, uint32_t *data)
+static int adin1110_standard_spi_reg_read(struct adin1110_desc *desc,
+		uint16_t addr, uint32_t *data)
 {
 	uint8_t crc;
 	uint8_t recv_crc;
@@ -151,6 +171,27 @@ int adin1110_reg_read(struct adin1110_desc *desc, uint16_t addr, uint32_t *data)
 	*data = no_os_get_unaligned_be32(&desc->data[header_len]);
 
 	return 0;
+}
+
+/**
+ * @brief Read a register's value
+ * @param desc - the device descriptor
+ * @param addr - register's address
+ * @param data - register's value
+ * @return 0 in case of success, negative error code otherwise
+ */
+int adin1110_reg_read(struct adin1110_desc *desc, uint16_t addr, uint32_t *data)
+{
+	uint8_t mms = 0;
+
+	if (desc->oa_tc6_spi) {
+		if (addr >= 0x30)
+			mms = 1;
+
+		return oa_tc6_reg_read(desc->oa_desc, OA_MMS_REG(mms, addr), data);
+	}
+
+	return adin1110_standard_spi_reg_read(desc, addr, data);
 }
 
 /**
@@ -503,17 +544,44 @@ int adin1110_write_fifo(struct adin1110_desc *desc, uint32_t port,
 	uint32_t tx_space;
 	int ret;
 
-	struct no_os_spi_msg xfer = {
-		.tx_buff = desc->data,
-		.cs_change = 1,
-	};
+	struct no_os_spi_msg xfer = {0};
 
 	if (port >= driver_data[desc->chip_type].num_ports)
 		return -EINVAL;
 
+	if (desc->oa_tc6_spi) {
+		struct oa_tc6_frame_buffer *oa_frame_buffer;
+
+		frame_offset = 0;
+		ret = oa_tc6_get_tx_frame(desc->oa_desc, &oa_frame_buffer);
+		if (ret)
+			return ret;
+
+		memcpy(&oa_frame_buffer->data[frame_offset], (void *)&eth_buff->mac_dest[0],
+		       ADIN1110_ETH_HDR_LEN);
+		frame_offset += ADIN1110_ETH_HDR_LEN;
+		memcpy(&oa_frame_buffer->data[frame_offset], eth_buff->payload,
+		       eth_buff->len - ADIN1110_ETH_HDR_LEN);
+
+		if (eth_buff->len < 64)
+			oa_frame_buffer->len = 64;
+		else
+			oa_frame_buffer->len = eth_buff->len;
+
+		oa_frame_buffer->vs = port;
+
+		oa_tc6_put_tx_frame(desc->oa_desc, oa_frame_buffer);
+
+		return oa_tc6_thread(desc->oa_desc);
+	}
+
 	/* The minimum frame length is 64 bytes */
 	if (eth_buff->len + ADIN1110_FCS_LEN < 64)
 		padding = 64 - (eth_buff->len + ADIN1110_FCS_LEN);
+
+	xfer.tx_buff = desc->data;
+	xfer.rx_buff = desc->data;
+	xfer.cs_change = 1;
 
 	padded_len = eth_buff->len + padding + ADIN1110_FRAME_HEADER_LEN;
 
@@ -573,15 +641,36 @@ int adin1110_read_fifo(struct adin1110_desc *desc, uint32_t port,
 	uint32_t rounded_len;
 	uint32_t frame_size;
 	uint32_t fifo_reg;
-	struct no_os_spi_msg xfer = {
-		.tx_buff = desc->data,
-		.rx_buff = desc->data,
-		.cs_change = 1,
-	};
+	struct no_os_spi_msg xfer = {0};
 	int ret;
 
 	if (port >= driver_data[desc->chip_type].num_ports)
 		return -EINVAL;
+
+	if (desc->oa_tc6_spi) {
+		struct oa_tc6_frame_buffer *frame;
+
+		oa_tc6_thread(desc->oa_desc);
+		ret = oa_tc6_get_rx_frame_match_vs(desc->oa_desc, &frame, port, 0x1);
+		if (ret)
+			return ret;
+
+		field_offset = 0;
+		memcpy((void *)&eth_buff->mac_dest[0], &frame->data[field_offset],
+		       ADIN1110_ETH_HDR_LEN);
+		field_offset += ADIN1110_ETH_HDR_LEN;
+		memcpy(eth_buff->payload, &frame->data[field_offset],
+		       frame->len - ADIN1110_ETH_HDR_LEN);
+		eth_buff->len = frame->len;
+
+		oa_tc6_put_rx_frame(desc->oa_desc, frame);
+
+		return 0;
+	}
+
+	xfer.tx_buff = desc->data;
+	xfer.rx_buff = desc->data;
+	xfer.cs_change = 1;
 
 	if (!port) {
 		fifo_reg = ADIN1110_RX_REG;
@@ -796,21 +885,20 @@ static int adin1110_setup_phy(struct adin1110_desc *desc)
 
 	for (i = 0; i < ports; i++) {
 		ret = adin1110_mdio_read_c45(desc, ADIN1110_MDIO_PHY_ID(i),
-					     0, ADIN1110_MI_CONTROL_REG, &reg_val);
+					     0x1E, ADIN1110_CRSM_SFT_PD_CNTRL_REG, &reg_val);
 		if (ret)
 			return ret;
 
 		/* Get the PHY out of software power down to start the autonegotiation process*/
-		sw_pd = no_os_field_get(ADIN1110_MI_SFT_PD_MASK, reg_val);
+		sw_pd = no_os_field_get(ADIN1110_CRSM_SFT_PD_MASK, reg_val);
 		if (sw_pd) {
-			while (reg_val & ADIN1110_MI_SFT_PD_MASK) {
-				reg_val &= ~ADIN1110_MI_SFT_PD_MASK;
+			while (reg_val & ADIN1110_CRSM_SFT_PD_MASK) {
 				ret = adin1110_mdio_write_c45(desc, ADIN1110_MDIO_PHY_ID(i),
-							      0, ADIN1110_MI_CONTROL_REG, reg_val);
+							      0x1E, ADIN1110_CRSM_SFT_PD_CNTRL_REG, 0x0);
 				if (ret)
 					return ret;
 				ret = adin1110_mdio_read_c45(desc, ADIN1110_MDIO_PHY_ID(i),
-							     0, ADIN1110_MI_CONTROL_REG, &reg_val);
+							     0x1E, ADIN1110_CRSM_SFT_PD_CNTRL_REG, &reg_val);
 				if (ret)
 					return ret;
 			}
@@ -855,13 +943,14 @@ static int adin1110_setup_mac(struct adin1110_desc *desc)
 int adin1110_init(struct adin1110_desc **desc,
 		  struct adin1110_init_param *param)
 {
+	struct oa_tc6_init_param oa_param;
 	struct adin1110_desc *descriptor;
 	int ret;
 
 	if (!param->mac_address)
 		return -EINVAL;
 
-	descriptor = calloc(1, sizeof(*descriptor));
+	descriptor = no_os_calloc(1, sizeof(*descriptor));
 	if (!descriptor)
 		return -ENOMEM;
 
@@ -909,28 +998,47 @@ int adin1110_init(struct adin1110_desc **desc,
 		no_os_mdelay(90);
 	}
 
+	descriptor->oa_tc6_spi = param->oa_tc6_spi;
+
+	if (descriptor->oa_tc6_spi) {
+		oa_param.comm_desc = descriptor->comm_desc;
+		ret = oa_tc6_init(&descriptor->oa_desc, &oa_param);
+		if (ret)
+			goto free_spi;
+	} else {
+		descriptor->data = no_os_calloc(ADIN1110_BUFF_LEN,
+						sizeof(*descriptor->data));
+		if (!descriptor->data) {
+			ret = -ENOMEM;
+			goto free_spi;
+		}
+	}
+
 	ret = adin1110_setup_mac(descriptor);
 	if (ret)
-		goto free_spi;
+		goto free_oa;
 
 	ret = adin1110_setup_phy(descriptor);
 	if (ret)
-		goto free_spi;
+		goto free_oa;
 
 	ret = adin1110_check_reset(descriptor);
 	if (ret)
-		goto free_spi;
+		goto free_oa;
 
 	*desc = descriptor;
 
 	return 0;
 
+free_oa:
+	no_os_free(descriptor->data);
+	oa_tc6_remove(descriptor->oa_desc);
 free_spi:
 	no_os_spi_remove(descriptor->comm_desc);
 free_rst_gpio:
 	no_os_gpio_remove(descriptor->reset_gpio);
 free_desc:
-	free(descriptor);
+	no_os_free(descriptor);
 
 	return ret;
 }
@@ -957,7 +1065,9 @@ int adin1110_remove(struct adin1110_desc *desc)
 			return ret;
 	}
 
-	free(desc);
+	no_os_free(desc->data);
+	oa_tc6_remove(desc->oa_desc);
+	no_os_free(desc);
 
 	return 0;
 }

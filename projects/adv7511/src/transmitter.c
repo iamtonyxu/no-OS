@@ -3,44 +3,35 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 ********************************************************************************
  *   SVN Revision: $WCREV$
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include "transmitter.h"
@@ -51,9 +42,6 @@
 #include "edid.h"
 #include "app_config.h"
 
-/*****************************************************************************/
-/******************* Macros and Constants Definitions ************************/
-/*****************************************************************************/
 #define TRANSMITTER_MODE_SWITCH_DELAY	500
 /* This value defines the delay from the time   */
 /* a mode change is detected to the time it is  */
@@ -70,9 +58,6 @@
 /* result in better response but generate much  */
 /* more i2c access. Recommended 100-200 ms      */
 
-/*****************************************************************************/
-/******************************* Variables ***********************************/
-/*****************************************************************************/
 static UINT32					HouseKeepingDelay;
 static TRANSMITTER_OPER_MODE	LastDetMode;
 static UINT32					ModeChngCount;
@@ -85,7 +70,6 @@ TRANSMITTER_TX_VARS	TransmitterTxVars;
 /**
  * @brief Link the transmitter clk_gen handler to the application one.
  * @param [in] clk_gen_handle - Pointer to the clk_axi_clkgen handle.
- * @return void
  */
 void transmitter_link_clkgen(struct axi_clkgen *clk_gen_handle)
 {
@@ -132,11 +116,10 @@ ATV_ERR ADIAPI_TransmitterInit(void)
 /***************************************************************************//**
  * @brief Initializes the software parameters.
  *
- * @return None.
 *******************************************************************************/
 void TRANSMITTER_SoftwareInit(void)
 {
-	memset (&(TransmitterTxVars), 0, sizeof(TRANSMITTER_TX_VARS));
+	memset(&(TransmitterTxVars), 0, sizeof(TRANSMITTER_TX_VARS));
 
 	TxStatus.Hpd        = FALSE;
 	TxStatus.Msen       = FALSE;
@@ -145,7 +128,6 @@ void TRANSMITTER_SoftwareInit(void)
 /***************************************************************************//**
  * @brief Initializes the hardware of the transmitter.
  *
- * @return None.
 *******************************************************************************/
 void TRANSMITTER_HardwareInit(void)
 {
@@ -153,7 +135,7 @@ void TRANSMITTER_HardwareInit(void)
 	ADIAPI_TxInit(TRUE);
 
 	/* Enable TMDS clock and data lines. */
-	ADIAPI_TxEnableTmds (TRUE, TRUE);
+	ADIAPI_TxEnableTmds(TRUE, TRUE);
 
 	/* Set system mute. */
 	ADIAPI_TxSetAvmute(TX_AVMUTE_OFF);
@@ -184,11 +166,11 @@ void TRANSMITTER_HardwareInit(void)
 				   1);
 
 	/* Set interrupt masks. */
-	ADIAPI_TxSetEnabledEvents (TX_EVENT_ALL_EVENTS, FALSE);
-	ADIAPI_TxSetEnabledEvents ((TX_EVENT)(TX_EVENT_HPD_CHG |
-					      TX_EVENT_MSEN_CHG |
-					      TX_EVENT_EDID_READY),
-				   TRUE);
+	ADIAPI_TxSetEnabledEvents(TX_EVENT_ALL_EVENTS, FALSE);
+	ADIAPI_TxSetEnabledEvents((TX_EVENT)(TX_EVENT_HPD_CHG |
+					     TX_EVENT_MSEN_CHG |
+					     TX_EVENT_EDID_READY),
+				  TRUE);
 
 	/* Enable AVI InfoFrame. */
 	ADIAPI_TxEnablePackets(PKT_AV_INFO_FRAME,
@@ -222,7 +204,7 @@ ATV_ERR ADIAPI_TransmitterGetDetectedMode(TRANSMITTER_OPER_MODE *Mode)
 	BOOL Msen;
 
 	ADIAPI_TxGetHpdMsenState(&Hpd, &Msen);
-	if(Hpd && Msen) {
+	if (Hpd && Msen) {
 		*Mode = MODE_XMT;
 	} else {
 		*Mode = MODE_NONE;
@@ -274,11 +256,10 @@ ATV_ERR ADIAPI_TransmitterSetOperatingMode(TRANSMITTER_OPER_MODE Mode)
  *
  * @param Mode - operating mode.
  *
- * @return None.
 *******************************************************************************/
 void ADIAPI_TransmitterSetMuteMode(TRANSMITTER_OPER_MODE Mode)
 {
-	if(Mode == MODE_XMT) {
+	if (Mode == MODE_XMT) {
 		MuteState = MUTE_DISABLE;
 	} else {
 		MuteState = MUTE_ENABLE;
@@ -289,19 +270,18 @@ void ADIAPI_TransmitterSetMuteMode(TRANSMITTER_OPER_MODE Mode)
  * @brief Checks current AVR operating mode and notify application if mode
  * 		  changed.
  *
- * @return None.
 *******************************************************************************/
 void TRANSMITTER_MonitorAvrMode(void)
 {
 	TRANSMITTER_OPER_MODE Mode;
 
 	ADIAPI_TransmitterGetDetectedMode(&Mode);
-	if(Mode != LastDetMode) {
+	if (Mode != LastDetMode) {
 		LastDetMode = Mode;
 		ModeChngCount = ATV_GetMsCountNZ();
 	}
-	if((Mode != TransmitterParm.Mode) && ModeChngCount) {
-		if(ATV_GetElapsedMs(ModeChngCount, 0) > TRANSMITTER_MODE_SWITCH_DELAY) {
+	if ((Mode != TransmitterParm.Mode) && ModeChngCount) {
+		if (ATV_GetElapsedMs(ModeChngCount, 0) > TRANSMITTER_MODE_SWITCH_DELAY) {
 			ADIAPI_TransmitterSetOperatingMode(Mode);
 			ADIAPI_TransmitterSetMuteMode(Mode);
 			ModeChngCount = 0;
@@ -313,7 +293,6 @@ void TRANSMITTER_MonitorAvrMode(void)
  * @brief Main function for polling mode operation.
  * 		  This function should be called periodically (at least every 100 ms).
  *
- * @return None.
 *******************************************************************************/
 ATV_ERR ADIAPI_TransmitterMain(void)
 {
@@ -321,7 +300,7 @@ ATV_ERR ADIAPI_TransmitterMain(void)
 
 	TRANSMITTER_MonitorAvrMode();
 	Events = 0;
-	if ( (TransmitterParm.PowerMode == REP_POWER_UP) && (TransmitterParm.Changed ||
+	if ((TransmitterParm.PowerMode == REP_POWER_UP) && (TransmitterParm.Changed ||
 			(ATV_GetElapsedMs(HouseKeepingDelay, 0) >= TRANSMITTER_HOUSEKEEPING_DELAY))) {
 		TransmitterParm.Changed = FALSE;
 		Events |= ADI_TASK_EVENT_TIMER;
@@ -335,7 +314,7 @@ ATV_ERR ADIAPI_TransmitterMain(void)
 	    && (TransmitterParm.PowerMode == REP_POWER_UP)) {
 		TRANSMITTER_Housekeeping();
 	}
-	if((CurrMuteState == MUTE_DISABLE)
+	if ((CurrMuteState == MUTE_DISABLE)
 	    && (TransmitterParm.PowerMode == REP_POWER_UP)) {
 		AudioClick();
 	}
@@ -347,7 +326,6 @@ ATV_ERR ADIAPI_TransmitterMain(void)
  * @brief Performs TX housekeeping tasks.
  *		  This function should be called periodically (at least every 100 ms)
  *
- * @return None.
 *******************************************************************************/
 void TRANSMITTER_Housekeeping(void)
 {
@@ -364,7 +342,7 @@ ATV_ERR ADIAPI_TransmitterSetMuteState(void)
 {
 	if (MuteState != CurrMuteState) {
 		CurrMuteState = MuteState;
-		if(CurrMuteState) {
+		if (CurrMuteState) {
 			TRANSMITTER_DBG_MSG("Mute audio and video.\n\r");
 			ADIAPI_TxMuteAudio(TRUE);
 			ADIAPI_TxMuteVideo(TRUE);
@@ -383,13 +361,13 @@ ATV_ERR ADIAPI_TransmitterSetMuteState(void)
  *
  * @return Returns 0.
 *******************************************************************************/
-UINT16 TRANSMITTER_Notification (TX_EVENT Ev, UINT16 Count, void *BufPtr)
+UINT16 TRANSMITTER_Notification(TX_EVENT Ev, UINT16 Count, void *BufPtr)
 {
 	switch (Ev) {
 	/* HPD changed */
 	case TX_EVENT_HPD_CHG:
 		TxStatus.Hpd = *((BOOL *)BufPtr);
-		TRANSMITTER_DBG_MSG("HPD changed to %s\n\r", TxStatus.Hpd? "HI": "LOW");
+		TRANSMITTER_DBG_MSG("HPD changed to %s\n\r", TxStatus.Hpd ? "HI" : "LOW");
 		if (TxStatus.Hpd) {
 			TRANSMITTER_HardwareInit();
 		} else {
@@ -399,7 +377,7 @@ UINT16 TRANSMITTER_Notification (TX_EVENT Ev, UINT16 Count, void *BufPtr)
 	/* MSEN changed */
 	case TX_EVENT_MSEN_CHG:
 		TxStatus.Msen = *((BOOL *)BufPtr);
-		TRANSMITTER_DBG_MSG("MSEN changed to %s\n\r", TxStatus.Msen? "HI": "LOW");
+		TRANSMITTER_DBG_MSG("MSEN changed to %s\n\r", TxStatus.Msen ? "HI" : "LOW");
 		break;
 	/* EDID ready */
 	case TX_EVENT_EDID_READY:
@@ -420,7 +398,6 @@ UINT16 TRANSMITTER_Notification (TX_EVENT Ev, UINT16 Count, void *BufPtr)
  * @param SegmentNum - Segment number.
  * @param SegPtr - Segment pointer.
  *
- * @return None.
 *******************************************************************************/
 void TRANSMITTER_NewEdidSegment(UINT16 SegmentNum, UCHAR *SegPtr)
 {
@@ -441,20 +418,20 @@ void TRANSMITTER_NewEdidSegment(UINT16 SegmentNum, UCHAR *SegPtr)
 	unsigned long  ieeeRegistration         = 0;
 
 	if (SegPtr) {
-		memcpy (EdidData, SegPtr, 256);
+		memcpy(EdidData, SegPtr, 256);
 	} else {
-		memset (EdidData, 0, 256);
+		memset(EdidData, 0, 256);
 	}
 	if (SegPtr && (SegmentNum < 2)) {
-		for(edidIndex = 128; edidIndex <= 253; edidIndex++) {
+		for (edidIndex = 128; edidIndex <= 253; edidIndex++) {
 			ieeeRegistration = ((unsigned long)EdidData[edidIndex + 2] << 16) |
 					   ((unsigned short)EdidData[edidIndex + 1] << 8) |
 					   EdidData[edidIndex];
-			if(ieeeRegistration == HDMI_IEEE_REG) {
+			if (ieeeRegistration == HDMI_IEEE_REG) {
 				break;
 			}
 		}
-		if(ieeeRegistration == HDMI_IEEE_REG) {
+		if (ieeeRegistration == HDMI_IEEE_REG) {
 			TRANSMITTER_DBG_MSG("HDMI device.\n\r");
 			ADIAPI_TxSetOutputMode(OUT_MODE_HDMI);
 		} else {

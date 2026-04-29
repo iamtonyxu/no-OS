@@ -6,43 +6,34 @@
 ********************************************************************************
  * Copyright 2019, 2021(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef AD7606_H_
 #define AD7606_H_
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
 #include "no_os_delay.h"
@@ -50,9 +41,13 @@
 #include "no_os_spi.h"
 #include "no_os_util.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
+#include "no_os_pwm.h"
+
+#ifdef XILINX_PLATFORM
+#include "clk_axi_clkgen.h"
+#include "spi_engine.h"
+#endif
+
 #define AD7606_REG_STATUS			0x01
 #define AD7606_REG_CONFIG			0x02
 #define AD7606_REG_RANGE_CH_ADDR(ch)		(0x03 + ((ch) >> 1))
@@ -117,8 +112,11 @@
 /* AD7606_REG_DIAGNOSTIC_MUX_CH */
 #define AD7606_DIAGN_MUX_CH_MSK(ch)		(NO_OS_GENMASK(2, 0) << (3 * (ch & 0x1)))
 
-#define AD7606_RD_FLAG_MSK(x)		(NO_OS_BIT(6) | ((x) & 0x3F))
-#define AD7606_WR_FLAG_MSK(x)		((x) & 0x3F)
+#define AD7606_SERIAL_RD_FLAG_MSK(x)		(NO_OS_BIT(6) | ((x) & 0x3F))
+#define AD7606_SERIAL_WR_FLAG_MSK(x)		((x) & 0x3F)
+
+#define AD7606_PARALLEL_RD_FLAG_MSK(x)		(NO_OS_BIT(7) | ((x) & 0x7F))
+#define AD7606_PARALLEL_WR_FLAG_MSK(x)		((x) & 0x7F)
 
 #define AD7606_MAX_CHANNELS		8
 
@@ -203,6 +201,17 @@ enum ad7606_dout_format {
 };
 
 /**
+ * @enum ad7606_range_type
+ * @brief Type of range for this channel.
+ */
+enum ad7606_range_type {
+	AD7606_HW_RANGE,
+	AD7606_SW_RANGE_SINGLE_ENDED_UNIPOLAR,
+	AD7606_SW_RANGE_SINGLE_ENDED_BIPOLAR,
+	AD7606_SW_RANGE_DIFFERENTIAL_BIPOLAR,
+};
+
+/**
  * @struct ad7606_config
  * @brief AD7606_REG_CONFIG configuration parameters
  */
@@ -226,8 +235,8 @@ struct ad7606_range {
 	int32_t min;
 	/** Maximum range value */
 	int32_t max;
-	/** Whether the range is differential */
-	bool differential;
+	/** Type of range according to \ref ad7606_range_type */
+	enum ad7606_range_type type;
 };
 
 /**
@@ -236,9 +245,9 @@ struct ad7606_range {
  */
 struct ad7606_oversampling {
 	/** Oversampling padding */
-	uint8_t os_pad:4;
+	uint8_t os_pad: 4;
 	/** Oversampling ratio */
-	enum ad7606_osr os_ratio:4;
+	enum ad7606_osr os_ratio : 4;
 };
 
 /**
@@ -264,11 +273,40 @@ struct ad7606_digital_diag {
 	bool interface_check_en: 1;
 };
 
+#ifdef XILINX_PLATFORM
+/**
+ * @struct ad7606_axi_dev
+ * @brief Structure for AXI FPGA cores
+ */
+struct ad7606_axi_dev {
+	/* Set to 'true' if the AXI modules have been initialized */
+	bool initialized;
+	/* Clock gen for hdl design structure */
+	struct axi_clkgen *clkgen;
+	/* Trigger conversion PWM generator descriptor */
+	struct no_os_pwm_desc *trigger_pwm_desc;
+	/* SPI Engine offload parameters */
+	struct spi_engine_offload_init_param offload_init_param;
+	/* AXI DMA controller for parallel sample capture */
+	struct axi_dmac *dmac;
+	/* AXI Core */
+	uint32_t core_baseaddr;
+	/* RX DMA base address */
+	uint32_t rx_dma_baseaddr;
+	uint32_t reg_access_speed;
+	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
+};
+#endif
+
 /**
  * @struct ad7606_dev
  * @brief Device driver structure
  */
 struct ad7606_dev {
+#ifdef XILINX_PLATFORM
+	/** AXI core device data */
+	struct ad7606_axi_dev axi_dev;
+#endif
 	/** SPI descriptor*/
 	struct no_os_spi_desc *spi_desc;
 	/** RESET GPIO descriptor */
@@ -295,6 +333,8 @@ struct ad7606_dev {
 	struct ad7606_oversampling oversampling;
 	/** Whether the device is running in hardware or software mode */
 	bool sw_mode;
+	/** Serial interface mode or Parallel interface mode */
+	bool parallel_interface;
 	/** Whether the device is running in register or ADC reading mode */
 	bool reg_mode;
 	/** Number of DOUT lines supported by the device */
@@ -305,25 +345,54 @@ struct ad7606_dev {
 	struct ad7606_digital_diag digital_diag_enable;
 	/** Number of input channels of the device */
 	uint8_t num_channels;
+	/** Channel scale computed from channel range setting */
+	double scale_ch[AD7606_MAX_CHANNELS];
+	/** Channel type setting */
+	enum ad7606_range_type range_ch_type[AD7606_MAX_CHANNELS];
 	/** Channel offset calibration */
 	int8_t offset_ch[AD7606_MAX_CHANNELS];
 	/** Channel phase calibration */
 	uint8_t phase_ch[AD7606_MAX_CHANNELS];
 	/** Channel gain calibration */
 	uint8_t gain_ch[AD7606_MAX_CHANNELS];
-	/** Channel operating range */
-	struct ad7606_range range_ch[AD7606_MAX_CHANNELS];
 	/** Data buffer (used internally by the SPI communication functions) */
 	uint8_t data[28];
 };
 
+#ifdef XILINX_PLATFORM
 /**
- * @struct ad7606_dev
+ * @struct ad7606_axi_init_param
+ * @brief AXI driver(s) initialization parameters
+ */
+struct ad7606_axi_init_param {
+	/* Clock generator init parameters */
+	struct axi_clkgen_init *clkgen_init;
+	/* Clock generator rate */
+	uint32_t axi_clkgen_rate;
+	/* PWM generator init structure */
+	struct no_os_pwm_init_param *trigger_pwm_init;
+	/* SPI Engine offload parameters */
+	struct spi_engine_offload_init_param *offload_init_param;
+	/* AXI Core */
+	uint32_t core_baseaddr;
+	/* RX DMA base address */
+	uint32_t rx_dma_baseaddr;
+	uint32_t reg_access_speed;
+	void (*dcache_invalidate_range)(uint32_t address, uint32_t bytes_count);
+};
+#endif
+
+/**
+ * @struct ad7606_init_param
  * @brief Device driver initialization parameters
  */
 struct ad7606_init_param {
 	/** SPI initialization parameters */
 	struct no_os_spi_init_param spi_init;
+#ifdef XILINX_PLATFORM
+	/* AXI initialization parameters */
+	struct ad7606_axi_init_param *axi_init;
+#endif
 	/** RESET GPIO initialization parameters */
 	struct no_os_gpio_init_param *gpio_reset;
 	/** CONVST GPIO initialization parameters */
@@ -348,6 +417,8 @@ struct ad7606_init_param {
 	struct ad7606_oversampling oversampling;
 	/** Whether the device is running in hardware or software mode */
 	bool sw_mode;
+	/** Serial interface mode or Parallel interface mode */
+	bool parallel_interface;
 	/** Configuration register settings */
 	struct ad7606_config config;
 	/** Digital diagnostics register settings */
@@ -362,24 +433,41 @@ struct ad7606_init_param {
 	struct ad7606_range range_ch[AD7606_MAX_CHANNELS];
 };
 
-int32_t ad7606_spi_reg_read(struct ad7606_dev *dev,
-			    uint8_t reg_addr,
-			    uint8_t *reg_data);
-int32_t ad7606_spi_reg_write(struct ad7606_dev *dev,
-			     uint8_t reg_addr,
-			     uint8_t reg_data);
-int32_t ad7606_spi_write_mask(struct ad7606_dev *dev,
-			      uint32_t addr,
-			      uint32_t mask,
-			      uint32_t val);
+const struct ad7606_range *ad7606_get_ch_ranges(struct ad7606_dev *dev,
+		uint8_t ch,
+		uint32_t *num_ranges);
+
+int32_t ad7606_capture_pre_enable(struct ad7606_dev *dev);
+void ad7606_capture_post_disable(struct ad7606_dev *dev);
+
+bool ad7606_sw_mode_enabled(struct ad7606_dev *dev);
+
+int32_t ad7606_get_channels_number(struct ad7606_dev *dev);
+
+int32_t ad7606_reg_read(struct ad7606_dev *dev,
+			uint8_t reg_addr,
+			uint8_t *reg_data);
+int32_t ad7606_reg_write(struct ad7606_dev *dev,
+			 uint8_t reg_addr,
+			 uint8_t reg_data);
+int32_t ad7606_write_mask(struct ad7606_dev *dev,
+			  uint32_t addr,
+			  uint32_t mask,
+			  uint32_t val);
 int32_t ad7606_spi_data_read(struct ad7606_dev *dev,
 			     uint32_t *data);
-int32_t ad7606_read(struct ad7606_dev *dev,
-		    uint32_t *data);
+int32_t ad7606_read_samples(struct ad7606_dev *dev,
+			    uint32_t *data,
+			    uint32_t samples);
 int32_t ad7606_convst(struct ad7606_dev *dev);
 int32_t ad7606_reset(struct ad7606_dev *dev);
 int32_t ad7606_set_oversampling(struct ad7606_dev *dev,
 				struct ad7606_oversampling oversampling);
+int32_t ad7606_get_oversampling(struct ad7606_dev *dev,
+				struct ad7606_oversampling *oversampling);
+int32_t ad7606_get_ch_scale(struct ad7606_dev *dev, uint8_t ch,
+			    double *scale);
+int32_t ad7606_get_resolution_bits(struct ad7606_dev *dev);
 int32_t ad7606_set_ch_range(struct ad7606_dev *dev, uint8_t ch,
 			    struct ad7606_range range);
 int32_t ad7606_set_ch_offset(struct ad7606_dev *dev, uint8_t ch,
@@ -394,5 +482,13 @@ int32_t ad7606_set_digital_diag(struct ad7606_dev *dev,
 				struct ad7606_digital_diag diag);
 int32_t ad7606_init(struct ad7606_dev **device,
 		    struct ad7606_init_param *init_param);
+int32_t ad7606_data_correction_serial(struct ad7606_dev *dev,
+				      uint32_t *buf, int32_t *data, uint8_t *status);
+int32_t ad7606_read_one_sample(struct ad7606_dev *dev, uint32_t * data);
 int32_t ad7606_remove(struct ad7606_dev *dev);
+int32_t ad7606_spi_reg_read(struct ad7606_dev *dev, uint8_t reg_addr,
+			    uint8_t *reg_data);
+int32_t ad7606_spi_reg_write(struct ad7606_dev *dev, uint8_t reg_addr,
+			     uint8_t reg_data);
+
 #endif /* AD7606_H_ */
