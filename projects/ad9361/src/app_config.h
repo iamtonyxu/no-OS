@@ -40,14 +40,15 @@
 #define AD9364_DEVICE			0 /* set it 1 if AD9364 device is used, 0 otherwise */
 #define AD9363A_DEVICE			0 /* set it 1 if AD9363A device is used, 0 otherwise */
 
-//#define XILINX_PLATFORM
+#define AD9361_LVDS_INTERFACE   0 /* set it 1 if LVDS interface is in use */
+#define XILINX_PLATFORM
 //#define ALTERA_PLATFORM
 //#define LINUX_PLATFORM
 //#define FMCOMMS5
 //#define ADI_RF_SOM
 //#define ADI_RF_SOM_CMOS
 //#define DMA_IRQ_ENABLE
-//#define DMA_EXAMPLE
+#define DMA_EXAMPLE
 //#define AXI_ADC_NOT_PRESENT
 //#define TDD_SWITCH_STATE_EXAMPLE
 

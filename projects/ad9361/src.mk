@@ -8,6 +8,8 @@
 #	- NO-OS								       #
 #									       #
 ################################################################################
+CFLAGS += -DFILE_SYSTEM_INTERFACE_SD \
+        -DFILE_SYSTEM_USE_MKFS
 
 SRCS += $(PROJECT)/src/main.c
 SRCS += $(DRIVERS)/rf-transceiver/ad9361/ad9361_api.c \
@@ -20,12 +22,21 @@ SRCS += $(DRIVERS)/axi_core/axi_adc_core/axi_adc_core.c \
 	$(DRIVERS)/axi_core/axi_sysid/axi_sysid.c \
 	$(DRIVERS)/api/no_os_spi.c \
 	$(DRIVERS)/api/no_os_gpio.c \
+	$(DRIVERS)/api/no_os_uart.c \
+	$(DRIVERS)/api/no_os_irq.c \
 	$(NO-OS)/util/no_os_util.c \
 	$(NO-OS)/util/no_os_alloc.c \
-	$(NO-OS)/util/no_os_mutex.c
+	$(NO-OS)/util/no_os_mutex.c \
+	$(NO-OS)/util/no_os_fifo.c \
+    $(NO-OS)/libraries/fatfs/source/diskio.c\
+    $(NO-OS)/libraries/fatfs/source/ff.c\
+    $(NO-OS)/libraries/fatfs/source/ffsystem.c\
+    $(NO-OS)/libraries/fatfs/source/ffunicode.c\
+    $(NO-OS)/libraries/fatfs/source/sdcard_access.c
 SRCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_axi_io.c
 SRCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_spi.c \
-	$(PLATFORM_DRIVERS)/$(PLATFORM)_gpio.c
+	$(PLATFORM_DRIVERS)/$(PLATFORM)_gpio.c \
+	$(PLATFORM_DRIVERS)/$(PLATFORM)_uart.c
 ifeq (linux,$(strip $(PLATFORM)))
 SRCS +=	$(PLATFORM_DRIVERS)/linux_delay.c
 else
@@ -55,7 +66,12 @@ SRCS += $(NO-OS)/util/no_os_fifo.c \
 	$(NO-OS)/util/no_os_circular_buffer.c
 endif
 INCS += $(DRIVERS)/rf-transceiver/ad9361/common.h \
-	$(PROJECT)/src/app_config.h
+	$(PROJECT)/src/app_config.h \
+    $(NO-OS)/libraries/fatfs/source/integer.h \
+    $(NO-OS)/libraries/fatfs/source/diskio.h\
+    $(NO-OS)/libraries/fatfs/source/ff.h\
+    $(NO-OS)/libraries/fatfs/source/ffconf.h\
+    $(NO-OS)/libraries/fatfs/source/sdcard_access.h
 INCS += $(DRIVERS)/rf-transceiver/ad9361/ad9361.h \
 	$(PROJECT)/src/parameters.h \
 	$(DRIVERS)/rf-transceiver/ad9361/ad9361_util.h \
@@ -80,7 +96,9 @@ INCS +=	$(INCLUDE)/no_os_axi_io.h \
 	$(INCLUDE)/no_os_util.h \
 	$(INCLUDE)/no_os_alloc.h \
 	$(INCLUDE)/no_os_mutex.h \
-	$(INCLUDE)/no_os_print_log.h
+	$(INCLUDE)/no_os_print_log.h \
+	$(INCLUDE)/no_os_fifo.h \
+	$(INCLUDE)/no_os_irq.h
 ifeq (y,$(strip $(IIOD)))
 
 ifeq (linux,$(strip $(PLATFORM)))
@@ -100,6 +118,13 @@ INCS += $(INCLUDE)/no_os_fifo.h \
 	$(NO-OS)/iio/iio_app/iio_app.h \
 	$(INCLUDE)/no_os_circular_buffer.h
 
+SRCS += $(DRIVERS)/api/no_os_uart.c
+else
+INCS += $(INCLUDE)/no_os_fifo.h \
+	$(INCLUDE)/no_os_uart.h \
+	$(INCLUDE)/no_os_lf256fifo.h \
+	$(INCLUDE)/no_os_list.h \
+	$(INCLUDE)/no_os_circular_buffer.h
 SRCS += $(DRIVERS)/api/no_os_uart.c
 endif
 ifeq (xilinx,$(strip $(PLATFORM)))

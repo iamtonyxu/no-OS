@@ -1,0 +1,118 @@
+/**
+ * \file fr9009_user.h
+ * \brief Contains FR9009 API macro definitions and global structure declarations for fr9009_user.c
+ *
+ * Copyright 2022 braridio.
+ * Released under the fr9009 API license, for more information see the "LICENSE.txt" file in this zip file.
+ */
+
+#ifndef _FR9009PROFILES_H_
+#define _FR9009PROFILES_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "fr9009_types.h"
+
+// #define VERIFY_ARM_CHKSUM_TIMEOUT_US  200000
+// #define VERIFY_ARM_CHKSUM_INTERVAL_US   5000
+// #define CLKPLL_CPCAL_TIMEOUT_US      1000000
+// #define CLKPLL_CPCAL_INTERVAL_US      100000
+// #define CLKPLL_LOCK_TIMEOUT_US       1000000
+// #define CLKPLL_LOCK_INTERVAL_US       100000
+// #define CLKPLL_POWERUP_US             200000
+// #define CLKPLL_LOCK_US               100000
+// #define SETARMGPIO_TIMEOUT_US        1000000
+// #define SETARMGPIO_INTERVAL_US        100000
+// #define SETRFPLL_TIMEOUT_US          1000000
+// #define SETRFPLL_INTERVAL_US          100000
+// #define GETRFPLL_TIMEOUT_US          1000000
+// #define GETRFPLL_INTERVAL_US          100000
+// #define SETFREQHOP_MODE_TIMEOUT_US   1000000
+// #define SETFREQHOP_MODE_INTERVAL_US   100000
+// #define GETFREQHOP_MODE_TIMEOUT_US   1000000
+// #define GETFREQHOP_MODE_INTERVAL_US   100000
+
+#define WAITINITCALS_INTERVAL_US      100
+
+// #define ABORTINITCALS_TIMEOUT_US     1000000
+// #define ABORTINITCALS_INTERVAL_US     100000
+
+// #define GETINITCALSTATUS_TIMEOUT_US  1000000
+// #define GETINITCALSTATUS_INTERVAL_US  100000
+// #define RADIOON_TIMEOUT_US           1000000
+// #define RADIOON_INTERVAL_US           100000
+// #define READARMCFG_TIMEOUT_US        1000000
+// #define READARMCFG_INTERVAL_US        100000
+// #define WRITEARMCFG_TIMEOUT_US       1000000
+// #define WRITEARMCFG_INTERVAL_US       100000
+// #define RADIOOFF_TIMEOUT_US          1000000
+// #define RADIOOFF_INTERVAL_US          100000
+// #define ENTRACKINGCALS_TIMEOUT_US    1000000
+// #define ENTRACKINGCALS_INTERVAL_US    100000
+// #define RESCHEDULETRACKINGCALS_TIMEOUT_US 1000000
+// #define RESCHEDULETRACKINGCALS_INTERVAL_US 100000
+// #define PAUSERESUMETRACKINGCALS_TIMEOUT_US 1000000
+// #define PAUSERESUMETRACKINGCALS_INTERVAL_US 100000
+// #define SETTXTOORXMAP_TIMEOUT_US     1000000
+// #define SETTXTOORXMAP_INTERVAL_US     100000
+// #define GETTXLOLSTATUS_TIMEOUT_US    1000000
+// #define GETTXLOLSTATUS_INTERVAL_US    100000
+// #define GETTXQECSTATUS_TIMEOUT_US    1000000
+// #define GETTXQECSTATUS_INTERVAL_US    100000
+// #define GETRXQECSTATUS_TIMEOUT_US    1000000
+// #define GETRXQECSTATUS_INTERVAL_US    100000
+// #define GETORXQECSTATUS_TIMEOUT_US   1000000
+// #define GETORXQECSTATUS_INTERVAL_US   100000
+// #define GETRXHD2STATUS_TIMEOUT_US    1000000
+// #define GETRXHD2STATUS_INTERVAL_US    100000
+#define WAITARMCMDINITCALI_TIMEOUT_US      10000000
+#define WAITARMCMDADCCALI_TIMEOUT_US       5000000
+#define WAITCOMMONARMCMD_TIMEOUT_US        1000000
+#define WAITCOMMONARMCMD_INTERVAL_US       100
+
+#define SENDARMCMD_TIMEOUT_US        2000000
+#define SENDARMCMD_INTERVAL_US        10
+
+// #define GETTEMPERATURE_TIMEOUT_US    1000000
+// #define GETTEMPERATURE_INTERVAL_US    100000
+// #define GETARMBOOTUP_TIMEOUT_US     1000000
+// #define GETARMBOOTUP_INTERVAL_US     100000
+// #define SETRFPLL_LOOP_FREQ_TIMEOUT_US 1000000
+// #define SETRFPLL_LOOP_FREQ_INTERVAL_US 100000
+// #define GETRFPLL_LOOP_FREQ_TIMEOUT_US 1000000
+// #define GETRFPLL_LOOP_FREQ_INTERVAL_US 100000
+// #define GETGPINTSRC_TIMEOUT_US    1000000
+// #define GETGPINTSRC_INTERVAL_US    100000
+// #define RUNSTREAMCMD_TIMEOUT_US   1000000
+// #define RUNSTREAMCMD_INTERVAL_US   100000
+
+/* 3 Bytes per SPI transaction * 341 transactions = ~1024 byte buffer size */
+/* Minimum MYK_SPIWRITEARRAY_BUFFERSIZE = 18 */
+
+#define FR9009_VERBOSE 1
+#define FR9009_LOGGING 0xF      /*LogLevel Set to All*/
+#define FR9009_RESET_ON_ERR  1   /*API Reset on Severe Errors*/
+
+/*
+ *****************************************
+ * Rx and ObsRx gain tables
+ ******************************************
+ */
+// #define MAX_GAIN_TABLE_INDEX            255
+// #define MIN_GAIN_TABLE_INDEX            0
+
+// #define START_RX_GAIN_INDEX             196
+// #define MIN_RX_GAIN_TABLE_INDEX         132
+
+#define START_ORX_GAIN_INDEX            (64 - 1)
+#define MIN_ORX_GAIN_TABLE_INDEX        0
+extern uint8_t framer_sel_type_rx;
+extern fr9009RxGainTable_t rxGainTable [64];
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
