@@ -31,7 +31,14 @@ SRCS += $(PROJECT)/src/app/ad9528_app.c \
 	$(PROJECT)/src/driver/fr9009/talise/src/fr9009_tx.c \
 	$(PROJECT)/src/driver/fr9009/talise/src/fr9009_user.c \
 	$(PROJECT)/src/driver/fr9009/talise/src/fr9009.c \
+	$(PROJECT)/src/driver/xilinx_hal/axi_fr9009_config.c \
 	$(PROJECT)/src/driver/xilinx_hal/platform_drivers.c \
+	$(PROJECT)/src/nr_micro_shell/src/ansi.c \
+	$(PROJECT)/src/nr_micro_shell/src/ansi_port.c \
+	$(PROJECT)/src/nr_micro_shell/src/nr_micro_shell.c \
+	$(PROJECT)/src/nr_micro_shell/nr_micro_shell_commands.c \
+	$(PROJECT)/src/rx_capture.c \
+	$(PROJECT)/src/tx_waveform.c \
 	$(PROJECT)/src/main.c
 
 INCS +=	$(PROJECT)/src/app/ad9528_app.h \
@@ -67,6 +74,14 @@ INCS +=	$(PROJECT)/src/app/ad9528_app.h \
 	$(PROJECT)/src/driver/fr9009/talise/include/fr9009_user.h \
 	$(PROJECT)/src/driver/fr9009/talise/include/fr9009_version.h \
 	$(PROJECT)/src/driver/fr9009/talise/include/fr9009.h \
+	$(PROJECT)/src/driver/xilinx_hal/axi_fr9009_config.h \
 	$(PROJECT)/src/driver/xilinx_hal/common.h \
 	$(PROJECT)/src/driver/xilinx_hal/parameters.h \
-	$(PROJECT)/src/driver/xilinx_hal/platform_drivers.h
+	$(PROJECT)/src/driver/xilinx_hal/platform_drivers.h \
+	$(PROJECT)/src/nr_micro_shell/inc/ansi.h \
+	$(PROJECT)/src/nr_micro_shell/inc/ansi_def.h \
+	$(PROJECT)/src/nr_micro_shell/inc/ansi_port.h \
+	$(PROJECT)/src/nr_micro_shell/inc/nr_micro_shell.h \
+	$(PROJECT)/src/nr_micro_shell/inc/nr_micro_shell_config.h \
+	$(PROJECT)/src/rx_capture.h \
+	$(PROJECT)/src/tx_waveform.h

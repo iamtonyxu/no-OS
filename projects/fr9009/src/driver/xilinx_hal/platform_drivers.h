@@ -61,8 +61,8 @@
 #define SUCCESS		0
 #define FAILURE		-1
 
-#define	SPI_CPHA	0x01
-#define	SPI_CPOL	0x02
+#define SPI_CPHA	0x01
+#define SPI_CPOL	0x02
 
 #define SPI_CS_DECODE	0x01
 
@@ -135,7 +135,7 @@ extern struct gpio_desc *gpio_jesd_map_bit0;
 extern struct gpio_desc *gpio_jesd_map_bit1;
 extern struct gpio_desc *gpio_jesd_map_bit2;
 
-#define INTC_DEVICE_ID     XPAR_SCUGIC_SINGLE_DEVICE_ID //ͨ���ж�
+#define INTC_DEVICE_ID XPAR_SCUGIC_SINGLE_DEVICE_ID // Common interrupt controller
 #define SPI_DEVICE_ID		XPAR_AD9528_SPI_DEVICE_ID
 #ifdef XPS_BOARD_ZCU102
 #define GPIO_OFFSET		78
@@ -147,9 +147,9 @@ extern struct gpio_desc *gpio_jesd_map_bit2;
 #endif
 
 
-#define GPIO_JESD_RX_RST	  	JESD_RX_RESET
-#define GPIO_JESD_TX_RST	  	JESD_TX_RESET
-#define BR3109_GPIO_0	 BR3109_GPIO_0_CONTRL
+#define GPIO_JESD_RX_RST JESD_RX_RESET
+#define GPIO_JESD_TX_RST JESD_TX_RESET
+#define BR3109_GPIO_0    BR3109_GPIO_0_CONTRL
 
 
 /******************************************************************************/
