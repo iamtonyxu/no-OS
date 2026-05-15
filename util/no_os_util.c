@@ -5,49 +5,36 @@
 ********************************************************************************
  * Copyright 2018(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <string.h>
 #include <stdlib.h>
 #include "no_os_util.h"
 #include "errno.h"
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
-
 extern int no_os_test_bit(int pos, const volatile void * addr);
 
 /**
@@ -65,6 +52,23 @@ uint32_t no_os_find_first_set_bit(uint32_t word)
 	}
 
 	return 32;
+}
+
+/**
+ * Find first set bit in word.
+ */
+uint64_t no_os_find_first_set_bit_u64(uint64_t word)
+{
+	uint64_t first_set_bit = 0;
+
+	while (word) {
+		if (word & 0x1)
+			return first_set_bit;
+		word >>= 1;
+		first_set_bit ++;
+	}
+
+	return 64;
 }
 
 /**
@@ -114,6 +118,11 @@ uint32_t no_os_field_prep(uint32_t mask, uint32_t val)
 	return (val << no_os_find_first_set_bit(mask)) & mask;
 }
 
+uint64_t no_os_field_prep_u64(uint64_t mask, uint64_t val)
+{
+	return (val << no_os_find_first_set_bit_u64(mask)) & mask;
+}
+
 /**
  * Get a field specified by a mask from a word.
  */
@@ -121,6 +130,35 @@ uint32_t no_os_field_get(uint32_t mask, uint32_t word)
 {
 	return (word & mask) >> no_os_find_first_set_bit(mask);
 }
+
+/**
+ * Produce the maximum value representable by a field
+ */
+uint32_t no_os_field_max(uint32_t mask)
+{
+	// Find the first set bit to determine the shift position
+	uint32_t first_set_bit = no_os_find_first_set_bit(mask);
+
+	// Shift the mask to the right by the position of the first set bit
+	uint32_t shifted_mask = mask >> first_set_bit;
+
+	return shifted_mask;
+}
+
+/**
+ * Produce the maximum value representable by a field
+ */
+uint64_t no_os_field_max_u64(uint64_t mask)
+{
+	// Find the first set bit to determine the shift position
+	uint64_t first_set_bit = no_os_find_first_set_bit_u64(mask);
+
+	// Shift the mask to the right by the position of the first set bit
+	uint64_t shifted_mask = mask >> first_set_bit;
+
+	return shifted_mask;
+}
+
 
 /**
  * Log base 2 of the given number.
@@ -137,17 +175,36 @@ uint32_t no_os_greatest_common_divisor(uint32_t a,
 				       uint32_t b)
 {
 	uint32_t div;
-	uint32_t common_div = 1;
 
 	if ((a == 0) || (b == 0))
 		return no_os_max(a, b);
 
-	for (div = 1; (div <= a) && (div <= b); div++)
-		if (!(a % div) && !(b % div))
-			common_div = div;
+	while (b != 0) {
+		div = a % b;
+		a = b;
+		b = div;
+	}
 
-	return common_div;
+	return a;
 }
+
+uint64_t no_os_greatest_common_divisor_u64(uint64_t a,
+		uint64_t b)
+{
+	uint64_t div;
+
+	if ((a == 0) || (b == 0))
+		return no_os_max(a, b);
+
+	while (b != 0) {
+		div = a % b;
+		a = b;
+		b = div;
+	}
+
+	return a;
+}
+
 /**
  * Find lowest common multiple of the given two numbers.
  */
@@ -172,6 +229,27 @@ void no_os_rational_best_approximation(uint32_t given_numerator,
 	uint32_t gcd;
 
 	gcd = no_os_greatest_common_divisor(given_numerator, given_denominator);
+
+	*best_numerator = given_numerator / gcd;
+	*best_denominator = given_denominator / gcd;
+
+	if ((*best_numerator > max_numerator) ||
+	    (*best_denominator > max_denominator)) {
+		*best_numerator = 0;
+		*best_denominator = 0;
+	}
+}
+
+void no_os_rational_best_approximation_u64(uint64_t given_numerator,
+		uint64_t given_denominator,
+		uint64_t max_numerator,
+		uint64_t max_denominator,
+		uint64_t *best_numerator,
+		uint64_t *best_denominator)
+{
+	uint64_t gcd;
+
+	gcd = no_os_greatest_common_divisor_u64(given_numerator, given_denominator);
 
 	*best_numerator = given_numerator / gcd;
 	*best_denominator = given_denominator / gcd;
@@ -419,6 +497,36 @@ uint64_t no_os_mul_u64_u32_shr(uint64_t a, uint32_t mul, unsigned int shift)
 	return ret;
 }
 
+uint64_t no_os_mul_u64_u32_div(uint64_t a, uint32_t mul, uint32_t divisor)
+{
+	int i;
+	uint64_t low, high, temp, rem;
+	uint32_t a_high = a >> 32;
+	uint32_t a_low = a & 0xFFFFFFFF;
+	uint64_t result = 0;
+	uint64_t low_low = no_os_mul_u32_u32(a_low, mul);
+	uint64_t high_low =  no_os_mul_u32_u32(a_high, mul);
+
+	low = low_low + ((high_low & 0xFFFFFFFF) << 32);
+	high = (high_low >> 32) + (low_low >> 32);
+
+	rem = high;
+
+	for (i = 0; i < 64; i++) {
+		/* Shift remainder left and add the next bit from low */
+		rem = (rem << 1) | (low >> 63);
+		low <<= 1;
+
+		/* Compare the remainder with the divisor */
+		if (rem >= divisor) {
+			rem -= divisor;
+			temp = (uint64_t)1 << (63 - i);
+			result |= temp;
+		}
+	}
+	return result;
+}
+
 /**
  * @brief Check big endianess of the host processor.
  * @return Big endianess status (true/false)
@@ -426,7 +534,7 @@ uint64_t no_os_mul_u64_u32_shr(uint64_t a, uint32_t mul, unsigned int shift)
 bool no_os_is_big_endian(void)
 {
 	uint16_t a = 0x0100;
-	return (bool) *(uint8_t *)&a;
+	return (bool) * (uint8_t *)&a;
 }
 
 /* @brief Swap bytes in a buffer with a given step

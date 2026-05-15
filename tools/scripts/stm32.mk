@@ -9,7 +9,11 @@ $(error $(ENDL)$(ENDL)STM32CUBEIDE not defined or not found at default path /opt
 		Ex: export STM32CUBEIDE=/opt/stm32cubeide$(ENDL)$(ENDL))
 endif # STM32CUBEIDE check
 
+ifeq ($(OS), Windows_NT)
+MX = STM32CubeMX.exe
+else
 MX = STM32CubeMX
+endif
 STM32CUBEMX ?= $(wildcard /opt/stm32cubemx)
 ifeq ($(STM32CUBEMX),)
 $(error $(ENDL)$(ENDL)STM32CUBEMX not defined or not found at default path /opt/stm32cubemx\
@@ -19,7 +23,7 @@ $(error $(ENDL)$(ENDL)STM32CUBEMX not defined or not found at default path /opt/
 endif # STM32CUBEMX check
 
 # Locate the compiler path under STM32CubeIDE plugins directory
-COMPILER_BIN = $(realpath $(dir $(call rwildcard, $(STM32CUBEIDE)/plugins, *arm-none-eabi-gcc)))
+COMPILER_BIN = $(realpath $(dir $(call rwildcard, $(STM32CUBEIDE)/plugins, *arm-none-eabi-gcc *arm-none-eabi-gcc.exe)))
 COMPILER_INTELLISENSE_PATH = $(COMPILER_BIN)/arm-none-eabi-gcc
 
 # Locate openocd location under STM32CubeIDE plugins directory
@@ -46,13 +50,11 @@ EXTRA_INCS += $(call rwildcard, $(PROJECT_BUILD)/Inc, *.h)
 PLATFORM_INCS += $(sort $(foreach h,$(EXTRA_INCS), -I$(dir $h)))
 
 # Get the path of the .s script
-ASM_SRCS += $(call rwildcard, $(PROJECT_BUILD)/Startup,*.s)
+STARTUP_FILE += $(call rwildcard, $(PROJECT_BUILD)/Startup,*.s)
+EXTRA_FILES += $(STARTUP_FILE)
 
 # Get the path of the interrupts file
 ITC = $(call rwildcard, $(PROJECT_BUILD)/Src,*_it.c)
-
-# Get the path of the hal config file
-HALCONF = $(call rwildcard, $(PROJECT_BUILD)/Inc,*_hal_conf.h)
 
 ifneq (,$(wildcard $(PROJECT_BUILD)))
 TARGET = $(shell sed -rn 's|^.*(STM32[A-Z][0-9][0-9A-Z][0-9]x.)"/>$$|\1|p' $(PROJECT_BUILDROOT)/.cproject | head -n 1)
@@ -68,6 +70,13 @@ LSCRIPT=$(wildcard $(PROJECT_BUILDROOT)/*FLASH.ld)
 # Get the extra flags that need to be added into the .cproject file
 CPROJECTFLAGS = $(sort $(subst -D,,$(filter -D%, $(CFLAGS))))
 
+ifeq ($(NO_OS_USB_UART),y)
+SRC_DIRS += $(BUILD_DIR)/app/USB_DEVICE \
+	    $(BUILD_DIR)/app/Middlewares/ST/STM32_USB_Device_Library
+SRCS += $(NO-OS)/drivers/platform/stm32/stm32_usb_uart.c
+INCS += $(NO-OS)/drivers/platform/stm32/stm32_usb_uart.h
+endif
+
 $(PLATFORM)_project:
 	$(call print,Creating IDE project)
 	$(call mk_dir, $(BUILD_DIR))
@@ -75,7 +84,7 @@ $(PLATFORM)_project:
 	@echo config load $(HARDWARE) > $(BINARY).cubemx
 	@echo project name app >> $(BINARY).cubemx
 	@echo project toolchain STM32CubeIDE >> $(BINARY).cubemx
-	@echo project path $(BUILD_DIR) >> $(BINARY).cubemx
+	@echo project path "build" >> $(BINARY).cubemx
 	@echo SetCopyLibrary "copy all" >> $(BINARY).cubemx
 	@echo SetStructure Advanced >> $(BINARY).cubemx
 	@echo project generate >> $(BINARY).cubemx
@@ -88,30 +97,39 @@ $(PROJECT)_configure:
 	$(call print,Configuring project)
 	sed -i 's/ main(/ stm32_init(/' $(PROJECT_BUILD)/Src/main.c $(HIDE)
 	sed -i '0,/while (1)/s//return 0;/' $(PROJECT_BUILD)/Src/main.c $(HIDE)
-	sed -i 's/USE_HAL_TIM_REGISTER_CALLBACKS\s*0U/USE_HAL_TIM_REGISTER_CALLBACKS\t1U/g' $(HALCONF) $(HIDE)
-	sed -i 's/USE_HAL_UART_REGISTER_CALLBACKS\s*0U/USE_HAL_UART_REGISTER_CALLBACKS\t1U/g' $(HALCONF) $(HIDE)
-	$(call copy_file, $(PROJECT_BUILD)/Src/main.c, $(PROJECT_BUILD)/Src/generated_main.c) $(HIDE)
-	$(call remove_file, $(PROJECT_BUILD)/Src/main.c) $(HIDE)
-
+	$(call move_file, $(PROJECT_BUILD)/Src/main.c, $(PROJECT_BUILD)/Src/generated_main.c) $(HIDE)
 	$(call remove_file, $(PROJECT_BUILD)/Src/syscalls.c) $(HIDE)
 
-	$(foreach inc, $(EXTRA_INC_PATHS), sed -i '/Core\/Inc"\/>/a <listOptionValue builtIn="false" value="$(inc)"\/>' $(PROJECT_BUILDROOT)/.cproject;) $(HIDE)
-	$(foreach flag, $(CPROJECTFLAGS), sed -i '/USE_HAL_DRIVER"\/>/a <listOptionValue builtIn="false" value="$(flag)"\/>' $(PROJECT_BUILDROOT)/.cproject;) $(HIDE)
+	for inc in $(EXTRA_INC_PATHS); do \
+  		sed -i "/Core\/Inc\"\/>/a <listOptionValue builtIn=\"false\" value=\"$${inc}\"/>" $(PROJECT_BUILDROOT)/.cproject; \
+  	done $(HIDE)
+	for flag in $(CPROJECTFLAGS); do \
+		sed -i "/USE_HAL_DRIVER\"\/>/a <listOptionValue builtIn=\"false\" value=\"$${flag}\"\/>" $(PROJECT_BUILDROOT)/.cproject; \
+	done $(HIDE)
 	$(STM32CUBEIDE)/$(IDE) -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
-		-import $(PROJECT_BUILDROOT) -data $(BUILD_DIR) \
+		-import "build/app" -data "build" \
 		$(HIDE)
 	sed -i  's/HAL_NVIC_EnableIRQ(\EXTI/\/\/ HAL_NVIC_EnableIRQ\(EXTI/' $(PROJECT_BUILD)/Src/generated_main.c $(HIDE)
-	$(shell python $(PLATFORM_TOOLS)/exti_script.py $(ASM_SRCS) $(EXTI_GEN_FILE))
-	$(call copy_file, $(EXTI_GEN_FILE), $(PROJECT_BUILD)/Src/stm32_gpio_irq_generated.c) $(HIDE)
-	$(file > $(CPP_PROP_JSON),$(CPP_FINAL_CONTENT))
-	$(file > $(SETTINGSJSON),$(VSC_SET_CONTENT))
-	$(file > $(LAUNCHJSON),$(VSC_LAUNCH_CONTENT))
-	$(file > $(TASKSJSON),$(VSC_TASKS_CONTENT))
+	$(shell python $(PLATFORM_TOOLS)/exti_script.py $(STARTUP_FILE) $(EXTI_GEN_FILE))
+	$(call move_file, $(EXTI_GEN_FILE), $(PROJECT_BUILD)/Src/stm32_gpio_irq_generated.c) $(HIDE)
+
+	$(file > $(CPP_PROP_JSON).default,$(CPP_FINAL_CONTENT))
+	$(file > $(SETTINGSJSON).default,$(VSC_SET_CONTENT))
+	$(file > $(LAUNCHJSON).default,$(VSC_LAUNCH_CONTENT))
+	$(file > $(TASKSJSON).default,$(VSC_TASKS_CONTENT))
+
+	[ -s $(CPP_PROP_JSON) ]	&& echo '.vscode/c_cpp_properties.json already exists, not overwriting'	|| cp $(CPP_PROP_JSON).default $(CPP_PROP_JSON)
+	[ -s $(SETTINGSJSON) ] 	&& echo '.vscode/settings.json already exists, not overwriting'			|| cp $(SETTINGSJSON).default $(SETTINGSJSON)
+	[ -s $(LAUNCHJSON) ] 	&& echo '.vscode/launch.json already exists, not overwriting'			|| cp $(LAUNCHJSON).default $(LAUNCHJSON)
+	[ -s $(TASKSJSON) ] 	&& echo '.vscode/tasks.json already exists, not overwriting'			|| cp $(TASKSJSON).default $(TASKSJSON)
+
+	rm $(CPP_PROP_JSON).default $(SETTINGSJSON).default $(LAUNCHJSON).default $(TASKSJSON).default
+
 	$(MAKE) $(BINARY).openocd-cmsis
 	$(MAKE) $(BINARY).openocd
 
 $(PLATFORM)_sdkopen:
-	$(STM32CUBEIDE)/$(IDE) -nosplash -import $(PROJECT_BUILDROOT) -data $(BUILD_DIR) &
+	$(STM32CUBEIDE)/$(IDE) -nosplash -import "build/app" -data "build" &
 
 CFLAGS += -std=gnu11 \
 	-g3 \
@@ -121,7 +139,7 @@ CFLAGS += -std=gnu11 \
 	-O0 \
 	-ffunction-sections \
 	-fdata-sections \
-	-mfloat-abi=hard \
+	-mfloat-abi=$(CFLAGS_MFLOAT_TYPE) \
 	-mfpu=fpv4-sp-d16 \
 	-mcpu=cortex-m4
 
@@ -130,7 +148,7 @@ LDFLAGS	= -mcpu=cortex-m4 \
 	-static \
 	--specs=nosys.specs \
 	-mfpu=fpv4-sp-d16 \
-	-mfloat-abi=hard \
+	-mfloat-abi=$(CFLAGS_MFLOAT_TYPE) \
 	-mthumb \
 	-Wl,--start-group \
 	-lc \
@@ -197,7 +215,7 @@ $(PLATFORM)_post_build: $(HEX)
 PHONY += $(PLATFORM)_sdkbuild
 $(PLATFORM)_sdkbuild:
 	$(STM32CUBEIDE)/$(IDE) -nosplash -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
-		-import $(PROJECT_BUILDROOT) -data $(BUILD_DIR) -build app $(HIDE)
+		-import "build/app" -data "build" -build app $(HIDE)
 
 PHONY += $(PLATFORM)_sdkclean
 $(PLATFORM)_sdkclean:
@@ -223,3 +241,5 @@ debug: all $(BINARY).openocd $(BINARY).gdb
 		-c "init" &);
 	$(GDB) --command=$(BINARY).gdb
 
+$(PLATFORM)_reset:
+	$(call remove_dir,$(VSCODE_CFG_DIR))

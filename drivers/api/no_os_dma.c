@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2024(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #include <inttypes.h>
 #include "no_os_dma.h"
@@ -158,13 +152,18 @@ int no_os_dma_remove(struct no_os_dma_desc *desc)
 		return 0;
 
 	for (i = 0; i < desc->num_ch; i++) {
-		ret = no_os_list_remove(desc->channels->sg_list);
+		ret = no_os_list_remove(desc->channels[i].sg_list);
 		if (ret)
 			return ret;
 
 		no_os_mutex_remove(desc->channels[i].mutex);
-	}
+		if (desc->irq_ctrl && desc->channels[i].cb_desc.handle) {
+			no_os_irq_unregister_callback(desc->irq_ctrl,
+						      desc->channels[i].irq_num,
+						      &desc->channels[i].cb_desc);
+		}
 
+	}
 	no_os_mutex_remove(desc->mutex);
 
 	ret = desc->platform_ops->dma_remove(desc);
@@ -246,30 +245,13 @@ int no_os_dma_config_xfer(struct no_os_dma_desc *desc,
 {
 	uint32_t i;
 	int ret;
-
-	struct no_os_callback_desc sg_callback = {
-		.callback = default_sg_callback,
-	};
+	void *discard;
+	struct no_os_callback_desc *sg_callback;
 
 	if (!desc || !xfer || !len || !ch)
 		return -EINVAL;
 
 	no_os_mutex_lock(ch->mutex);
-
-	sg_callback.peripheral = xfer[0].periph;
-
-	switch (xfer[0].xfer_type) {
-	case MEM_TO_DEV:
-	case MEM_TO_MEM:
-		sg_callback.event = NO_OS_EVT_DMA_TX_COMPLETE;
-		break;
-	case DEV_TO_MEM:
-		sg_callback.event = NO_OS_EVT_DMA_RX_COMPLETE;
-		break;
-	default:
-		ret = -EINVAL;
-		goto unlock;
-	}
 
 	/*
 	 * Add the transfers to the channel's SG list. It's safe to do so, since
@@ -279,34 +261,49 @@ int no_os_dma_config_xfer(struct no_os_dma_desc *desc,
 		no_os_list_add_last(ch->sg_list, &xfer[i]);
 
 	if (desc->irq_ctrl) {
+		sg_callback = &ch->cb_desc;
+		sg_callback->ctx = &ch->irq_ctx;
+		sg_callback->handle = (void *)ch->id;
+		sg_callback->peripheral = xfer[0].periph;
 		ch->irq_ctx.desc = desc;
 		ch->irq_ctx.channel = ch;
-		sg_callback.ctx = &ch->irq_ctx;
-		sg_callback.handle = (void *)ch->id;
+
+		switch (xfer[0].xfer_type) {
+		case MEM_TO_DEV:
+		case MEM_TO_MEM:
+			sg_callback->event = NO_OS_EVT_DMA_TX_COMPLETE;
+			break;
+		case DEV_TO_MEM:
+			sg_callback->event = NO_OS_EVT_DMA_RX_COMPLETE;
+			break;
+		default:
+			ret = -EINVAL;
+			goto err;
+		}
 
 		ret = desc->platform_ops->dma_config_xfer(ch, xfer);
 		if (ret)
-			goto abort_xfer;
+			goto err;
 
 		if (desc->sg_handler)
-			sg_callback.callback = desc->sg_handler;
+			sg_callback->callback = desc->sg_handler;
 		else
-			sg_callback.callback = default_sg_callback;
+			sg_callback->callback = default_sg_callback;
 
 		ret = no_os_irq_register_callback(desc->irq_ctrl,
 						  ch->irq_num,
-						  &sg_callback);
+						  sg_callback);
 		if (ret)
-			goto abort_xfer;
+			goto err;
 
 		no_os_irq_set_priority(desc->irq_ctrl, ch->irq_num, xfer[0].irq_priority);
 	}
 
+	no_os_mutex_unlock(ch->mutex);
 	return 0;
-
-abort_xfer:
-	no_os_dma_xfer_abort(desc, ch);
-unlock:
+err:
+	for (i = 0; i < len; i++)
+		no_os_list_get_first(ch->sg_list, &discard);
 	no_os_mutex_unlock(ch->mutex);
 
 	return ret;

@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "basic_example.h"
 #include "common_data.h"
 #include "adxl313.h"
@@ -47,9 +38,6 @@
 #include "no_os_print_log.h"
 #include "no_os_error.h"
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /***************************************************************************//**
  * @brief Basic example main execution.
  *
@@ -62,10 +50,10 @@ int basic_example_main()
 	int ret = -EINVAL;
 
 	/* Clear the screen. */
-	printf("%c",27);
-	printf("%c",'[');
-	printf("%c",'2');
-	printf("%c",'J');
+	printf("%c", 27);
+	printf("%c", '[');
+	printf("%c", '2');
+	printf("%c", 'J');
 
 	/* Initialize component. */
 	ret = adxl313_init(&adxl313, adxl313_user_init);
@@ -156,15 +144,15 @@ int basic_example_main()
 	uint8_t fifo_entries = 0;
 	int16_t x_raw = 0, y_raw = 0, z_raw = 0;
 
-	while(1) {
+	while (1) {
 		/* Clear the screen. */
-		printf("%c",27);
-		printf("%c",'[');
-		printf("%c",'2');
-		printf("%c",'J');
+		printf("%c", 27);
+		printf("%c", '[');
+		printf("%c", '2');
+		printf("%c", 'J');
 
 		pr_info("Single read raw data:\n");
-		ret = adxl313_get_raw_xyz(adxl313,&x_raw, &y_raw, &z_raw);
+		ret = adxl313_get_raw_xyz(adxl313, &x_raw, &y_raw, &z_raw);
 		if (ret)
 			goto error;
 		pr_info(" x=%d", x_raw);
@@ -172,12 +160,12 @@ int basic_example_main()
 		pr_info(" z=%d\n", z_raw);
 
 		pr_info("Single read:\n");
-		ret = adxl313_get_xyz(adxl313,&x[0], &y[0], &z[0]);
+		ret = adxl313_get_xyz(adxl313, &x[0], &y[0], &z[0]);
 		if (ret)
 			goto error;
 		pr_info(" x=%d"".%07u", (int)x[0].integer, (abs)(x[0].fractional));
 		pr_info(" y=%d"".%07u", (int)y[0].integer, (abs)(y[0].fractional));
-		pr_info(" z=%d"".%07u\n", (int)z[0].integer,(abs)(z[0].fractional));
+		pr_info(" z=%d"".%07u\n", (int)z[0].integer, (abs)(z[0].fractional));
 
 		/* Read FIFO data. */
 		ret = adxl313_get_fifo_data(adxl313, &fifo_entries, x, y, z);
@@ -212,6 +200,6 @@ int basic_example_main()
 	}
 
 error:
-	pr_info("Error! (code %d)\n",ret);
+	pr_info("Error! (code %d)\n", ret);
 	return ret;
 }

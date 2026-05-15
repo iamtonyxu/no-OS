@@ -15,6 +15,7 @@ endif
 
 TIMESTAMP = $(shell date +"%T")
 copy_file = cp $1 $2
+move_file = mv $1 $2
 copy_dir = cp -r $1 $2
 remove_file = rm -rf $1
 remove_dir_action = rm -rf $1
@@ -41,11 +42,11 @@ get_full_path = $(patsubst root/%,$(ROOT_DRIVE)%,$(FULL_PATH))
 ifeq 'y' '$(strip $(LINK_SRCS))'
 update_file = $(make_link)
 update_dir = $(make_dir_link)
-ACTION = Linking
+ACTION = symlinks to
 else
 update_file = $(call copy_file,$1,$(dir $2))
 update_dir = $(copy_dir)
-ACTION = Copying
+ACTION = copies of
 endif
 
 # Display the platform for which build is launched
@@ -174,12 +175,17 @@ ifeq (y,$(strip $(DISABLE_SECURE_SOCKET)))
 CFLAGS += -DDISABLE_SECURE_SOCKET
 endif
 
+# Mbed also has an INC_DIRS variable, so this needs to be NO_OS_INC_DIRS
+NO_OS_INC_DIRS := $(patsubst %/,%,$(NO_OS_INC_DIRS))
 SRC_DIRS := $(patsubst %/,%,$(SRC_DIRS))
 
 # Get all .c, .cpp and .h files from SRC_DIRS
 SRCS     += $(foreach dir, $(SRC_DIRS), $(call rwildcard, $(dir),*.c))
 SRCS     += $(foreach dir, $(SRC_DIRS), $(call rwildcard, $(dir),*.cpp))
+ASM_SRCS += $(foreach dir, $(SRC_DIRS), $(call rwildcard, $(dir),*.S))
+ASM_SRCS += $(foreach dir, $(SRC_DIRS), $(call rwildcard, $(dir),*.s))
 INCS     += $(foreach dir, $(SRC_DIRS), $(call rwildcard, $(dir),*.h))
+INCS     += $(foreach dir, $(NO_OS_INC_DIRS), $(call rwildcard, $(dir),*.h))
 
 # Recursive ignored files. If a directory is in the variable IGNORED_FILES,
 # all files from inside the directory will be ignored
@@ -188,9 +194,10 @@ ALL_IGNORED_FILES += $(foreach dir, $(IGNORED_FILES), $(call rwildcard, $(dir),*
 # Remove ignored files
 SRCS     := $(filter-out $(ALL_IGNORED_FILES),$(SRCS))
 INCS     := $(filter-out $(ALL_IGNORED_FILES),$(INCS))
+ASM_SRCS := $(filter-out $(ALL_IGNORED_FILES),$(ASM_SRCS))
 
 # Get all src files that are not in SRC_DRIS
-FILES_OUT_OF_DIRS := $(filter-out $(foreach source_directory_name,$(sort $(SRC_DIRS)),$(wildcard $(source_directory_name)/*)),$(SRCS) $(INCS))
+FILES_OUT_OF_DIRS := $(filter-out $(foreach source_directory_name,$(sort $(SRC_DIRS)),$(wildcard $(source_directory_name)/*)),$(SRCS) $(INCS) $(ASM_SRCS))
 
 REL_SRCS = $(addprefix $(OBJECTS_DIR)/,$(call get_relative_path,$(SRCS_IN_BUILD) $(PLATFORM_SRCS)))
 OBJS = $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(REL_SRCS)))
@@ -210,6 +217,7 @@ FLAGS_WITHOUT_D = $(sort $(subst -D,,$(filter -D%, $(CFLAGS))))
 
 # Remove duplicates
 SRCS := $(sort $(SRCS))
+ASM_SRCS := $(sort $(ASM_SRCS))
 INCS := $(sort $(INCS))
 
 CREATED_DIRECTORIES += noos root $(PROJECT_NAME)
@@ -249,6 +257,7 @@ PHONY += all
 ifneq ($(wildcard $(BUILD_LOCK)),)
 all:
 	$(call print_build_type,$(PLATFORM))
+	$(MAKE) --no-print-directory update
 	$(MAKE) --no-print-directory build
 	$(call print,Done ($(notdir $(BUILD_DIR))/$(notdir $(BINARY))))
 else
@@ -296,32 +305,41 @@ LSCRIPT_FLAG = -T$(LSCRIPT)
 endif
 
 define generate_cflags_func
-echo $(subst \",\\\",$(1)) >> $(CFLAGS_FILE)
+echo $(subst \",\\\",$(1)) >> $(CFLAGS_FILE).tmp
 endef
 
 define generate_cppflags_func
-echo $(subst \",\\\",$(1)) >> $(CPPFLAGS_FILE)
+echo $(subst \",\\\",$(1)) >> $(CPPFLAGS_FILE).tmp
 endef
 
 define generate_asflags_func
-echo $(subst \",\\\",$(1)) >> $(ASFLAGS_FILE)
+echo $(subst \",\\\",$(1)) >> $(ASFLAGS_FILE).tmp
 endef
 
 define generate_objs_func
-echo $(1) >> $(OBJS_FILE)
+echo $(1) >> $(OBJS_FILE).tmp
+endef
+
+define overwrite_file_if_different
+	if ! diff $(1) $(2) &> /dev/null ; then \
+		mv -f $(1) $(2) ; \
+	fi
+endef
+
+define generate_flags_file
+	echo -n > $(1).tmp
+	$(call process_items_in_chunks,$(2),10,$(3))
+	$(call overwrite_file_if_different,$(1).tmp,$(1))
+	rm -f $(1).tmp
 endef
 
 PHONY += pre_build
 pre_build:
 	$(call print,Generating build flags)
-	echo -n > $(CFLAGS_FILE)
-	$(call process_items_in_chunks,$(CFLAGS),10,generate_cflags_func)
-	echo -n > $(CPPFLAGS_FILE)
-	$(call process_items_in_chunks,$(CPPFLAGS),10,generate_cppflags_func)
-	echo -n > $(ASFLAGS_FILE)
-	$(call process_items_in_chunks,$(ASFLAGS),10,generate_asflags_func)
-	echo -n > $(OBJS_FILE)
-	$(call process_items_in_chunks,$(sort $(OBJS)),10,generate_objs_func)
+	$(call generate_flags_file,$(CFLAGS_FILE),$(CFLAGS),generate_cflags_func)
+	$(call generate_flags_file,$(CPPFLAGS_FILE),$(CPPFLAGS),generate_cppflags_func)
+	$(call generate_flags_file,$(ASFLAGS_FILE),$(ASFLAGS),generate_asflags_func)
+	$(call generate_flags_file,$(OBJS_FILE),$(OBJS),generate_objs_func)
 
 $(BINARY): $(LIB_TARGETS) $(OBJS) $(ASM_OBJS) $(LSCRIPT) $(BOOTOBJ)
 	$(call print,[LD] $(notdir $(OBJS)))
@@ -361,17 +379,23 @@ define process_items_in_chunks
 	)
 endef
 
-define update_file_func
-$(call update_file,$(1),$(call relative_to_project,$(1)))
-endef
+SRC_FILES = $(sort $(SRCS) $(INCS) $(ASM_SRCS))
+BUILD_FILES = $(foreach file,$(SRC_FILES),$(call relative_to_project,$(file)))
+
+$(foreach file,$(BUILD_FILES), \
+	$(eval $(file): $(filter %/$(notdir $(file)),$(SRC_FILES))) \
+)
+
+$(BUILD_FILES): % :
+	$(call update_file,$<,$@)
+	@TS=$(shell stat --format=%Y $<); touch -h -d @$${TS} $@
+
+make_dirs:
+	$(call mk_dir,$(DIRS_TO_CREATE))
 
 PHONY += update
-update:
-	$(call print,$(ACTION) srcs to created project)
-	$(call remove_dir,$(DIRS_TO_REMOVE))
-	$(call mk_dir,$(DIRS_TO_CREATE))
-	$(call process_items_in_chunks,$(sort $(SRCS) $(INCS)),10,update_file_func)
-	$(MAKE) --no-print-directory pre_build
+update: make_dirs $(BUILD_FILES) pre_build
+	$(call print,Creating $(ACTION) source files)
 
 standalone:
 	$(MAKE) --no-print-directory project LINK_SRCS=n
@@ -396,13 +420,13 @@ clean:
 
 # Remove the whole build directory
 PHONY += reset
-reset: clean_libs
+reset: clean_libs $(PLATFORM)_reset
 	$(call print,[Delete] $(BUILD_DIR))
 	$(call remove_dir,$(BUILD_DIR))
 
 PHONY += list
 list:
-	$(call print_lines, $(sort $(SRCS) $(INCS)))
+	$(call print_lines, $(SRC_FILES))
 
 .PHONY: $(PHONY)
 

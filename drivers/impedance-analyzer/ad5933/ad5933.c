@@ -5,54 +5,38 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/*****************************************************************************/
-/***************************** Include Files *********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "ad5933.h"
 #include <math.h>
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************** Constants Definitions *****************************/
-/******************************************************************************/
 const int32_t pow_2_27 = 134217728ul;      // 2 to the power of 27
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Initializes the communication peripheral and the initial Values for
@@ -115,8 +99,6 @@ int32_t ad5933_remove(struct ad5933_dev *dev)
  * @param register_address - Address of the register.
  * @param register_value   - Data value to write.
  * @param bytes_number     - Number of bytes.
- *
- * @return None.
 *******************************************************************************/
 void ad5933_set_register_value(struct ad5933_dev *dev,
 			       uint8_t register_address,
@@ -126,7 +108,7 @@ void ad5933_set_register_value(struct ad5933_dev *dev,
 	uint8_t byte = 0;
 	uint8_t write_data[2] = {0, 0};
 
-	for(byte = 0; byte < bytes_number; byte++) {
+	for (byte = 0; byte < bytes_number; byte++) {
 		write_data[0] = register_address + bytes_number - byte - 1;
 		write_data[1] = (uint8_t)((register_value >> (byte * 8)) & 0xFF);
 		no_os_i2c_write(dev->i2c_desc, write_data, 2, 1);
@@ -151,7 +133,7 @@ uint32_t ad5933_get_register_value(struct ad5933_dev *dev,
 	uint8_t write_data[2]   = {0, 0};
 	uint8_t read_data[2]    = {0, 0};
 
-	for(byte = 0; byte < bytes_number; byte ++) {
+	for (byte = 0; byte < bytes_number; byte ++) {
 		/* Set the register pointer. */
 		write_data[0] = AD5933_ADDR_POINTER;
 		write_data[1] = register_address + byte;
@@ -170,8 +152,6 @@ uint32_t ad5933_get_register_value(struct ad5933_dev *dev,
  * @brief Resets the device.
  *
  * @param dev             - The device structure.
- *
- * @return None.
 *******************************************************************************/
 void ad5933_reset(struct ad5933_dev *dev)
 {
@@ -189,15 +169,13 @@ void ad5933_reset(struct ad5933_dev *dev)
  *                     Example: AD5933_CONTROL_INT_SYSCLK
  *                              AD5933_CONTROL_EXT_SYSCLK
  * @param ext_clk_freq - Frequency value of the external clock, if used.
- *
- * @return None.
 *******************************************************************************/
 void ad5933_set_system_clk(struct ad5933_dev *dev,
 			   int8_t clk_source,
 			   uint32_t ext_clk_freq)
 {
 	dev->current_clock_source = clk_source;
-	if(clk_source == AD5933_CONTROL_EXT_SYSCLK) {
+	if (clk_source == AD5933_CONTROL_EXT_SYSCLK) {
 		dev->current_sys_clk = ext_clk_freq;                 // External clock frequency
 	} else {
 		dev->current_sys_clk = AD5933_INTERNAL_SYS_CLK;    // 16 MHz
@@ -222,8 +200,6 @@ void ad5933_set_system_clk(struct ad5933_dev *dev,
  * @param gain  - Gain option.
  *                Example: AD5933_GAIN_X5
  *                         AD5933_GAIN_X1
- *
- * @return None.
 *******************************************************************************/
 void ad5933_set_range_and_gain(struct ad5933_dev *dev,
 			       int8_t range,
@@ -259,7 +235,7 @@ float ad5933_get_temperature(struct ad5933_dev *dev)
 				  AD5933_CONTROL_RANGE(dev->current_range) |
 				  AD5933_CONTROL_PGA_GAIN(dev->current_gain),
 				  1);
-	while((status & AD5933_STAT_TEMP_VALID) == 0) {
+	while ((status & AD5933_STAT_TEMP_VALID) == 0) {
 		status = ad5933_get_register_value(dev,
 						   AD5933_REG_STATUS,
 						   1);
@@ -268,7 +244,7 @@ float ad5933_get_temperature(struct ad5933_dev *dev)
 	temperature = ad5933_get_register_value(dev,
 						AD5933_REG_TEMP_DATA,
 						2);
-	if(temperature < 8192) {
+	if (temperature < 8192) {
 		temperature /= 32;
 	} else {
 		temperature -= 16384;
@@ -286,8 +262,6 @@ float ad5933_get_temperature(struct ad5933_dev *dev)
  * @param start_freq - Start frequency in Hz;
  * @param inc_freq   - Frequency increment in Hz;
  * @param inc_num    - Number of increments. Maximum value is 511(0x1FF).
- *
- * @return None.
 *******************************************************************************/
 void ad5933_config_sweep(struct ad5933_dev *dev,
 			 uint32_t  start_freq,
@@ -299,7 +273,7 @@ void ad5933_config_sweep(struct ad5933_dev *dev,
 	uint16_t inc_num_reg = 0;
 
 	/* Ensure that incNum is a valid data. */
-	if(inc_num > AD5933_MAX_INC_NUM) {
+	if (inc_num > AD5933_MAX_INC_NUM) {
 		inc_num_reg = AD5933_MAX_INC_NUM;
 	} else {
 		inc_num_reg = inc_num;
@@ -332,8 +306,6 @@ void ad5933_config_sweep(struct ad5933_dev *dev,
  * @brief Starts the sweep operation.
  *
  * @param dev             - The device structure.
- *
- * @return None.
 *******************************************************************************/
 void ad5933_start_sweep(struct ad5933_dev *dev)
 {
@@ -348,7 +320,7 @@ void ad5933_start_sweep(struct ad5933_dev *dev)
 	ad5933_reset(dev);
 	ad5933_set_register_value(dev,
 				  AD5933_REG_CONTROL_HB,
-				  AD5933_CONTROL_FUNCTION(AD5933_FUNCTION_INIT_START_FREQ)|
+				  AD5933_CONTROL_FUNCTION(AD5933_FUNCTION_INIT_START_FREQ) |
 				  AD5933_CONTROL_RANGE(dev->current_range) |
 				  AD5933_CONTROL_PGA_GAIN(dev->current_gain),
 				  1);
@@ -359,7 +331,7 @@ void ad5933_start_sweep(struct ad5933_dev *dev)
 				  AD5933_CONTROL_PGA_GAIN(dev->current_gain),
 				  1);
 	status = 0;
-	while((status & AD5933_STAT_DATA_VALID) == 0) {
+	while ((status & AD5933_STAT_DATA_VALID) == 0) {
 		status = ad5933_get_register_value(dev,
 						   AD5933_REG_STATUS,
 						   1);
@@ -373,8 +345,6 @@ void ad5933_start_sweep(struct ad5933_dev *dev)
  * @param freq_function         - Frequency function.
  * @param imag_data         	- Pointer to imaginary data
  * @param real_data         	- Pointer to real data
- *
- * @return None.
 *******************************************************************************/
 void ad5933_get_data(struct ad5933_dev *dev,
 		     uint8_t freq_function,
@@ -393,7 +363,7 @@ void ad5933_get_data(struct ad5933_dev *dev,
 				  AD5933_CONTROL_PGA_GAIN(dev->current_gain),
 				  1);
 
-	while((status & AD5933_STAT_DATA_VALID) == 0) {
+	while ((status & AD5933_STAT_DATA_VALID) == 0) {
 		status = ad5933_get_register_value(dev,
 						   AD5933_REG_STATUS,
 						   1);
@@ -475,8 +445,6 @@ double ad5933_calculate_impedance(struct ad5933_dev *dev,
  *                Example: AD5933_SETTLING_X1
  *                         AD5933_SETTLING_X2
  *                         AD5933_SETTLING_X4
- *
- * @return None.
 *******************************************************************************/
 void ad5933_set_settling_time(struct ad5933_dev *dev,
 			      uint8_t multiplier,

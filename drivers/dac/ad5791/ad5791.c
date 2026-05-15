@@ -5,49 +5,37 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad5791.h"    // AD5791 definitions.
 #include "no_os_alloc.h"
 
-/*****************************************************************************/
-/***************************** Constant definition ***************************/
-/*****************************************************************************/
 static const struct ad5791_chip_info chip_info[] = {
 	[ID_AD5760] = {
 		.resolution = 16,
@@ -88,6 +76,7 @@ int32_t ad5791_init(struct ad5791_dev **device,
 		return -1;
 
 	dev->act_device = init_param.act_device;
+	dev->rbuf_gain2 = init_param.rbuf_gain2;
 
 	/* GPIO */
 	status = no_os_gpio_get(&dev->gpio_reset, &init_param.gpio_reset);
@@ -161,7 +150,7 @@ int32_t ad5791_set_register_value(struct ad5791_dev *dev,
 	status = no_os_spi_write_and_read(dev->spi_desc,
 					  write_command,
 					  3);
-	if(status != 0) {
+	if (status != 0) {
 		return -1;
 	}
 
@@ -193,7 +182,7 @@ int32_t ad5791_get_register_value(struct ad5791_dev *dev,
 	status = no_os_spi_write_and_read(dev->spi_desc,
 					  register_word,
 					  3);
-	if(status != 0) {
+	if (status != 0) {
 		return -1;
 	}
 	register_word[0] = 0x00;
@@ -202,7 +191,7 @@ int32_t ad5791_get_register_value(struct ad5791_dev *dev,
 	status = no_os_spi_write_and_read(dev->spi_desc,
 					  register_word,
 					  3);
-	if(status != 0) {
+	if (status != 0) {
 		return -1;
 	}
 	*value = ((int32_t)register_word[0] << 16) |
@@ -233,7 +222,7 @@ int32_t ad5791_dac_ouput_state(struct ad5791_dev *dev,
 	int32_t status = 0;
 
 	status = ad5791_get_register_value(dev, AD5791_REG_CTRL, &val);
-	if(status < 0) {
+	if (status < 0) {
 		return status;
 	}
 	old_ctrl = val;
@@ -292,7 +281,7 @@ int32_t ad5791_soft_instruction(struct ad5791_dev *dev,
 	status = ad5791_set_register_value(dev,
 					   AD5791_CMD_WR_SOFT_CTRL,
 					   instruction_bit);
-	if(status < 0) {
+	if (status < 0) {
 		return status;
 	}
 	no_os_mdelay(1);    // Wait for the instruction to take effect.
@@ -323,11 +312,16 @@ int32_t ad5791_setup(struct ad5791_dev *dev,
 	uint32_t new_ctrl = 0;
 	uint32_t val;
 	int32_t status = 0;
+	uint32_t rbuf_mask;
 
+	if (dev->rbuf_gain2)
+		rbuf_mask = 0;
+	else
+		rbuf_mask = AD5791_CTRL_RBUF_MASK;
 	/* Reads the control register in order to save the options related to the
 	   DAC output state that may have been configured previously. */
 	status = ad5791_get_register_value(dev, AD5791_REG_CTRL, &val);
-	if(status < 0) {
+	if (status < 0) {
 		return status;
 	}
 	old_ctrl = val;
@@ -335,7 +329,7 @@ int32_t ad5791_setup(struct ad5791_dev *dev,
 	old_ctrl = old_ctrl & ~(AD5791_CTRL_LINCOMP(-1) |
 				AD5791_CTRL_SDODIS_MASK |
 				AD5791_CTRL_BIN2SC_MASK |
-				AD5791_CTRL_RBUF_MASK);
+				rbuf_mask);
 	/* Sets the new state provided by the user. */
 	new_ctrl = old_ctrl | setup_word;
 	status = ad5791_set_register_value(dev,
@@ -368,7 +362,7 @@ int ad5791_spi_write_mask(struct ad5791_dev *dev,
 	int status;
 	uint32_t reg_data;
 
-	if(!dev)
+	if (!dev)
 		return -EINVAL;
 
 	status = ad5791_get_register_value(dev, register_address, &reg_data);
@@ -391,10 +385,10 @@ int ad5791_spi_write_mask(struct ad5791_dev *dev,
 int ad5791_set_lin_comp(struct ad5791_dev *dev,
 			enum ad5791_lin_comp_select v_span)
 {
-	if(!dev)
+	if (!dev)
 		return -EINVAL;
 
-	switch(dev->act_device) {
+	switch (dev->act_device) {
 	case ID_AD5781:
 		if (v_span != AD5781_SPAN_UPTO_10V &&
 		    v_span != AD5781_SPAN_10V_TO_20V)

@@ -6,41 +6,31 @@
 *******************************************************************************
 * Copyright 2013(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*****************************************************************************/
 
-/*****************************************************************************/
-/****************************** Include Files ********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "adf4106.h"
 #include "no_os_alloc.h"
@@ -55,10 +45,6 @@
 
 #define FREQ_2_4_GHZ        2400000000u
 #define FREQ_5_2_GHZ        5200000000u
-
-/******************************************************************************/
-/************************** Constants Definitions *****************************/
-/******************************************************************************/
 
 const struct adf4106_chip_info chip_info[] = {
 	[ID_ADF4001] = {
@@ -80,10 +66,6 @@ const struct adf4106_chip_info chip_info[] = {
 		.pfd_min_frequency = 20000000,            // 20   Mhz
 	}
 };
-
-/*****************************************************************************/
-/*************************** Functions definitions ***************************/
-/*****************************************************************************/
 
 /**************************************************************************//**
  * @brief Initialize SPI and Initial Values for ADF4106 Board.
@@ -132,11 +114,11 @@ int8_t adf4106_init(struct adf4106_dev **device,
 	ADF4106_LE_LOW;
 
 	/* Import the PFD max limit, from user set up */
-	if(dev->chip_info.pfd_max_frequency > dev->adf4106_st.pfd_max) {
+	if (dev->chip_info.pfd_max_frequency > dev->adf4106_st.pfd_max) {
 		dev->chip_info.pfd_max_frequency = dev->adf4106_st.pfd_max;
 	}
 
-	switch(init_param.init_method) {
+	switch (init_param.init_method) {
 	case INIT_LATCH :
 		adf4106_init_latch_method(dev);
 		break;
@@ -181,8 +163,6 @@ int32_t adf4106_remove(struct adf4106_dev *dev)
  *
  * @param dev        - The device structure.
  * @param latch_data - the data which will be written to the latch
- *
- * @return
 ******************************************************************************/
 void adf4106_update_latch(struct adf4106_dev *dev,
 			  uint32_t latch_data)
@@ -191,7 +171,7 @@ void adf4106_update_latch(struct adf4106_dev *dev,
 	uint8_t latch_type = latch_data & 0x3;
 
 	/* Update the internal buffers */
-	switch(latch_type) {
+	switch (latch_type) {
 	case ADF4106_CTRL_R_COUNTER :
 		dev->r_latch = latch_data;
 		break;
@@ -225,8 +205,6 @@ void adf4106_update_latch(struct adf4106_dev *dev,
  * @brief Initialization latch method
  *
  * @param dev - The device structure.
- *
- * @return
 ******************************************************************************/
 void adf4106_init_latch_method(struct adf4106_dev *dev)
 {
@@ -239,7 +217,7 @@ void adf4106_init_latch_method(struct adf4106_dev *dev)
 			     ADF4106_PDPOL(dev->adf4106_st.phase_detector_pol) | \
 			     ADF4106_CP(dev->adf4106_st.cp_type) | \
 			     ADF4106_FASTLOCK(dev->adf4106_st.fast_lock_mode) | \
-			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) |\
+			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) | \
 			     ADF4106_CS1(dev->adf4106_st.current_setting1) | \
 			     ADF4106_CS2(dev->adf4106_st.current_setting2) | \
 			     ADF4106_PD2(dev->adf4106_st.power_down2) | \
@@ -249,7 +227,7 @@ void adf4106_init_latch_method(struct adf4106_dev *dev)
 	adf4106_update_latch(dev,
 			     ADF4106_CTRL_R_COUNTER | \
 			     ADF4106_R_COUNTER(dev->adf4106_st.ref_counter) | \
-			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width)| \
+			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width) | \
 			     ADF4106_R_TMB(dev->adf4106_st.test_mode_bits) | \
 			     ADF4106_R_LDP(dev->adf4106_st.lock_detect_precision));
 
@@ -267,8 +245,6 @@ void adf4106_init_latch_method(struct adf4106_dev *dev)
  * @brief CE Pin method
  *
  * @param dev - The device structure.
- *
- * @return
 ******************************************************************************/
 void adf4106_init_cepin_method(struct adf4106_dev *dev)
 {
@@ -283,7 +259,7 @@ void adf4106_init_cepin_method(struct adf4106_dev *dev)
 			     ADF4106_PDPOL(dev->adf4106_st.phase_detector_pol) | \
 			     ADF4106_CP(dev->adf4106_st.cp_type) | \
 			     ADF4106_FASTLOCK(dev->adf4106_st.fast_lock_mode) | \
-			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) |\
+			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) | \
 			     ADF4106_CS1(dev->adf4106_st.current_setting1) | \
 			     ADF4106_CS2(dev->adf4106_st.current_setting2) | \
 			     ADF4106_PD2(dev->adf4106_st.power_down2));
@@ -291,7 +267,7 @@ void adf4106_init_cepin_method(struct adf4106_dev *dev)
 	adf4106_update_latch(dev,
 			     ADF4106_CTRL_R_COUNTER | \
 			     ADF4106_R_COUNTER(dev->adf4106_st.ref_counter) | \
-			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width)| \
+			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width) | \
 			     ADF4106_R_TMB(dev->adf4106_st.test_mode_bits) | \
 			     ADF4106_R_LDP(dev->adf4106_st.lock_detect_precision));
 	/* Program the N counter latch */
@@ -309,8 +285,6 @@ void adf4106_init_cepin_method(struct adf4106_dev *dev)
  * @brief Counter reset method
  *
  * @param dev - The device structure.
- *
- * @return
 ******************************************************************************/
 void adf4106_init_counte_reset_method(struct adf4106_dev *dev)
 {
@@ -323,7 +297,7 @@ void adf4106_init_counte_reset_method(struct adf4106_dev *dev)
 			     ADF4106_PDPOL(dev->adf4106_st.phase_detector_pol) | \
 			     ADF4106_CP(dev->adf4106_st.cp_type) | \
 			     ADF4106_FASTLOCK(dev->adf4106_st.fast_lock_mode) | \
-			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) |\
+			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) | \
 			     ADF4106_CS1(dev->adf4106_st.current_setting1) | \
 			     ADF4106_CS2(dev->adf4106_st.current_setting2) | \
 			     ADF4106_PD2(dev->adf4106_st.power_down2));
@@ -331,7 +305,7 @@ void adf4106_init_counte_reset_method(struct adf4106_dev *dev)
 	adf4106_update_latch(dev,
 			     ADF4106_CTRL_R_COUNTER | \
 			     ADF4106_R_COUNTER(dev->adf4106_st.ref_counter) | \
-			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width)| \
+			     ADF4106_R_ABP(dev->adf4106_st.anti_backlash_width) | \
 			     ADF4106_R_TMB(dev->adf4106_st.test_mode_bits) | \
 			     ADF4106_R_LDP(dev->adf4106_st.lock_detect_precision));
 	/* Program the N counter latch */
@@ -348,7 +322,7 @@ void adf4106_init_counte_reset_method(struct adf4106_dev *dev)
 			     ADF4106_PDPOL(dev->adf4106_st.phase_detector_pol) | \
 			     ADF4106_CP(dev->adf4106_st.cp_type) | \
 			     ADF4106_FASTLOCK(dev->adf4106_st.fast_lock_mode) | \
-			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) |\
+			     ADF4106_TCC(dev->adf4106_st.timer_counter_control) | \
 			     ADF4106_CS1(dev->adf4106_st.current_setting1) | \
 			     ADF4106_CS2(dev->adf4106_st.current_setting2) | \
 			     ADF4106_PD2(dev->adf4106_st.power_down2));
@@ -369,7 +343,7 @@ void adf4106_init_counte_reset_method(struct adf4106_dev *dev)
 uint32_t adf4106_read_latch(struct adf4106_dev *dev,
 			    uint8_t latch_type)
 {
-	switch(latch_type) {
+	switch (latch_type) {
 	case ADF4106_CTRL_R_COUNTER :
 		return dev->r_latch;
 
@@ -404,7 +378,7 @@ uint16_t adf4106_tune_rcounter(struct adf4106_dev *dev,
 	do {
 		r_counter++;
 		frequency_pfd = dev->adf4106_st.ref_in / r_counter;
-	} while(frequency_pfd > dev->chip_info.pfd_max_frequency);
+	} while (frequency_pfd > dev->chip_info.pfd_max_frequency);
 
 	return r_counter;
 }
@@ -431,8 +405,8 @@ uint64_t adf4106_set_frequency(struct adf4106_dev *dev,
 	uint8_t user_prescaler = 0; // prescaler defined by user
 
 	/* Force "frequency" parameter to the [minMHz...maxGHz] interval. */
-	if(frequency <= dev->chip_info.vco_max_frequency) {
-		if(frequency >= dev->chip_info.vco_min_frequency) {
+	if (frequency <= dev->chip_info.vco_max_frequency) {
+		if (frequency >= dev->chip_info.vco_min_frequency) {
 			vco_frequency = frequency;
 		} else {
 			vco_frequency = dev->chip_info.vco_min_frequency;
@@ -462,7 +436,7 @@ uint64_t adf4106_set_frequency(struct adf4106_dev *dev,
 				    (vco_frequency < FREQ_5_2_GHZ)) ? \
 				   ADF4106_PRESCALE(ADF4106_PS_16_17) : \
 				   ADF4106_PRESCALE(ADF4106_PS_32_33);
-		if(device_prescaler < user_prescaler) {
+		if (device_prescaler < user_prescaler) {
 			device_prescaler = user_prescaler;
 		}
 		/* Find the values for Counter A and Counter B using VCO frequency and
@@ -471,7 +445,7 @@ uint64_t adf4106_set_frequency(struct adf4106_dev *dev,
 		freq_ratio = (uint16_t)((float)vco_frequency / frequency_pfd);
 		b = freq_ratio / device_prescaler;
 		a = freq_ratio % device_prescaler;
-	} while(a > b); // B must be greater or equal to A
+	} while (a > b); // B must be greater or equal to A
 	/* Find the actual VCO frequency. */
 	calculated_frequency = (uint64_t)((b * device_prescaler) + a) * frequency_pfd;
 	/* Load the saved values into the registers using Counter Reset Method. */
@@ -488,7 +462,7 @@ uint64_t adf4106_set_frequency(struct adf4106_dev *dev,
 
 	dev->n_latch &= ~(ADF4106_N_COUNTER_A(ADF4106_N_COUNTER_A_MASK) |
 			  ADF4106_N_COUNTER_B(ADF4106_N_COUNTER_B_MASK));
-	if(dev->this_device == ID_ADF4106) {
+	if (dev->this_device == ID_ADF4106) {
 		adf4106_update_latch(dev,
 				     ADF4106_CTRL_N_COUNTER |
 				     dev->n_latch |

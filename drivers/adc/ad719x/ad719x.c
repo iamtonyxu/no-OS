@@ -5,51 +5,38 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "ad719x.h"    // AD719X definitions.
 #include "no_os_error.h"
 #include "no_os_delay.h"
 #include "no_os_alloc.h"
 #include <string.h>
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Initializes the communication peripheral and the initial Values for
@@ -107,27 +94,27 @@ int ad719x_init(struct ad719x_dev **device,
 
 	switch (dev->chip_id) {
 	case AD7190:
-		if((reg_val & AD7190_4_ID_MASK) != AD7190) {
+		if ((reg_val & AD7190_4_ID_MASK) != AD7190) {
 			goto error_sync;
 		}
 		break;
 	case AD7192:
-		if((reg_val & AD7190_4_ID_MASK) != AD7192) {
+		if ((reg_val & AD7190_4_ID_MASK) != AD7192) {
 			goto error_sync;
 		}
 		break;
 	case AD7193:
-		if((reg_val & AD7190_4_ID_MASK) != AD7193) {
+		if ((reg_val & AD7190_4_ID_MASK) != AD7193) {
 			goto error_sync;
 		}
 		break;
 	case AD7194:
-		if((reg_val & AD7190_4_ID_MASK) != AD7194) {
+		if ((reg_val & AD7190_4_ID_MASK) != AD7194) {
 			goto error_sync;
 		}
 		break;
 	case AD7195:
-		if((reg_val & AD7195_ID_MASK) != AD7195) {
+		if ((reg_val & AD7195_ID_MASK) != AD7195) {
 			goto error_sync;
 		}
 		break;
@@ -149,7 +136,7 @@ int ad719x_init(struct ad719x_dev **device,
 	if (ret != 0)
 		goto error_sync;
 
-	if(dev->chip_id == AD7193 || dev->chip_id == AD7194) {
+	if (dev->chip_id == AD7193 || dev->chip_id == AD7194) {
 		ret = ad719x_config_input_mode(dev, init_param.input_mode);
 		if (ret != 0)
 			goto error_sync;
@@ -270,7 +257,7 @@ int ad719x_get_register_value(struct ad719x_dev *dev, uint8_t reg_addr,
 		return ret;
 
 	*reg_data = 0; // Clearing the buffer
-	for(i = 1; i < bytes_number + 1; i++) {
+	for (i = 1; i < bytes_number + 1; i++) {
 		*reg_data = (*reg_data << 8) + reg_word[i];
 	}
 
@@ -466,7 +453,7 @@ int ad719x_config_input_mode(struct ad719x_dev *dev, uint8_t mode)
 {
 	int ret;
 
-	if(dev->chip_id == AD7193 || dev->chip_id == AD7194) {
+	if (dev->chip_id == AD7193 || dev->chip_id == AD7194) {
 		ret = ad719x_set_masked_register_value(dev, AD719X_REG_CONF,
 						       AD719X_CONF_PSEUDO, (AD719X_CONF_PSEUDO * mode),
 						       3);
@@ -573,7 +560,7 @@ int ad719x_set_bridge_switch(struct ad719x_dev *dev, uint8_t bpdsw_select)
 {
 	int ret;
 
-	if(dev->chip_id == AD7194) {
+	if (dev->chip_id == AD7194) {
 		return -ENOTSUP;
 	}
 
@@ -681,7 +668,7 @@ int ad719x_continuous_read_avg(struct ad719x_dev *dev,
 			return ret;
 
 		ret = ad719x_get_register_value(dev, AD719X_REG_DATA, 3, &samples);
-		if(ret != 0)
+		if (ret != 0)
 			return ret;
 
 		*samples_avg += samples;
@@ -710,7 +697,8 @@ int ad719x_temperature_read(struct ad719x_dev *dev, float *temp)
 	if (ret != 0)
 		return ret;
 
-	if(dev->chip_id == AD7190 || dev->chip_id == AD7192 || dev->chip_id == AD7195) {
+	if (dev->chip_id == AD7190 || dev->chip_id == AD7192
+	    || dev->chip_id == AD7195) {
 		ret = ad719x_channels_select(dev, AD719X_CH_MASK(AD719X_CH_2));
 		if (ret != 0)
 			return ret;
@@ -746,7 +734,7 @@ float ad719x_convert_to_volts(struct ad719x_dev *dev,
 {
 	float voltage = 0;
 
-	if(dev->current_polarity == 0 ) { // Bipolar mode
+	if (dev->current_polarity == 0) { // Bipolar mode
 		voltage = 1000 * (((float)raw_data / (1ul << 23)) - 1) * v_ref /
 			  dev->current_gain;
 	} else {                    // Unipolar mode
@@ -768,7 +756,7 @@ float ad719x_convert_to_volts(struct ad719x_dev *dev,
 *******************************************************************************/
 int ad719x_sync_control(struct ad719x_dev *dev, uint8_t value)
 {
-	if(dev->sync_pin) {
+	if (dev->sync_pin) {
 		return no_os_gpio_set_value(dev->sync_pin, value);
 	} else {
 		return -ENOTSUP;

@@ -5,52 +5,39 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #ifndef __ADXL367_H__
 #define __ADXL367_H__
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
 #include "no_os_spi.h"
 #include "no_os_i2c.h"
-
-/******************************************************************************/
-/********************************* ADXL367 ************************************/
-/******************************************************************************/
 
 /* ADXL367 communication commands */
 #define ADXL367_WRITE_REG               0x0A
@@ -124,6 +111,14 @@
 #define ADXL367_REG_AXIS_MASK		0x43
 #define ADXL367_REG_STATUS_COPY         0x44
 #define ADXL367_REG_STATUS_2            0x45
+#define ADXL367_REG_STATUS_3		0x46
+#define ADXL367_REG_PEDOMETER_STEP_CNT_H	0x47
+#define ADXL367_REG_PEDOMETER_STEP_CNT_L	0x48
+#define ADXL367_REG_PEDOMETER_CTL	0x49
+#define ADXL367_REG_PEDOMETER_THRESH_H	0x4a
+#define ADXL367_REG_PEDOMETER_THRESH_L	0x4b
+#define ADXL367_REG_PEDOMETER_SENS_H	0x4c
+#define ADXL367_REG_PEDOMETER_SENS_L	0x4d
 
 /* ADXL367_REG_STATUS definitions */
 #define ADXL367_STATUS_ERR_USER_REGS    NO_OS_BIT(7)
@@ -142,6 +137,7 @@
 #define ADXL367_THRESH_L		0xFC
 
 /* ADXL367_REG_ACT_INACT_CTL definitions */
+#define ADXL367_ACT_INACT_CTL_REF_READBACK_MSK	NO_OS_GENMASK(7, 6)
 #define ADXL367_ACT_INACT_CTL_LINKLOOP_MSK	NO_OS_GENMASK(5, 4)
 #define ADXL367_ACT_INACT_CTL_INACT_EN_MSK	NO_OS_GENMASK(3, 2)
 #define ADXL367_ACT_INACT_CTL_ACT_EN_MSK	NO_OS_GENMASK(1, 0)
@@ -245,9 +241,18 @@
 #define ADXL367_ADC_EN				NO_OS_BIT(0)
 
 /* ADXL367_REG_TEMP_CTL definitions. */
+#define ADXL367_NL_COMP_EN			NO_OS_BIT(7)
 #define ADXL367_TEMP_INACT_EN			NO_OS_BIT(3)
 #define ADXL367_TEMP_ACT_EN			NO_OS_BIT(1)
 #define ADXL367_TEMP_EN				NO_OS_BIT(0)
+
+/* ADXL367_REG_STATUS_3 definitions. */
+#define ADXL367_PEDOMETER_OVERFLOW_MSK		NO_OS_BIT(0)
+
+/* ADXL367_REG_PEDOMETER_CTL definitions. */
+#define ADXL367_PEDOMETER_RESET_STEPMSK		NO_OS_BIT(2)
+#define ADXL367_PEDOMETER_RESET_OF_MSK		NO_OS_BIT(1)
+#define ADXL367_PEDOMETER_EN_MSK		NO_OS_BIT(0)
 
 /* ADXL367 device information */
 #define ADXL367_DEVICE_AD               0xAD
@@ -290,9 +295,14 @@
 /* Max change = 270mg. Sensitivity = 4LSB / mg */
 #define ADXL367_SELF_TEST_MAX	270 * 100 / 25
 
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
+/**
+ * @enum adxl367_id
+ * @brief Compatible device specifier, value corresponds to REV_ID register value.
+ */
+enum adxl367_id {
+	ADXL367_ID = 0x3,
+	ADXL366_ID = 0x5,
+};
 
 /**
  * @enum adxl367_comm_type
@@ -428,6 +438,8 @@ struct adxl367_fractional_val {
  * @brief ADXL367 Device structure.
  */
 struct adxl367_dev {
+	/** Compatible device specifier. */
+	enum adxl367_id			id;
 	/** Communication type - I2C or SPI. */
 	enum adxl367_comm_type		comm_type;
 	/** SPI Descriptor */
@@ -455,6 +467,8 @@ struct adxl367_dev {
  * @brief Structure holding the parameters for ADXL367 device initialization.
  */
 struct adxl367_init_param {
+	/** Compatible device specifier. */
+	enum adxl367_id			id;
 	/** Communication type - I2C or SPI. */
 	enum adxl367_comm_type 		comm_type;
 	/** SPI Initialization structure. */
@@ -464,10 +478,6 @@ struct adxl367_init_param {
 	/** Depending on ASEL pin, can be 0x53 or 0x1D. Only for I2C Comm. */
 	uint8_t 			i2c_slave_address;
 };
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /* Initializes the device. */
 int adxl367_init(struct adxl367_dev **device,
@@ -594,5 +604,24 @@ int adxl367_setup_inactivity_detection(struct adxl367_dev *dev,
 				       uint8_t  ref_or_abs,
 				       uint16_t threshold,
 				       uint16_t  time);
+
+/* Enable or disable Z-axis nonlinearity compensation. */
+int adxl367_z_nonlinearity_compensation(struct adxl367_dev *dev, bool enable);
+
+/* Enable or disable activity and inactivity reference readback. */
+int adxl367_reference_readback(struct adxl367_dev *dev,
+			       bool inactivity,
+			       int16_t* x,
+			       int16_t* y,
+			       int16_t* z);
+
+/* Enable the step counter feature. */
+int adxl367_pedometer_enable(struct adxl367_dev *dev, bool enable);
+
+/* Read the step counter. */
+int adxl367_pedometer_get_steps(struct adxl367_dev *dev, uint16_t *steps);
+
+/* Reset the step counter. */
+int adxl367_pedometer_reset(struct adxl367_dev *dev);
 
 #endif /* __ADXL367_H__ */

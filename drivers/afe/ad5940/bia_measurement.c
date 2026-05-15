@@ -6,36 +6,30 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #include <errno.h>
 #include "bia_measurement.h"
@@ -617,7 +611,7 @@ int AppBiaInit(struct ad5940_dev *dev, uint32_t *pBuffer, uint32_t BufferSize)
 
 	/* Initialization sequencer  */
 	AppBiaCfg.InitSeqInfo.WriteSRAM = false;
-	ret = ad5940_SEQInfoCfg(dev,&AppBiaCfg.InitSeqInfo);
+	ret = ad5940_SEQInfoCfg(dev, &AppBiaCfg.InitSeqInfo);
 	if (ret < 0)
 		return ret;
 	seq_cfg.SeqEnable = true;
@@ -658,16 +652,16 @@ int AppBiaInit(struct ad5940_dev *dev, uint32_t *pBuffer, uint32_t BufferSize)
 static int AppEITRegModify(struct ad5940_dev *dev, int32_t * const pData,
 			   uint32_t *pDataCount)
 {
-	if(AppBiaCfg.NumOfData > 0) {
-		AppBiaCfg.FifoDataCount += *pDataCount/4;
-		if((int32_t)AppBiaCfg.FifoDataCount >= AppBiaCfg.NumOfData) {
+	if (AppBiaCfg.NumOfData > 0) {
+		AppBiaCfg.FifoDataCount += *pDataCount / 4;
+		if ((int32_t)AppBiaCfg.FifoDataCount >= AppBiaCfg.NumOfData) {
 			return ad5940_WUPTCtrl(dev, false);
 		}
 	}
-	if(AppBiaCfg.StopRequired == true) {
+	if (AppBiaCfg.StopRequired == true) {
 		return ad5940_WUPTCtrl(dev, false);
 	}
-	if(AppBiaCfg.SweepCfg.SweepEn) { /* Need to set new frequency and set power mode */
+	if (AppBiaCfg.SweepCfg.SweepEn) { /* Need to set new frequency and set power mode */
 		return ad5940_WGFreqCtrlS(dev, AppBiaCfg.SweepNextFreq, AppBiaCfg.SysClkFreq);
 	}
 	return 0;
@@ -691,9 +685,9 @@ fImpCar_Type computeImpedance(uint32_t *const pData)
 	iImpCar_Type *pSrcData = (iImpCar_Type *)pData;
 	iImpCar_Type *pDftVolt, *pDftCurr;
 	fImpCar_Type fCarZval;
-	float a,b;
-	float c,d;
-	float denum=1;
+	float a, b;
+	float c, d;
+	float denum = 1;
 
 	pDftVolt = pSrcData++;
 	pDftCurr = pSrcData;
@@ -708,11 +702,11 @@ fImpCar_Type computeImpedance(uint32_t *const pData)
 	d = (float)pDftCurr->Image;
 
 	//(c^2+d^2)
-	denum = (c*c+d*d);
+	denum = (c * c + d * d);
 	//RE((a+bi)(c-di)) = RE(a*c-b*d(-1)+(-a*d+b*c)i) = a*c+b*d
-	fCarZval.Real = (a*c + b*d)/denum;
+	fCarZval.Real = (a * c + b * d) / denum;
 	////IM((a+bi)(c-di)) = IM(a*c-b*d(-1)+(-a*d+b*c)i) = (-a*d+b*c)
-	fCarZval.Image = (-a*d + b*c)/denum;
+	fCarZval.Image = (-a * d + b * c) / denum;
 
 	//Apply Rtia cal values;
 	a = fCarZval.Real * AppBiaCfg.RtiaCurrValue[0] - fCarZval.Image *

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /**
  * \file talise_error_types.h
  * \brief Contains Talise data types for API Error messaging
@@ -38,7 +37,7 @@ typedef enum {
  *        to ease debug of errors.
  */
 typedef enum {
-	TAL_ERR_OK=0,
+	TAL_ERR_OK = 0,
 	TAL_ERR_INV_NULL_INIT_PARAM,
 	TAL_ERR_WAITFOREVENT_INV_PARM,
 	TAL_ERR_CLKPLL_INV_HSDIV,

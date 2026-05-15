@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "dma_example.h"
 #include "common_data.h"
 #include "parameters.h"
@@ -53,6 +44,7 @@
 #include "no_os_error.h"
 #include "no_os_util.h"
 #include "no_os_spi.h"
+#include "no_os_uart.h"
 
 #include "axi_jesd204_rx.h"
 #include "axi_jesd204_tx.h"
@@ -64,17 +56,180 @@
 #include "xilinx_gpio.h"
 #include "xilinx_spi.h"
 #include "xil_cache.h"
+#include "xilinx_uart.h"
 
 #include "adrv9025.h"
 #include "ad9528.h"
+#include "adi_adrv9025_external_dpd_types.h"
+#include "adi_adrv9025_external_dpd.h"
+#include "adrv9025_txqec_reg_addr_macros.h"
+#include "adrv9025_txqec_hw.h"
 
-uint32_t dac_buffer_dma[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
-uint16_t adc_buffer_dma[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((
-			aligned));
+//redefine in axi_dac_core.c
+#define AXI_DAC_REG_DATA_SELECT(c)		(0x0418 + (c) * 0x40)
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
+/*******************************************************************************
+ * global and static variables
+*******************************************************************************/
+#define DAC_DDR_ENABLE 1
+#define BASIC_EXAMPLE 0
+#define ORX_CAPTURE 1
+
+txqec_outputs_t txqecOut;
+
+adi_adrv9025_ExternalPathDelay_t externalPathDelay;
+uint8_t captureCompleteFlag = 0u;
+adi_adrv9025_ExtDpdCaptureConfig_t dpdCaptureConfig = {
+	.extDpdCaptureTriggerPin = ADI_ADRV9025_GPIO_INVALID,
+	.extDpdCaptureDoneStatusPin = ADI_ADRV9025_GPIO_INVALID,
+	{
+			.extDpdCaptureFifoDelay = 0u,
+			.extDpdCaptureInterpolationIndex = 0u,
+	},
+	{
+			.extDpdCapturetxChannelSel = ADI_ADRV9025_TX3,
+			.dpdCaptureTypeSel = ADI_ADRV9025_EXT_DPD_CAPTURE_IMMEDIATE_TRIGGER,
+			#if 1
+			.dpdCaptureTxObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_OBS_POST_DPD_ACTUATOR,
+			.dpdCaptureTxAltObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_ALT_OBS_DPD_ACTUATOR,
+			#else
+			.dpdCaptureTxObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_OBS_POST_DPD_ACTUATOR,
+			.dpdCaptureTxAltObsSel = ADI_ADRV9025_EXT_DPD_CAPTURE_TX_ALT_OBS_PRE_CFR,		
+			#endif	
+			.dpdCaptureSize = ADI_ADRV9025_EXT_DPD_CAPTURE_SIZE_4096_SAMPLES,
+			{
+					.extDpdPeakCaptureInputSel = ADI_ADRV9025_EXT_DPD_CAPTURE_PEAK_DET_DPD_INPUT,
+					.extDpdPeakWinCnt = 491520,
+					.extDpdPeakDetectIIREnable = 0,
+					.extDpdPeakDetectIIRBypass = 1,
+					.extDpdPeakDecay = 1,
+					.extDpdPeakExtendedWindowUs = 0,
+			},
+			.extDpdCaptureAlignDelay = 0u,
+			.extDpdCaptureDelay = 0
+	},
+
+};
+adi_adrv9025_ExtDpdCaptureDetailedStatus_t extDpdCaptureDetailedStatus;
+adi_adrv9025_ExtDpdCaptureData_t extDpdCaptureData;
+
+uint32_t dac_buffer_dma[DAC_BUFFER_SAMPLES] __attribute__((aligned(16)));
+//uint16_t adc_buffer_dma[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((aligned(16)));
+
+struct no_os_gpio_desc *gpio_plddrbypass;
+struct no_os_gpio_init_param gpio_init_plddrbypass;
+uint8_t tx_is_transfering;
+
+uint32_t zero_lut_iq[DAC_BUFFER_SAMPLES]; // buffer to receive dac waveform
+
+struct adrv9025_init_param adrv9025_init_par = { 0 };
+struct adi_adrv9025_Device adrv9025_device = { 0 };
+adi_adrv9025_AgcCfg_t agcConfig_init_param = { 0 };
+struct ad9528_platform_data ad9528_pdata = { 0 };
+struct ad9528_channel_spec ad9528_channels[14];
+struct ad9528_init_param ad9528_param;
+struct ad9528_dev* ad9528_device;
+struct adrv9025_rf_phy *phy;
+int status;
+
+struct xil_gpio_init_param hal_gpio_param = {
+	.type = GPIO_PS,
+	.device_id = GPIO_DEVICE_ID
+};
+
+struct axi_dmac_init rx_dmac_init = {
+	"rx_dmac",
+	RX_DMA_BASEADDR,
+	IRQ_DISABLED
+};
+struct axi_dmac *rx_dmac;
+
+struct axi_dmac_init rx_os_dmac_init = {
+	"rx_os_dmac",
+	RX_DMA_BASEADDR,
+	IRQ_DISABLED
+};
+struct axi_dmac *rx_os_dmac;
+
+struct axi_dmac_init tx_dmac_init = {
+	"tx_dmac",
+	TX_DMA_BASEADDR,
+	IRQ_DISABLED
+};
+struct axi_dmac *tx_dmac;
+
+struct axi_adc_init rx_adc_init = {
+	.name = "rx_adc",
+	.base = RX_CORE_BASEADDR,
+	.num_channels = 8
+};
+struct axi_dac_init tx_dac_init = {
+	.name = "tx_dac",
+	.base = TX_CORE_BASEADDR,
+	.channels = NULL,
+	.rate = 3,
+	.num_channels = 8
+};
+
+struct jesd204_tx_init tx_jesd_init = {
+	.name = "tx_jesd",
+	.base = TX_JESD_BASEADDR,
+	.octets_per_frame = ADRV9025_TX_JESD_OCTETS_PER_FRAME,
+	.frames_per_multiframe = ADRV9025_TX_JESD_FRAMES_PER_MULTIFRAME,
+	.converters_per_device = ADRV9025_TX_JESD_CONVS_PER_DEVICE,
+	.converter_resolution = ADRV9025_TX_JESD_CONV_RESOLUTION,
+	.bits_per_sample = ADRV9025_TX_JESD_BITS_PER_SAMPLE,
+	.high_density = ADRV9025_TX_JESD_HIGH_DENSITY,
+	.control_bits_per_sample = ADRV9025_TX_JESD_CTRL_BITS_PER_SAMPLE,// optional
+	.subclass = ADRV9025_TX_JESD_SUBCLASS,
+	.device_clk_khz = ADRV9025_DEVICE_CLK_KHZ,
+	.lane_clk_khz = ADRV9025_LANE_RATE_KHZ
+};
+
+struct jesd204_rx_init rx_jesd_init = {
+	.name = "rx_jesd",
+	.base = RX_JESD_BASEADDR,
+	.octets_per_frame = ADRV9025_RX_JESD_OCTETS_PER_FRAME,
+	.frames_per_multiframe = ADRV9025_RX_JESD_FRAMES_PER_MULTIFRAME,
+	.subclass = ADRV9025_RX_JESD_SUBCLASS,
+	.device_clk_khz = ADRV9025_DEVICE_CLK_KHZ,
+	.lane_clk_khz = ADRV9025_LANE_RATE_KHZ
+};
+
+struct adxcvr_init tx_adxcvr_init = {
+	.name = "tx_adxcvr",
+	.base = TX_XCVR_BASEADDR,
+	.sys_clk_sel = ADXCVR_SYS_CLK_QPLL0,
+	.out_clk_sel = ADXCVR_REFCLK,
+	.lpm_enable = 0,
+	.lane_rate_khz = ADRV9025_LANE_RATE_KHZ,
+	.ref_rate_khz = ADRV9025_DEVICE_CLK_KHZ,
+	.export_no_os_clk = true
+};
+struct adxcvr *tx_adxcvr;
+
+struct adxcvr_init rx_adxcvr_init = {
+	.name = "rx_adxcvr",
+	.base = RX_XCVR_BASEADDR,
+	.sys_clk_sel = ADXCVR_SYS_CLK_CPLL,
+	.out_clk_sel = ADXCVR_REFCLK,
+	.lpm_enable = 1,
+	.lane_rate_khz = ADRV9025_LANE_RATE_KHZ,
+	.ref_rate_khz = ADRV9025_DEVICE_CLK_KHZ,
+	.export_no_os_clk = true
+};
+struct adxcvr *rx_adxcvr;
+
+/*******************************************************************************
+ * external variables
+*******************************************************************************/
+extern const uint32_t sine_lut_iq[1024];
+
+/*******************************************************************************
+ * static functions
+*******************************************************************************/
+static void parse_spi_command(void *devHalInfo);
+
 /***************************************************************************//**
  * @brief DMA example main execution.
  *
@@ -82,30 +237,8 @@ uint16_t adc_buffer_dma[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((
 *******************************************************************************/
 int dma_example_main(void)
 {
-	struct adrv9025_init_param adrv9025_init_par = { 0 };
-	struct adi_adrv9025_Device adrv9025_device = { 0 };
-	struct ad9528_platform_data ad9528_pdata = { 0 };
-	struct ad9528_channel_spec ad9528_channels[14];
-	struct ad9528_init_param ad9528_param;
-	struct ad9528_dev* ad9528_device;
-	struct adrv9025_rf_phy *phy;
-	int status;
-
 	Xil_ICacheEnable();
 	Xil_DCacheEnable();
-
-	struct axi_dmac_init rx_dmac_init = {
-		"rx_dmac",
-		RX_DMA_BASEADDR,
-		IRQ_DISABLED
-	};
-	struct axi_dmac *rx_dmac;
-	struct axi_dmac_init tx_dmac_init = {
-		"tx_dmac",
-		TX_DMA_BASEADDR,
-		IRQ_DISABLED
-	};
-	struct axi_dmac *tx_dmac;
 
 	ad9528_param.spi_init = ad9528_spi_param;
 
@@ -201,68 +334,6 @@ int dma_example_main(void)
 		goto error;
 	}
 
-	struct axi_adc_init rx_adc_init = {
-		.name = "rx_adc",
-		.base = RX_CORE_BASEADDR,
-		.num_channels = 8
-	};
-	struct axi_dac_init tx_dac_init = {
-		.name = "tx_dac",
-		.base = TX_CORE_BASEADDR,
-		.channels = NULL,
-		.rate = 3,
-		.num_channels = 8
-	};
-
-	struct jesd204_tx_init tx_jesd_init = {
-		.name = "tx_jesd",
-		.base = TX_JESD_BASEADDR,
-		.octets_per_frame = ADRV9025_TX_JESD_OCTETS_PER_FRAME,
-		.frames_per_multiframe = ADRV9025_TX_JESD_FRAMES_PER_MULTIFRAME,
-		.converters_per_device = ADRV9025_TX_JESD_CONVS_PER_DEVICE,
-		.converter_resolution = ADRV9025_TX_JESD_CONV_RESOLUTION,
-		.bits_per_sample = ADRV9025_TX_JESD_BITS_PER_SAMPLE,
-		.high_density = ADRV9025_TX_JESD_HIGH_DENSITY,
-		.control_bits_per_sample = ADRV9025_TX_JESD_CTRL_BITS_PER_SAMPLE,// optional
-		.subclass = ADRV9025_TX_JESD_SUBCLASS,
-		.device_clk_khz = ADRV9025_DEVICE_CLK_KHZ,
-		.lane_clk_khz = ADRV9025_LANE_RATE_KHZ
-	};
-
-	struct jesd204_rx_init rx_jesd_init = {
-		.name = "rx_jesd",
-		.base = RX_JESD_BASEADDR,
-		.octets_per_frame = ADRV9025_RX_JESD_OCTETS_PER_FRAME,
-		.frames_per_multiframe = ADRV9025_RX_JESD_FRAMES_PER_MULTIFRAME,
-		.subclass = ADRV9025_RX_JESD_SUBCLASS,
-		.device_clk_khz = ADRV9025_DEVICE_CLK_KHZ,
-		.lane_clk_khz = ADRV9025_LANE_RATE_KHZ
-	};
-
-	struct adxcvr_init tx_adxcvr_init = {
-		.name = "tx_adxcvr",
-		.base = TX_XCVR_BASEADDR,
-		.sys_clk_sel = ADXCVR_SYS_CLK_QPLL0,
-		.out_clk_sel = ADXCVR_REFCLK,
-		.lpm_enable = 0,
-		.lane_rate_khz = ADRV9025_LANE_RATE_KHZ,
-		.ref_rate_khz = ADRV9025_DEVICE_CLK_KHZ,
-		.export_no_os_clk = true
-	};
-	struct adxcvr *tx_adxcvr;
-
-	struct adxcvr_init rx_adxcvr_init = {
-		.name = "rx_adxcvr",
-		.base = RX_XCVR_BASEADDR,
-		.sys_clk_sel = ADXCVR_SYS_CLK_CPLL,
-		.out_clk_sel = ADXCVR_REFCLK,
-		.lpm_enable = 1,
-		.lane_rate_khz = ADRV9025_LANE_RATE_KHZ,
-		.ref_rate_khz = ADRV9025_DEVICE_CLK_KHZ,
-		.export_no_os_clk = true
-	};
-	struct adxcvr *rx_adxcvr;
-
 	status = adxcvr_init(&tx_adxcvr, &tx_adxcvr_init);
 	if (status)
 		goto error_1;
@@ -288,6 +359,7 @@ int dma_example_main(void)
 	adrv9025_init_par.adrv9025_device = &adrv9025_device;
 	adrv9025_init_par.dev_clk = ad9528_device->clk_desc[1];
 	adrv9025_init_par.streamImageFile = ADRV9025_STREAM_IMAGE_FILE;
+	adrv9025_init_par.agcConfig_init_param = &agcConfig_init_param;
 
 	status = adrv9025_init(&phy, &adrv9025_init_par);
 	if (status) {
@@ -298,10 +370,13 @@ int dma_example_main(void)
 	status = axi_dac_init_begin(&phy->tx_dac, &tx_dac_init);
 	if (status)
 		goto error_6;
+
 	status = axi_adc_init_begin(&phy->rx_adc, &rx_adc_init);
 	if (status)
 		goto error_7;
 
+ 	// todo: why reset Tx DAC and Rx ADC here???
+#if 1
 	// Reset Tx DAC
 	axi_adc_write(phy->rx_adc, 0x4040, 0);
 	axi_adc_write(phy->rx_adc, 0x4040,
@@ -311,12 +386,23 @@ int dma_example_main(void)
 	axi_adc_write(phy->rx_adc, AXI_ADC_REG_RSTN, 0);
 	axi_adc_write(phy->rx_adc, AXI_ADC_REG_RSTN,
 		      AXI_ADC_MMCM_RSTN | AXI_ADC_RSTN);
+#endif
 
 	status = adrv9025_post_setup(phy);
 	if (status) {
 		pr_err("error: adrv9025_post_setup() failed\n");
 		goto error_8;
 	}
+
+#if BASIC_EXAMPLE
+#if 1
+	// Set DDS data
+	axi_dac_data_setup(phy->tx_dac);
+#else
+	// Set PN
+	axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_PN7);
+#endif
+#endif //BASIC_EXAMPLE
 
 	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
 	if (status) {
@@ -328,14 +414,65 @@ int dma_example_main(void)
 		printf("axi_dmac_init rx init error: %d\n", status);
 		goto error_9;
 	}
+	status = axi_dmac_init(&rx_os_dmac, &rx_os_dmac_init);
+	if (status) {
+		printf("OBS axi_dmac_init() rx init error: %d\n", status);
+		goto error_9;
+	}
 
-	Xil_DCacheFlush();
+struct axi_dma_transfer transfer = {
+	// Number of bytes to write/read
+	.size = sizeof(sine_lut_iq),
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = CYCLIC,
+	// Address of data source
+#if DAC_DDR_ENABLE
+	.src_addr = (uintptr_t)DAC_DDR_BASEADDR,
+#else
+	.src_addr = (uintptr_t)dac_buffer_dma,
+#endif
+	// Address of data destination
+	.dest_addr = 0
+};
 
-	extern const uint32_t sine_lut_iq[1024];
+struct axi_dma_transfer read_transfer = {
+	// Number of bytes to write/read
+	.size = ADC_BUFFER_SAMPLES * 2,
+	// Transfer done flag
+	.transfer_done = 0,
+	// Signal transfer mode
+	.cyclic = NO,
+	// Address of data source
+	.src_addr = 0,
+	// Address of data destination
+	.dest_addr = (uintptr_t)ADC_DDR_BASEADDR
+};
+
+#if BASIC_EXAMPLE == 0
+	gpio_init_plddrbypass.extra = &hal_gpio_param;
+	gpio_init_plddrbypass.number = DAC_GPIO_PLDDR_BYPASS;
+	status = no_os_gpio_get(&gpio_plddrbypass, &gpio_init_plddrbypass);
+	if (status) {
+		printf("no_os_gpio_get() failed with status %d", status);
+		goto error_3;
+	}
+	no_os_gpio_direction_output(gpio_plddrbypass, 1);
+
 	axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
+#if DAC_DDR_ENABLE
 	axi_dac_load_custom_data(phy->tx_dac, sine_lut_iq,
 				 NO_OS_ARRAY_SIZE(sine_lut_iq),
-				 (uintptr_t)dac_buffer_dma);
+				 (uintptr_t)DAC_DDR_BASEADDR);
+#else
+	axi_dac_load_custom_data(phy->tx_dac, sine_lut_iq,
+							NO_OS_ARRAY_SIZE(sine_lut_iq),
+							(uintptr_t)dac_buffer_dma);
+#endif // DAC_DDR_ENABLE
+#endif // BASIC_EXAMPLE == 0
+
+	Xil_DCacheFlush();
 
 	struct jesd204_topology *topology;
 	struct jesd204_topology_dev devs[] = {
@@ -363,66 +500,158 @@ int dma_example_main(void)
 		},
 	};
 
+	status = adi_adrv9025_HwOpen(phy->madDevice, &phy->spiSettings);
+	if (status) {
+		pr_err("error: adi_adrv9025_HwOpen() failed\n");
+		goto error_8;
+	}
+
 	jesd204_topology_init(&topology, devs,
-			      sizeof(devs)/sizeof(*devs));
+			      sizeof(devs) / sizeof(*devs));
 
 	jesd204_fsm_start(topology, JESD204_LINKS_ALL);
 
 	axi_jesd204_tx_status_read(tx_jesd);
 	axi_jesd204_rx_status_read(rx_jesd);
 
-	struct axi_dma_transfer transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(sine_lut_iq),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = CYCLIC,
-		// Address of data source
-		.src_addr = (uintptr_t)dac_buffer_dma,
-		// Address of data destination
-		.dest_addr = 0
-	};
+#if 0
+	// Note: run adrv9025 init cals
+	status = adrv9025_jesd204_link_setup(phy->jdev, JESD204_STATE_OP_REASON_INIT);
+	if(status != JESD204_STATE_CHANGE_DONE){
+		goto error_10;
+	}
+	status = adi_adrv9025_HwOpen(phy->madDevice, &phy->spiSettings);
+	if (status) {
+		pr_err("error: adi_adrv9025_HwOpen() failed\n");
+		goto error_8;
+	}
+#endif
 
+#if 0
 	pr_info("DMA_EXAMPLE Tx: address=%#lx samples=%lu channels=%u bits=%lu\n",
 		(uintptr_t)dac_buffer_dma, NO_OS_ARRAY_SIZE(dac_buffer_dma),
 		tx_dac_init.num_channels,
 		8 * sizeof(dac_buffer_dma[0]));
+#endif
 
+#if BASIC_EXAMPLE == 0
 	/* Transfer the data. */
 	axi_dmac_transfer_start(tx_dmac, &transfer);
 
 	/* Flush cache data. */
+#if DAC_DDR_ENABLE
+	Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(sine_lut_iq));
+#else
 	Xil_DCacheInvalidateRange((uintptr_t)dac_buffer_dma, sizeof(sine_lut_iq));
+#endif
+#endif
 
+	tx_is_transfering = 1u; // 1 indicates tx is transfering the data...
 	no_os_mdelay(1000);
 
-	struct axi_dma_transfer read_transfer = {
-		// Number of bytes to write/read
-		.size = sizeof(adc_buffer_dma),
-		// Transfer done flag
-		.transfer_done = 0,
-		// Signal transfer mode
-		.cyclic = NO,
-		// Address of data source
-		.src_addr = 0,
-		// Address of data destination
-		.dest_addr = (uintptr_t)adc_buffer_dma
-	};
-
+#if 1
 	/* Read the data from the ADC DMA. */
+#if ORX_CAPTURE == 0
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
+#else
+	axi_dmac_transfer_start(rx_os_dmac, &read_transfer);
+#endif
 
 	/* Wait until transfer finishes */
+#if ORX_CAPTURE == 0
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 1000);
-	if(status)
+#else
+	status = axi_dmac_transfer_wait_completion(rx_os_dmac, 1000);
+#endif
+
+	if (status)
 		goto error_10;
 
-	Xil_DCacheInvalidateRange((uintptr_t)adc_buffer_dma, sizeof(adc_buffer_dma));
+	Xil_DCacheInvalidateRange((uintptr_t)ADC_DDR_BASEADDR, ADC_BUFFER_SAMPLES*2);
+#endif
+
+#if 0
 	pr_info("DMA_EXAMPLE Rx: address=%#lx samples=%lu channels=%u bits=%lu\n",
 		(uintptr_t)adc_buffer_dma, NO_OS_ARRAY_SIZE(adc_buffer_dma),
 		rx_adc_init.num_channels,
 		8 * sizeof(adc_buffer_dma[0]));
+#endif
+
+	/* ext dpd capture init */
+	// Enable Tx3 and ORx3
+	adi_adrv9025_RxTxEnableSet(phy->madDevice, 0x40, 0x04);
+
+	// ENABLE:  trackcal_orx3_qec, trackcal_tx3_lol
+	// DISABLE: trackcal_tx3_qec
+    uint64_t enableMaskSet = 0x0400u, enableMaskGet = 0u;
+	status = adi_adrv9025_TrackingCalsEnableSet(phy->madDevice, enableMaskSet, 1);
+	adi_adrv9025_TrackingCalsEnableGet(phy->madDevice, &enableMaskGet);
+
+	if((enableMaskGet & 0xffffu) != enableMaskSet)
+	{
+		pr_info("Failed on adi_adrv9025_TrackingCalsEnableSet.\n");
+	}
+
+	// enable dpd actuator
+	adi_adrv9025_ExtDpdActuatorEnableSet(phy->madDevice, 0x04, 1);
+
+	// bypass dpd actuator
+	adi_adrv9025_ExtDpdActutatorPassthruSet(phy->madDevice, 0x04, 1);
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureConfigSet(phy->madDevice, &dpdCaptureConfig);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureConfigSet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureConfigSet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureConfigGet(phy->madDevice, &dpdCaptureConfig);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureConfigGet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureConfigGet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureStartTriggerSet(phy->madDevice);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureStartTriggerSet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureStartTriggerSet.\n");
+	}
+
+	if(status == 0)
+	{
+		status = adi_adrv9025_ExtDpdCaptureDoneStatusGet(phy->madDevice, &captureCompleteFlag);
+		if(status != 0)
+			pr_info("Failed on adi_adrv9025_ExtDpdCaptureDoneStatusGet.\n");
+		else
+			pr_info("Done on adi_adrv9025_ExtDpdCaptureDoneStatusGet.\n");
+
+		if(captureCompleteFlag == 1)
+		{
+			pr_info("a capture completes!\n");
+
+			adi_adrv9025_ExtDpdCaptureDetailedStatusGet(phy->madDevice,
+					dpdCaptureConfig.extDpdCaptureCtrl.extDpdCapturetxChannelSel,
+					&extDpdCaptureDetailedStatus);
+
+			adi_adrv9025_ExtDpdCaptureDataGet(phy->madDevice,
+					&extDpdCaptureData);
+		}
+		else
+		{
+			pr_info("a capture in progress/not started!\n");
+		}
+	}
+
+	/* no-ending loop to handle commands from PC */
+	parse_spi_command((void *)phy->madDevice);
 
 error_10:
 	axi_dmac_remove(rx_dmac);
@@ -433,7 +662,6 @@ error_8:
 error_7:
 	axi_dac_remove(phy->tx_dac);
 error_6:
-	adi_adrv9025_HwClose(phy->madDevice);
 	adrv9025_remove(phy);
 error_5:
 	axi_jesd204_rx_remove(rx_jesd);
@@ -463,3 +691,364 @@ error:
 	printf("Error %d.\n", status);
 	return status;
 }
+
+
+#if 1
+static void parse_spi_command(void *devHalInfo)
+{
+	struct xil_uart_init_param platform_uart_init_par = {
+		.type = UART_PS,
+		.irq_id = UART_IRQ_ID
+	};
+
+	struct no_os_uart_init_param uart_param = {
+		.device_id = UART_DEVICE_ID,
+		.irq_id = UART_IRQ_ID,
+		.baud_rate = UART_BAUDRATE,
+		.size = NO_OS_UART_CS_8,
+		.parity = NO_OS_UART_PAR_NO,
+		.stop = NO_OS_UART_STOP_1_BIT,
+		.extra = &platform_uart_init_par,
+		.platform_ops = &xil_uart_ops
+	};
+
+	struct no_os_uart_desc *uart_desc;
+
+#if 1
+	struct axi_dma_transfer transfer = {
+		// Number of bytes to write/read
+		.size = sizeof(zero_lut_iq),
+		// Transfer done flag
+		.transfer_done = 0,
+		// Signal transfer mode
+		.cyclic = CYCLIC,
+		// Address of data source
+	#if DAC_DDR_ENABLE
+		.src_addr = (uintptr_t)DAC_DDR_BASEADDR,
+	#else
+		.src_addr = (uintptr_t)dac_buffer_dma,
+	#endif
+		// Address of data destination
+		.dest_addr = 0
+	};
+
+	struct axi_dma_transfer read_transfer = {
+		// Number of bytes to write/read
+		.size = ADC_BUFFER_SAMPLES * 2,
+		// Transfer done flag
+		.transfer_done = 0,
+		// Signal transfer mode
+		.cyclic = NO,
+		// Address of data source
+		.src_addr = 0,
+		// Address of data destination
+		.dest_addr = (uintptr_t)ADC_DDR_BASEADDR
+	};
+#endif
+
+#define MAX_SIZE (DAC_BUFFER_SAMPLES*4*2)
+	int32_t error = 0;
+	uint32_t bytes_number = 10;
+	uint8_t wr_data[MAX_SIZE] = {0};
+	uint32_t bytes_recv = 0;
+    uint32_t bytes_send = 0u;
+    const uint32_t bytes_chunk = 4096u;
+	uint8_t spi_mode = 0u;
+	uint32_t spi_addr = 0;
+	uint32_t spi_data = 0;
+    uint8_t dpd_lutId = 0;
+
+    //for txqec test
+	uint32_t chan = 0u;
+	uint32_t enableMask = 0u;
+	uint32_t txqec_param_mask = 0x0Fu;
+
+	error = no_os_uart_init(&uart_desc, &uart_param);
+
+	if(error == 0)
+	{
+		while(1)
+		{
+			bytes_number = 10; // length of spi_write and spi_read
+			// receive data
+			bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+
+			if(bytes_recv == bytes_number)
+			{
+				// spi write
+				spi_mode = wr_data[1];
+				spi_addr = (wr_data[2] << 3*8) | (wr_data[3] << 2*8) | (wr_data[4] << 1*8) | wr_data[5];
+				spi_data = (wr_data[6] << 3*8) | (wr_data[7] << 2*8) | (wr_data[8] << 1*8) | wr_data[9];
+				switch(wr_data[0])
+				{
+				case 0x5A:
+					adi_adrv9025_SpiByteWrite(devHalInfo, (uint16_t)spi_addr, (uint8_t)spi_data);
+					break;
+				case 0x5B:
+#if 0
+					// spi read
+					adi_adrv9025_SpiByteRead(devHalInfo, (uint16_t)spi_addr, &spi_rd_data);
+#else
+					spi_data = 0xa1b2c3e4;
+#endif
+					// send data
+					wr_data[6] = (spi_data >> 3*8) & 0xff;
+					wr_data[7] = (spi_data >> 2*8) & 0xff;
+					wr_data[8] = (spi_data >> 1*8) & 0xff;
+					wr_data[9] = (spi_data >> 0*8) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+
+				case 0x5C:
+					bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					bytes_recv = no_os_uart_read(uart_desc, wr_data, bytes_number);
+					if(bytes_number/4 <= DAC_BUFFER_SAMPLES)
+					{
+						for(int sample = 0; sample < bytes_number/4; sample++)
+						{
+							uint32_t iq = (wr_data[sample*4 + 1] << 0) |
+										(wr_data[sample*4 + 0] << 8) |
+										(wr_data[sample*4 + 3] << 16) |
+										(wr_data[sample*4 + 2] << 24);
+							zero_lut_iq[sample] = iq;
+						}
+						/* Reload transfer data memory and transfer the data */
+						if(tx_is_transfering == 1u)
+						{
+							/* Stop tranfering the data. */
+							axi_dmac_transfer_stop(tx_dmac);
+
+							//Xil_DCacheFlush();
+
+							axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_DMA);
+							/* Reload the waveform */
+#if DAC_DDR_ENABLE
+							axi_dac_load_custom_data(phy->tx_dac,
+													zero_lut_iq,
+													NO_OS_ARRAY_SIZE(zero_lut_iq),
+													(uintptr_t)DAC_DDR_BASEADDR);
+#else
+							axi_dac_load_custom_data(phy->tx_dac,
+													zero_lut_iq,
+													NO_OS_ARRAY_SIZE(zero_lut_iq),
+													(uintptr_t)dac_buffer_dma);
+#endif
+							Xil_DCacheFlush();
+
+							/* Transfer the data. */
+							transfer.size = bytes_number*2; //NOTE: play half waveform if size = bytes_number
+							axi_dmac_transfer_start(tx_dmac, &transfer);
+							axi_dmac_transfer_wait_completion(tx_dmac, 500);
+
+							/* Flush cache data. */
+#if DAC_DDR_ENABLE
+							Xil_DCacheInvalidateRange((uintptr_t)DAC_DDR_BASEADDR, sizeof(zero_lut_iq));
+#else
+							Xil_DCacheInvalidateRange((uintptr_t)dac_buffer_dma, sizeof(zero_lut_iq));
+#endif
+							no_os_mdelay(100);
+						}
+					}
+					no_os_mdelay(10);
+					break;
+
+				case 0x5D:
+					// NOTE: ignore bytes_number from PC
+					//bytes_number = (wr_data[1] << 2*8) | (wr_data[2] << 1*8) | (wr_data[3] << 0*8);
+					uint8_t act_enable = 1;
+					uint8_t act_passthru_enable = 1;
+					uint16_t CAP_SIZE = ADRV9025_MAX_EXT_DPD_CAPTURE_SAMPLE_SIZE; // 4096u
+					bytes_number = CAP_SIZE * 2;
+					uint8_t cap_point = wr_data[4];
+					if(cap_point > 3)
+						cap_point = 3;
+
+					if(cap_point == 0) // only trigger when cap_point == 0
+					{
+#if 0
+						// Enable Tx3 and ORx3
+						adi_adrv9025_RxTxEnableSet(phy->madDevice, 0x40, 0x04);
+
+						// enable dpd actuator
+						adi_adrv9025_ExtDpdActuatorEnableSet(phy->madDevice, 0x04, 1);
+						adi_adrv9025_ExtDpdActuatorEnableGet(phy->madDevice, 0x04, &act_enable);
+						if(act_enable == 1){
+							// bypass dpd actuator
+							adi_adrv9025_ExtDpdActutatorPassthruSet(phy->madDevice, 0x04, 1);
+							adi_adrv9025_ExtDpdActutatorPassthruGet(phy->madDevice, 0x04, &act_passthru_enable);
+						}
+#endif
+						if(act_passthru_enable == 1)
+						{
+							// trigger a capture
+							status = adi_adrv9025_ExtDpdCaptureStartTriggerSet(phy->madDevice);
+
+							// get capture status
+							adi_adrv9025_ExtDpdCaptureDoneStatusGet(phy->madDevice, &captureCompleteFlag);
+
+							// get capture detailed status
+							adi_adrv9025_ExtDpdCaptureDetailedStatusGet(phy->madDevice,
+									dpdCaptureConfig.extDpdCaptureCtrl.extDpdCapturetxChannelSel,
+									&extDpdCaptureDetailedStatus);
+						}
+
+						// get capture data
+						if(captureCompleteFlag)
+						{
+							adi_adrv9025_ExtDpdCaptureDataGet(phy->madDevice, &extDpdCaptureData);
+						}
+					}
+
+					// send capture data via uart
+					//for(int ii=0; ii<3*2; ii++)
+					for(int ii = cap_point*2; ii < (cap_point+1)*2; ii++)
+					{
+						uint8_t *pbuf;
+						switch(ii){
+						case 0:
+							pbuf = (uint8_t*)extDpdCaptureData.orxCaptureData.extDpdCaptureDataI;
+							break;
+						case 1:
+							pbuf = (uint8_t*)extDpdCaptureData.orxCaptureData.extDpdCaptureDataQ;
+							break;
+						case 2:
+							pbuf = (uint8_t*)extDpdCaptureData.txCaptureData.extDpdCaptureDataI;
+							break;
+						case 3:
+							pbuf = (uint8_t*)extDpdCaptureData.txCaptureData.extDpdCaptureDataQ;
+							break;
+						case 4:
+							pbuf = (uint8_t*)extDpdCaptureData.txAlternateCaptureData.extDpdCaptureDataI;
+							break;
+						case 5:
+							pbuf = (uint8_t*)extDpdCaptureData.txAlternateCaptureData.extDpdCaptureDataQ;
+							break;
+						default:
+							pbuf = NULL;
+							break;
+						}
+
+						if(captureCompleteFlag)
+						{
+							memcpy(wr_data, pbuf, CAP_SIZE*2);
+						}
+						else
+						{
+							memset(wr_data, 0x5A, CAP_SIZE*2);
+						}
+
+						bytes_send = 0u;
+						while(bytes_send + bytes_chunk < bytes_number)
+						{
+							no_os_uart_write(uart_desc, &wr_data[bytes_send], bytes_chunk);
+							bytes_send += bytes_chunk;
+						}
+						if(bytes_send < bytes_number)
+						{
+							no_os_uart_write(uart_desc, &wr_data[bytes_send], (bytes_number-bytes_send));
+						}
+						no_os_mdelay(10);
+					}
+					break;
+
+				case 0x5E:
+					uint8_t source_sel = wr_data[1];
+					switch(source_sel)
+					{
+					case 0:
+							uint32_t tone_freq = wr_data[2]; // MHz
+							uint32_t dds_phase = 0;
+							uint16_t dds_scale = (wr_data[3] << 1*8) | (wr_data[4] << 0*8); // max 1000
+							if(dds_scale > 1000u)
+								dds_scale = 1000u;
+
+							for (int i = 0; i < phy->tx_dac->num_channels; i++)
+							{
+								axi_dac_dds_set_frequency(phy->tx_dac, ((i * 2) + 0), tone_freq * 1000 * 1000);
+								axi_dac_dds_set_frequency(phy->tx_dac, ((i * 2) + 1), tone_freq * 1000 * 1000);
+								axi_dac_dds_set_phase(phy->tx_dac, ((i * 2) + 0), (i % 2) ? 0 : 90000);
+								axi_dac_dds_set_phase(phy->tx_dac, ((i * 2) + 1), (i % 2) ? 0 : 90000);
+								axi_dac_dds_set_scale(phy->tx_dac, ((i * 2) + 0), dds_scale * 1000);
+								axi_dac_dds_set_scale(phy->tx_dac, ((i * 2) + 1), dds_scale * 1000);
+								axi_dac_write(phy->tx_dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 0), 0);
+								axi_dac_write(phy->tx_dac, AXI_DAC_REG_DATA_SELECT((i * 2) + 1), 0);
+							}
+
+						break;
+					case 1:
+							// Set PN
+							axi_dac_set_datasel(phy->tx_dac, -1, AXI_DAC_DATA_SEL_PN15);
+						break;
+					default:
+							// Set DDS data
+							axi_dac_data_setup(phy->tx_dac);
+						break;
+					}
+					break;
+
+				case 0x5F:
+					uint8_t int_delay = wr_data[1];
+					uint8_t frac_delay = wr_data[2] & 0xF;
+					/*
+					dpdCaptureConfig.pathDelay.extDpdCaptureFifoDelay = int_delay;
+					dpdCaptureConfig.pathDelay.extDpdCaptureInterpolationIndex = frac_delay;
+					adi_adrv9025_ExtDpdCaptureConfigSet(phy->madDevice, &dpdCaptureConfig);
+					*/
+					externalPathDelay.fifoDelay = int_delay;
+					externalPathDelay.interpolationIndex = frac_delay;
+					adi_adrv9025_ExternalPathDelaySet(phy->madDevice, ADI_ADRV9025_TX3, &externalPathDelay);
+					break;
+
+#if 0
+				case 0x70: // get EnabledTrackingCals
+					TALISE_getEnabledTrackingCals(&tal[TALISE_A], &enableMask);
+					for(int i = 1; i < 5; i++) {
+						wr_data[i + 1] = (enableMask >> (8 * (4 - i))) & 0xff;
+					}
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+				case 0x71: // set EnabledTrackingCals
+					enableMask = 0u;
+					for(int i = 1; i < 5; i++) {
+						enableMask |= (wr_data[i + 1] << (8 * (4 - i)));
+					}
+					TALISE_enableTrackingCals(&tal[TALISE_A], enableMask);
+					break;
+#endif
+				case 0x72: // read qec correction gain and phase adj
+					txqec_param_mask = 0x0Fu;
+					ADRV9025_get_phase_gain_gd_tx3(devHalInfo, &txqecOut, txqec_param_mask);
+					wr_data[2] = (txqecOut.gain >> 8) & 0xff;
+					wr_data[3] = (txqecOut.gain >> 0) & 0xff;
+
+					wr_data[4] = (txqecOut.phase >> 8) & 0xff;
+					wr_data[5] = (txqecOut.phase >> 0) & 0xff;
+
+					wr_data[6] = (txqecOut.gd[0] >> 8) & 0xff;
+					wr_data[7] = (txqecOut.gd[0] >> 0) & 0xff;
+
+					wr_data[8] = (txqecOut.gd[1] >> 8) & 0xff;
+					wr_data[9] = (txqecOut.gd[1] >> 0) & 0xff;
+					no_os_uart_write(uart_desc, wr_data, bytes_number);
+					break;
+				case 0x73: // write qec correction gain and phase adj
+					int16_t wr_gain = (wr_data[2] << 8) +  wr_data[3];
+					int16_t wr_phase = (wr_data[4] << 8) +  wr_data[5];
+
+					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_GAIN, wr_gain);
+					ADRV9025_set_phase_gain_gd_tx3(devHalInfo, PARAM_PHASE, wr_phase);
+					break;
+
+				default:
+					/* do nothing */
+					printf("Invalid command.\n");
+					break;
+				}
+
+			}
+		}
+	}
+	no_os_uart_remove(&uart_desc);
+}
+
+#endif

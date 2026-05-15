@@ -6,41 +6,31 @@
 *******************************************************************************
 * Copyright 2013(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*****************************************************************************/
 
-/*****************************************************************************/
-/****************************** Include Files ********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "ad525x.h"
 #include "no_os_alloc.h"
@@ -49,9 +39,6 @@
 #define LSB_BYTE_MASK       0x00FF
 #define ONEBYTE_OFFSET      0x8
 
-/*****************************************************************************/
-/***************************** Constant definition ***************************/
-/*****************************************************************************/
 static const struct ad525x_chip_info chip_info[] = {
 	[ID_AD5232] = {
 		.num_channels = 2,
@@ -90,10 +77,6 @@ static const struct ad525x_chip_info chip_info[] = {
 	}
 };
 
-/*****************************************************************************/
-/*************************** Functions definitions ***************************/
-/*****************************************************************************/
-
 /**************************************************************************//**
  * @brief Initialize SPI and Initial Values for AD5172 Board.
  *
@@ -115,7 +98,7 @@ int8_t ad525x_init(struct ad525x_dev **device,
 
 	dev->this_device = init_param.this_device;
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* CPHA = 0; CPOL = 0; */
 		status = no_os_spi_init(&dev->spi_desc, &init_param.spi_init);
 	} else {
@@ -192,12 +175,12 @@ uint16_t ad525x_read_mem(struct ad525x_dev *dev,
 	uint8_t data_buffer[3] = {0,};
 	uint16_t data = 0;
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* Sending the command, reading the result on the next frame */
 		data_buffer[0] |= AD525X_CMD_SPI_MEM2SREG << AD525X_CMD_SPI_OFFSET;
 		data_buffer[0] |= address & AD525X_MEM_ADDR_MASK;
 		/* 3 byte data word */
-		if((dev->this_device == ID_AD5235) || (dev->this_device == ID_ADN2850)) {
+		if ((dev->this_device == ID_AD5235) || (dev->this_device == ID_ADN2850)) {
 			no_os_spi_write_and_read(dev->spi_desc,
 						 data_buffer,
 						 3);
@@ -239,8 +222,6 @@ uint16_t ad525x_read_mem(struct ad525x_dev *dev,
  * @param dev     - The device structure.
  * @param address - desired address of the EEMEM memory
  * @param data    - the data which will be written to the memory
- *
- * @return success
 ******************************************************************************/
 void ad525x_write_mem(struct ad525x_dev *dev,
 		      uint8_t address,
@@ -248,11 +229,11 @@ void ad525x_write_mem(struct ad525x_dev *dev,
 {
 	uint8_t data_buffer[3] = {0,};
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* Sending the command, reading the result on the next frame */
 		data_buffer[0] |= AD525X_CMD_SPI_SREG2MEM << AD525X_CMD_SPI_OFFSET;
 		data_buffer[0] |= address & AD525X_MEM_ADDR_MASK;
-		if((dev->this_device == ID_AD5235)
+		if ((dev->this_device == ID_AD5235)
 		    || (dev->this_device == ID_ADN2850)) { /* 3 byte data word */
 			data_buffer[1] = (data & MSB_BYTE_MASK) >> ONEBYTE_OFFSET;
 			data_buffer[2] = data & LSB_BYTE_MASK;
@@ -293,12 +274,12 @@ uint16_t ad525x_read_rdac(struct ad525x_dev *dev,
 	uint8_t data_buffer[3] = {0,};
 	uint16_t data = 0;
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* Sending the command, reading the result on the next frame */
 		data_buffer[0] |= AD525X_CMD_SPI_RDAC2SREG << AD525X_CMD_SPI_OFFSET;
 		data_buffer[0] |= address & AD525X_MEM_ADDR_MASK;
 		/* 3 byte data word */
-		if((dev->this_device == ID_AD5235) || (dev->this_device == ID_ADN2850)) {
+		if ((dev->this_device == ID_AD5235) || (dev->this_device == ID_ADN2850)) {
 			no_os_spi_write_and_read(dev->spi_desc,
 						 data_buffer,
 						 3);
@@ -347,8 +328,6 @@ uint16_t ad525x_read_rdac(struct ad525x_dev *dev,
  * @param dev     - The device structure.
  * @param address - desired address of the RDAC register
  * @param data    - the data which will be written to the RDAC register
- *
- * @return success
 ******************************************************************************/
 void ad525x_write_rdac(struct ad525x_dev *dev,
 		       uint8_t address,
@@ -356,11 +335,11 @@ void ad525x_write_rdac(struct ad525x_dev *dev,
 {
 	uint8_t data_buffer[3] = {0,};
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* Sending the command, reading the result on the next frame */
 		data_buffer[0] |= AD525X_CMD_SPI_SREG2RDAC << AD525X_CMD_SPI_OFFSET;
 		data_buffer[0] |= address & AD525X_MEM_ADDR_MASK;
-		if((dev->this_device == ID_AD5235)
+		if ((dev->this_device == ID_AD5235)
 		    || (dev->this_device == ID_ADN2850)) { /* 3 byte data word */
 			data_buffer[1] = (data & MSB_BYTE_MASK) >> ONEBYTE_OFFSET;
 			data_buffer[2] = data & LSB_BYTE_MASK;
@@ -394,7 +373,6 @@ void ad525x_write_rdac(struct ad525x_dev *dev,
  * @param command - desired command, the functionality of a command it may
  *                    vary at diffrent devices
  * @param address - Address to be written
- * @return success
 ******************************************************************************/
 void ad525x_write_command(struct ad525x_dev *dev,
 			  uint8_t command,
@@ -402,29 +380,29 @@ void ad525x_write_command(struct ad525x_dev *dev,
 {
 	uint8_t data_buffer[3] = {0,};
 
-	if(chip_info[dev->this_device].comm_type == SPI) {
+	if (chip_info[dev->this_device].comm_type == SPI) {
 		/* Sending the command, reading the result on the next frame */
 		command &= AD525X_CMD_MASK;
 		/* Command adjustment (because of the diffrence between command
 		representations) */
-		if((command >= AD525X_CMD_DECRDAC_6DB) && (command <= AD525X_CMD_RESET)) {
+		if ((command >= AD525X_CMD_DECRDAC_6DB) && (command <= AD525X_CMD_RESET)) {
 			command += 1;
-		} else if(command >= AD525X_CMD_INCRDAC_6DB) {
+		} else if (command >= AD525X_CMD_INCRDAC_6DB) {
 			command += 4;
 		}
 		data_buffer[0] |= command << AD525X_CMD_SPI_OFFSET;
-		if(command == AD525X_CMD_RESET) {
+		if (command == AD525X_CMD_RESET) {
 			data_buffer[0] &= 0xF0;
 		} else {
 			data_buffer[0] |= (address & AD525X_RDAC_ADDR_MASK_1BIT);
 		}
 
-		if((dev->this_device == ID_AD5235)
+		if ((dev->this_device == ID_AD5235)
 		    || (dev->this_device == ID_ADN2850)) { /* 3 byte data word */
 			no_os_spi_write_and_read(dev->spi_desc,
 						 data_buffer,
 						 3);
-			if(command == AD525X_CMD_MEM2RDAC) {
+			if (command == AD525X_CMD_MEM2RDAC) {
 				data_buffer[0] &= AD525X_CMD_NOP;
 				no_os_spi_write_and_read(dev->spi_desc,
 							 data_buffer,
@@ -434,7 +412,7 @@ void ad525x_write_command(struct ad525x_dev *dev,
 			no_os_spi_write_and_read(dev->spi_desc,
 						 data_buffer,
 						 2);
-			if(command == AD525X_CMD_MEM2RDAC) {
+			if (command == AD525X_CMD_MEM2RDAC) {
 				no_os_spi_write_and_read(dev->spi_desc,
 							 data_buffer,
 							 2);
@@ -449,7 +427,7 @@ void ad525x_write_command(struct ad525x_dev *dev,
 				data_buffer,
 				2,
 				1);
-		if(command == AD525X_CMD_MEM2RDAC) {
+		if (command == AD525X_CMD_MEM2RDAC) {
 			data_buffer[0] &= AD525X_CMD_NOP;
 			no_os_i2c_write(dev->i2c_desc,
 					data_buffer,

@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2017(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "stdio.h"
 #include "stdlib.h"
 #include "stdbool.h"
@@ -49,9 +40,6 @@
 #include "no_os_delay.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
 /**
  * Compute CRC8 checksum.
  * @param data - The data buffer.
@@ -134,7 +122,7 @@ int32_t ad77681_spi_reg_read(struct ad77681_dev *dev,
 		if (dev->crc_sel == AD77681_XOR)
 			/* INITIAL_CRC is 0, when ADC is not in continuous-read mode */
 			crc = ad77681_compute_xor(crc_buf, 2, INITIAL_CRC);
-		else if(dev->crc_sel == AD77681_CRC)
+		else if (dev->crc_sel == AD77681_CRC)
 			/* INITIAL_CRC is 0, when ADC is not in continuous-read mode */
 			crc = ad77681_compute_crc8(crc_buf, 2, INITIAL_CRC);
 
@@ -500,7 +488,7 @@ int32_t ad77681_update_sample_rate(struct ad77681_dev *dev)
 	}
 
 	/* Sample rate to Hz */
-	dev->sample_rate = (dev->mclk / (osr*mclk_div)) * 1000;
+	dev->sample_rate = (dev->mclk / (osr * mclk_div)) * 1000;
 
 	return 0;
 }
@@ -802,7 +790,7 @@ int32_t ad77681_set_filter_type(struct ad77681_dev *dev,
 					      AD77681_SINC3_DEC_RATE_LSB(sinc3_LSB));
 	}
 
-	if ( ret == 0) {
+	if (ret == 0) {
 		dev->decimate = decimate;
 		dev->filter = filter;
 		/* Sync pulse after each filter change */
@@ -1221,7 +1209,7 @@ int32_t ad77681_programmable_filter(struct ad77681_dev *dev,
 		no_os_udelay(twait);
 
 		/* Padding of zeros before the desired coef in case the coef count in less than 56 */
-		if((num_coeffs + i) < coeff_reg_length) {
+		if ((num_coeffs + i) < coeff_reg_length) {
 			/* wirte zeroes to COEFF_DATA, in case of less coeffs than 56*/
 			coeffs_buf[0] = AD77681_REG_WRITE(AD77681_REG_COEFF_DATA);
 			coeffs_buf[1] = 0;
@@ -1708,7 +1696,7 @@ int32_t ad77681_status(struct ad77681_dev *dev,
 	uint8_t buf[3];
 
 	/* Master status register */
-	ret = ad77681_spi_reg_read(dev, AD77681_REG_MASTER_STATUS,buf);
+	ret = ad77681_spi_reg_read(dev, AD77681_REG_MASTER_STATUS, buf);
 	status->master_error = buf[1] & AD77681_MASTER_ERROR_MSK;
 	status->adc_error = buf[1] & AD77681_MASTER_ADC_ERROR_MSK;
 	status->dig_error = buf[1] & AD77681_MASTER_DIG_ERROR_MSK;
@@ -1725,7 +1713,7 @@ int32_t ad77681_status(struct ad77681_dev *dev,
 	status->spi_write_error = buf[1] & AD77681_SPI_WRITE_ERROR_MSK;
 	status->spi_crc_error = buf[1] & AD77681_SPI_CRC_ERROR_MSK;
 	/* ADC diag status register */
-	ret |= ad77681_spi_reg_read(dev, AD77681_REG_ADC_DIAG_STATUS,buf);
+	ret |= ad77681_spi_reg_read(dev, AD77681_REG_ADC_DIAG_STATUS, buf);
 	status->dldo_psm_error = buf[1] & AD77681_ADC_DLDO_PSM_ERROR_MSK;
 	status->aldo_psm_error = buf[1] & AD77681_ADC_ALDO_PSM_ERROR_MSK;
 	status->ref_det_error = buf[1] & AD77681_ADC_REF_DET_ERROR_MSK;
@@ -1733,7 +1721,7 @@ int32_t ad77681_status(struct ad77681_dev *dev,
 	status->filt_not_set_error = buf[1] & AD77681_ADC_FILT_NOT_SET_MSK;
 	status->ext_clk_qual_error = buf[1] & AD77681_ADC_DIG_ERR_EXT_CLK_MSK;
 	/* DIG diag status register */
-	ret |= ad77681_spi_reg_read(dev, AD77681_REG_DIG_DIAG_STATUS,buf);
+	ret |= ad77681_spi_reg_read(dev, AD77681_REG_DIG_DIAG_STATUS, buf);
 	status->memoy_map_crc_error = buf[1] & AD77681_DIG_MEMMAP_CRC_ERROR_MSK;
 	status->ram_crc_error = buf[1] & AD77681_DIG_RAM_CRC_ERROR_MSK;
 	status->fuse_crc_error = buf[1] & AD77681_DIG_FUS_CRC_ERROR_MSK;
@@ -1805,7 +1793,7 @@ int32_t ad77681_setup(struct ad77681_dev **device,
 	if (ad77681_scratchpad(dev, &scratchpad_check) == -1) {
 		scratchpad_check = 0xAD;/* If failure, second try */
 		ret |= (ad77681_scratchpad(dev, &scratchpad_check));
-		if(ret == -1) {
+		if (ret == -1) {
 			no_os_free(dev);
 			no_os_free(stat);
 			return ret;

@@ -5,43 +5,34 @@
 ********************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 #ifndef __ADE9113_H__
 #define __ADE9113_H__
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -49,10 +40,6 @@
 #include "no_os_spi.h"
 #include "no_os_gpio.h"
 #include "no_os_irq.h"
-
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 
 /* SPI commands */
 #define ADE9113_SPI_READ			NO_OS_BIT(7)
@@ -212,15 +199,8 @@
 #define ADE9113_2_CHANNEL_ADE9112		1U
 #define ADE9113_NONISOLATED_ADE9103		3U
 
-/* Revision Value of ISO and NONISO Silicon */
-#define ADE9113_SILICON_REVISION		0x12
-
 /* Nominal reference voltage */
-#define ADE9113_VREF				(883883)
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
+#define ADE9113_VREF				(1249810)
 
 /**
  * @enum ade9113_stream_debug_e
@@ -346,6 +326,8 @@ struct ade9113_init_param {
 	/** External callback used to handle interrupt routine for GPIO RDY */
 	/** Set to NULL if callback defined in driver used */
 	void (*drdy_callback)(void *context);
+	/** number of devices in daisy-chain, if 1, then no daisy-chain */
+	uint8_t no_devs;
 };
 
 /**
@@ -360,11 +342,11 @@ struct ade9113_dev {
 	/* CRC setting */
 	uint8_t				crc_en;
 	/* I_WAV */
-	int32_t				i_wav;
+	int32_t				*i_wav;
 	/* V1_WAV */
-	int32_t				v1_wav;
+	int32_t				*v1_wav;
 	/* V2_WAV */
-	int32_t				v2_wav;
+	int32_t				*v2_wav;
 	/** GPIO RDY descriptor used to signal when ADC data is available */
 	struct no_os_gpio_desc  	*gpio_rdy;
 	/** GPIO RESET descriptor used to reset device (HW reset) */
@@ -373,19 +355,25 @@ struct ade9113_dev {
 	struct no_os_irq_ctrl_desc 	*irq_ctrl;
 	/** IRQ callback used to handle interrupt routine for GPIO RDY */
 	struct no_os_callback_desc	irq_cb;
+	/** number of devices in daisy-chain, if 1, then no daisy-chain */
+	uint8_t no_devs;
 };
-
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 
 /* Read device register. */
 int ade9113_read(struct ade9113_dev *dev, uint8_t reg_addr,
 		 uint8_t *reg_data, enum ade9113_operation_e op_mode);
 
+/* Read device register in a daisy-chain setup. */
+int ade9113_read_dc(struct ade9113_dev *dev, uint8_t reg_addr,
+		    uint8_t *reg_data);
+
 /* Write device register. */
 int ade9113_write(struct ade9113_dev *dev, uint8_t reg_addr,
 		  uint8_t reg_data, enum ade9113_operation_e op_mode);
+
+/* Write device register in a daisy-chain setup. */
+int ade9113_write_dc(struct ade9113_dev *dev, uint8_t reg_addr,
+		     uint8_t *reg_data);
 
 /* Initialize the device. */
 int ade9113_init(struct ade9113_dev **device,
@@ -402,7 +390,7 @@ int ade9113_hw_reset(struct ade9113_dev *dev);
 
 /* Convert a 24-bit raw sample to millivolts. */
 int ade9113_convert_to_millivolts(struct ade9113_dev *dev,
-				  enum ade9113_wav_e ch, int32_t *mv_val);
+				  uint8_t dev_no, enum ade9113_wav_e ch, int32_t *mv_val);
 
 /* Get STREAM_DBG mode. */
 int ade9113_get_stream_dbg_mode(struct ade9113_dev *dev,

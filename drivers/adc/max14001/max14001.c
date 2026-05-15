@@ -5,51 +5,38 @@
  *******************************************************************************
  * Copyright 2023(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "max14001.h"
 #include "no_os_delay.h"
 #include "no_os_error.h"
 #include "no_os_util.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * @brief Read from device.
@@ -112,7 +99,7 @@ int max14001_write(struct max14001_dev *dev,
 	    || reg_addr < MAX14001_FLTEN_REG)
 		return -EINVAL;
 
-	tx_data = MAX14001_REG_WRITE(reg_addr,reg_data);
+	tx_data = MAX14001_REG_WRITE(reg_addr, reg_data);
 	tx_data = REVERSE_UINT16(tx_data);
 
 	no_os_put_unaligned_be16(tx_data, buf);
@@ -308,7 +295,7 @@ int max14001_init_config(struct max14001_dev *dev)
 int max14001_wen(struct max14001_dev *dev, bool enable)
 {
 	return max14001_write(dev, MAX14001_WEN_REG,
-			      enable ? MAX14001_SPI_REG_WRITE_ENABLE:
+			      enable ? MAX14001_SPI_REG_WRITE_ENABLE :
 			      MAX14001_SPI_REG_WRITE_DISABLE);
 }
 
@@ -354,7 +341,7 @@ int max14001_emv_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_EMV_FLTEN_MASK,
-					    mode ? MAX14001_EMV_FLTEN_MASK: 0);
+					    mode ? MAX14001_EMV_FLTEN_MASK : 0);
 }
 
 /**
@@ -369,7 +356,7 @@ int max14001_efet_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_EFET_FLTEN_MASK,
-					    mode ? MAX14001_EFET_FLTEN_MASK: 0);
+					    mode ? MAX14001_EFET_FLTEN_MASK : 0);
 }
 
 /**
@@ -384,7 +371,7 @@ int max14001_ecrcf_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_ECRCF_FLTEN_MASK,
-					    mode ? MAX14001_ECRCF_FLTEN_MASK: 0);
+					    mode ? MAX14001_ECRCF_FLTEN_MASK : 0);
 }
 
 /**
@@ -399,7 +386,7 @@ int max14001_ecrcl_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_ECRCL_FLTEN_MASK,
-					    mode ? MAX14001_ECRCL_FLTEN_MASK: 0);
+					    mode ? MAX14001_ECRCL_FLTEN_MASK : 0);
 }
 
 /**
@@ -414,7 +401,7 @@ int max14001_ecom_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_ECOM_FLTEN_MASK,
-					    mode ? MAX14001_ECOM_FLTEN_MASK: 0);
+					    mode ? MAX14001_ECOM_FLTEN_MASK : 0);
 }
 
 /**
@@ -429,7 +416,7 @@ int max14001_espi_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_ESPI_FLTEN_MASK,
-					    mode ? MAX14001_ESPI_FLTEN_MASK: 0);
+					    mode ? MAX14001_ESPI_FLTEN_MASK : 0);
 }
 
 /**
@@ -444,7 +431,7 @@ int max14001_einrd_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_EINRD_FLTEN_MASK,
-					    mode ? MAX14001_EINRD_FLTEN_MASK: 0);
+					    mode ? MAX14001_EINRD_FLTEN_MASK : 0);
 }
 
 /**
@@ -459,7 +446,7 @@ int max14001_eadc_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_EADC_FLTEN_MASK,
-					    mode ? MAX14001_EADC_FLTEN_MASK: 0);
+					    mode ? MAX14001_EADC_FLTEN_MASK : 0);
 }
 
 /**
@@ -474,7 +461,7 @@ int max14001_dyen_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_FLTEN_REG,
 					    MAX14001_DYEN_FLTEN_MASK,
-					    mode ? MAX14001_DYEN_FLTEN_MASK: 0);
+					    mode ? MAX14001_DYEN_FLTEN_MASK : 0);
 }
 
 /**
@@ -489,7 +476,7 @@ int max14001_fast_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_CFG_REG,
 					    MAX14001_FAST_CFG_MASK,
-					    fast ? MAX14001_FAST_CFG_MASK: 0);
+					    fast ? MAX14001_FAST_CFG_MASK : 0);
 }
 
 /**
@@ -504,7 +491,7 @@ int max14001_iraw_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_CFG_REG,
 					    MAX14001_IRAW_CFG_MASK,
-					    raw_data ? MAX14001_IRAW_CFG_MASK: 0);
+					    raw_data ? MAX14001_IRAW_CFG_MASK : 0);
 }
 
 /**
@@ -519,7 +506,7 @@ int max14001_ena_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_ENBL_REG,
 					    MAX14001_ENA_ENBL_MASK,
-					    enable ? MAX14001_ENA_ENBL_MASK: 0);
+					    enable ? MAX14001_ENA_ENBL_MASK : 0);
 }
 
 /**
@@ -534,7 +521,7 @@ int max14001_exrf_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_CFG_REG,
 					    MAX14001_EXRF_CFG_MASK,
-					    mode ? MAX14001_EXRF_CFG_MASK: 0);
+					    mode ? MAX14001_EXRF_CFG_MASK : 0);
 }
 
 /**
@@ -549,7 +536,7 @@ int max14001_exti_config(struct max14001_dev *dev,
 {
 	return max14001_write_config_verify(dev, MAX14001_CFG_REG,
 					    MAX14001_EXTI_CFG_MASK,
-					    mode ? MAX14001_EXTI_CFG_MASK: 0);
+					    mode ? MAX14001_EXTI_CFG_MASK : 0);
 }
 
 /**

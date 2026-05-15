@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2018(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include "ad5758.h"
 #include "no_os_delay.h"
@@ -463,7 +453,7 @@ int32_t ad5758_slew_rate_config(struct ad5758_dev *dev,
 	ret = ad5758_spi_write_mask(dev, AD5758_REG_DAC_CONFIG,
 				    AD5758_DAC_CONFIG_SR_EN_MSK,
 				    AD5758_DAC_CONFIG_SR_EN_MODE(enable));
-	if(ret)
+	if (ret)
 		goto error;
 
 	ret = ad5758_spi_write_mask(dev, AD5758_REG_DAC_CONFIG,
@@ -592,13 +582,13 @@ int32_t ad5758_set_clkout_config(struct ad5758_dev *dev,
 	ret = ad5758_spi_write_mask(dev, AD5758_REG_GP_CONFIG1,
 				    AD5758_GP_CONFIG1_CLKOUT_FREQ_MSK,
 				    AD5758_GP_CONFIG1_CLKOUT_FREQ_MODE(freq));
-	if(ret < 0)
+	if (ret < 0)
 		goto error;
 
 	ret = ad5758_spi_write_mask(dev, AD5758_REG_GP_CONFIG1,
 				    AD5758_GP_CONFIG1_CLKOUT_CONFIG_MSK,
 				    AD5758_GP_CONFIG1_CLKOUT_CONFIG_MODE(config));
-	if(ret < 0)
+	if (ret < 0)
 		goto error;
 
 	dev->clkout_config = config;
@@ -784,80 +774,80 @@ int32_t ad5758_init(struct ad5758_dev **device,
 
 	/* Initialize the SPI communication */
 	ret = no_os_spi_init(&dev->spi_desc, &init_param->spi_init);
-	if(ret)
+	if (ret)
 		goto error_init;
 
 	/* GPIO */
 	ret = no_os_gpio_get(&dev->reset_n, &init_param->reset_n);
-	if(ret)
+	if (ret)
 		goto error_init;
 	ret = no_os_gpio_get(&dev->ldac_n, &init_param->ldac_n);
-	if(ret)
+	if (ret)
 		goto error_gpio_ldac;
 
 	/* Get the DAC out of reset */
 	ret = no_os_gpio_direction_output(dev->reset_n, NO_OS_GPIO_HIGH);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Tie the LDAC pin low */
 	ret = no_os_gpio_direction_output(dev->ldac_n, NO_OS_GPIO_LOW);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Perform a software reset */
 	ret = ad5758_soft_reset(dev);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Perform a calibration memory refresh */
 	ret = ad5758_calib_mem_refresh(dev);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Clear the RESET_OCCURRED flag */
 	ret = ad5758_clear_dig_diag_flag(dev, DIAG_RESET_OCCURRED);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Configure CLKOUT before enabling the dc-to-dc converter */
 	ret = ad5758_set_clkout_config(dev, init_param->clkout_config,
 				       init_param->clkout_freq);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Set the dc-to-dc current limit */
 	ret = ad5758_set_dc_dc_ilimit(dev, init_param->dc_dc_ilimit);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Set up the dc-to-dc converter mode */
 	ret = ad5758_set_dc_dc_conv_mode(dev, init_param->dc_dc_mode);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Power up the DAC and internal (INT) amplifiers */
 	ret = ad5758_internal_buffers_en(dev, 1);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Configure the output range */
 	ret = ad5758_set_out_range(dev, init_param->output_range);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Enable Slew Rate Control and set the slew rate clock */
 	ret = ad5758_slew_rate_config(dev, init_param->slew_rate_clk, 1);
-	if(ret)
+	if (ret)
 		goto err;
 
 	/* Enable VIOUT */
 	ret = ad5758_dac_output_en(dev, 1);
-	if(ret)
+	if (ret)
 		goto err;
 
 	ret = ad5758_set_crc(dev, init_param->crc_en);
-	if(ret)
+	if (ret)
 		goto err;
 
 	*device = dev;

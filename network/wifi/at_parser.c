@@ -6,41 +6,31 @@
  *   @copyright
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include <inttypes.h>
 #include <stdarg.h>
@@ -56,10 +46,6 @@
 #include "no_os_error.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
-
 /* Should be sizeof(async_msgs)/sizeof(*async_msgs) */
 #define NB_ASYNC_MESSAGES	3
 /* Should be sizeof(responses)/sizeof(*responses) */
@@ -72,10 +58,6 @@
 #define PUI8(X)			((uint8_t *)(X))
 /* Timeout waiting for module response. (20 seconds) */
 #define MODULE_TIMEOUT		20000
-
-/******************************************************************************/
-/*************************** Types Declarations *******************************/
-/******************************************************************************/
 
 /* Command descriptor */
 struct cmd_desc {
@@ -186,15 +168,11 @@ struct at_desc {
 	/* Variable where current message length is built */
 	uint32_t		ipd_len;
 	/* Will be called when a new connection is created or closed */
-	void			(*connection_callback)(void *ctx, enum at_event,
-			uint32_t conn_id, struct no_os_circular_buffer **cb);
+	void	(*connection_callback)(void *ctx, enum at_event,
+				       uint32_t conn_id, struct no_os_circular_buffer **cb);
 	/* Context that will be passed to the callback */
 	void			*callback_ctx;
 };
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /* Increment idx if current ch match in msg[idx] and return true if idx == len*/
 static inline bool match_message(const struct at_buff *msg, uint8_t *idx,
@@ -589,7 +567,7 @@ static void set_params(struct at_buff *dest, uint8_t *fmt, ...)
 	uint32_t		i;
 	int32_t		nb = 0;
 
-	va_start (args, fmt);
+	va_start(args, fmt);
 	while (*fmt) {
 		switch (*fmt) {
 		case 'd':
@@ -619,7 +597,7 @@ static void set_params(struct at_buff *dest, uint8_t *fmt, ...)
 			dest->buff[dest->len++] = ',';
 	}
 
-	va_end (args);
+	va_end(args);
 }
 
 /* Concatenate command parameters to desc->cmd */

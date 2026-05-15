@@ -1,36 +1,30 @@
 #!/bin/bash
 # Copyright 2023(c) Analog Devices, Inc.
 #
-# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-#     - Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#     - Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#     - Neither the name of Analog Devices, Inc. nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#     - The use of this software may or may not infringe the patent rights
-#       of one or more patent holders.  This license does not release you
-#       from the requirement that you obtain separate licenses from these
-#       patent holders to use this software.
-#     - Use of the software either in source or binary form, must be run
-#       on or directly connected to an Analog Devices Inc. component.
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
 #
-# THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A
-# PARTICULAR PURPOSE ARE DISCLAIMED.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
 #
-# IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, INTELLECTUAL PROPERTY
-# RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-# BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-# THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# 3. Neither the name of Analog Devices, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived from this
+#    software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 . ./ci/lib.sh
 
@@ -76,16 +70,16 @@ check_sphinx_doc() {
                         if ! [ -f "$sphinx_path/$top_dir/$fn_dir.rst" ];
                         then
                                 echo_red "Missing $fn_dir.rst file at $sphinx_path/$top_dir"
-                                erros_found=1
+                                errors_found=1
                         fi
 
                         if ! grep -q "$top_dir/$fn_dir" "$sphinx_path/${top_dir}_doc.rst"
                         then
                                 echo_red "Missing $top_dir/$fn_dir link inside $sphinx_path/${top_dir}_doc.rst"
-                                erros_found=1
+                                errors_found=1
                         fi
 
-                        if [ $erros_found -eq 1 ]
+                        if [ "$errors_found" -eq "1" ]
                         then
                                 exit 1
                         fi
@@ -98,7 +92,7 @@ check_sphinx_doc() {
 ############################################################################
 build_doxygen() {
         pushd ${TOP_DIR}/doc/doxygen
-        (cd build && ! make -j${NUM_JOBS} doc 2>&1 | grep -E "warning:|error:") || {
+        (cd build && ! make -j${NUM_JOBS} doc TOP_DIR=${TOP_DIR} 2>&1 | grep -E "warning:|error:") || {
                 echo_red "Documentation incomplete or errors in the generation of it have occured!"
                 exit 1
         }
@@ -146,7 +140,7 @@ update_gh_pages() {
 
                 # Create doxygen folder holding new build content
                 mkdir -p ${TOP_DIR}/doxygen
-                cp -R ${TOP_DIR}/doc/doxygen/build/doxygen_doc/html/* ${TOP_DIR}/doxygen/
+                rsync -a "${TOP_DIR}/doc/doxygen/build/doxygen_doc/html/" "${TOP_DIR}/doxygen/"
 
                 # Add sphinx build content to root folder
                 cp -R ${TOP_DIR}/doc/sphinx/build/html/* ${TOP_DIR}
@@ -178,8 +172,8 @@ update_gh_pages() {
 
 check_sphinx_doc
 
-build_sphinx
-
 build_doxygen
+
+build_sphinx
 
 update_gh_pages

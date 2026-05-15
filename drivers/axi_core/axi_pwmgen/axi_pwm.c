@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "no_os_pwm.h"
 #include "axi_pwm_extra.h"
@@ -48,33 +39,28 @@
 #include "no_os_alloc.h"
 #include "no_os_error.h"
 
-/******************************************************************************/
-/********************** Macros and Constants Definitions **********************/
-/******************************************************************************/
 #define AXI_PWMGEN_REG_CORE_VERSION	0x00
 #define AXI_PWMGEN_REG_ID		0x04
 #define AXI_PWMGEN_REG_SCRATCHPAD	0x08
 #define AXI_PWMGEN_REG_CORE_MAGIC	0x0C
 #define AXI_PWMGEN_REG_CONFIG		0x10
 #define AXI_PWMGEN_REG_NPWM		0x14
-#define AXI_PWMGEN_CH_PERIOD_BASE	0x40
-#define AXI_PWMGEN_CH_DUTY_BASE		0x44
-#define AXI_PWMGEN_CH_PHASE_BASE	0x48
-
-#define AXI_PWMGEN_CHX_PERIOD(ch)	(AXI_PWMGEN_CH_PERIOD_BASE + (12 * (ch)))
-#define AXI_PWMGEN_CHX_DUTY(ch)		(AXI_PWMGEN_CH_DUTY_BASE + (12 * (ch)))
-#define AXI_PWMGEN_CHX_PHASE(ch)	(AXI_PWMGEN_CH_PHASE_BASE + (12 * (ch)))
+#define AXI_PWMGEN_CHX_PERIOD(p, ch) \
+    (((p)->hw_major_ver == 1) ? (0x40 + 12 * (ch)) : (0x40 + 4 * (ch)))
+#define AXI_PWMGEN_CHX_DUTY(p, ch) \
+    (((p)->hw_major_ver == 1) ? (0x44 + 12 * (ch)) : (0x80 + 4 * (ch)))
+#define AXI_PWMGEN_CHX_PHASE(p, ch) \
+    (((p)->hw_major_ver == 1) ? (0x48 + 12 * (ch)) : (0xC0 + 4 * (ch)))
 #define AXI_PWMGEN_TEST_DATA		0x5A0F0081
 #define AXI_PWMGEN_LOAD_CONIG		NO_OS_BIT(1)
 #define AXI_PWMGEN_RESET		NO_OS_BIT(0)
 #define AXI_PWMGEN_CHANNEL_DISABLE	0
-#define AXI_PWMGEN_MAX_CHANNELS		4
+#define AXI_PWMGEN_MAX_CHANNELS(p)	(((p)->hw_major_ver == 1) ? 4 : 16)
 #define NSEC_PER_USEC			1000L
 #define USEC_PER_SEC			1000000L
-
-/******************************************************************************/
-/************************** Functions Implementation **************************/
-/******************************************************************************/
+#define AXI_PWMGEN_VERSION_MAJOR(x)	(((x) >> 16) & 0xff)
+#define AXI_PWMGEN_VERSION_MINOR(x)	(((x) >> 8) & 0xff)
+#define AXI_PWMGEN_VERSION_PATCH(x)	((x) & 0xff)
 
 /**
  * @brief Write the pwmgen axi register using a bitmask
@@ -111,7 +97,7 @@ int32_t axi_pwm_enable(struct no_os_pwm_desc *desc)
 	int ret;
 
 	ret = no_os_axi_io_write(axi_desc->base_addr,
-				 AXI_PWMGEN_CHX_PERIOD(axi_desc->channel),
+				 AXI_PWMGEN_CHX_PERIOD(axi_desc, axi_desc->channel),
 				 axi_desc->ch_period);
 	if (ret != 0)
 		return ret;
@@ -132,7 +118,7 @@ int32_t axi_pwm_disable(struct no_os_pwm_desc *desc)
 	int ret;
 
 	ret = no_os_axi_io_write(axi_desc->base_addr,
-				 AXI_PWMGEN_CHX_PERIOD(axi_desc->channel),
+				 AXI_PWMGEN_CHX_PERIOD(axi_desc, axi_desc->channel),
 				 AXI_PWMGEN_CHANNEL_DISABLE);
 	if (ret != 0)
 		return ret;
@@ -159,7 +145,7 @@ int32_t axi_pwm_set_period(struct no_os_pwm_desc *desc, uint32_t period_ns)
 	period_cnt = NO_OS_DIV_ROUND_UP(tmp, USEC_PER_SEC);
 	axi_desc->ch_period = period_cnt;
 	ret = no_os_axi_io_write(axi_desc->base_addr,
-				 AXI_PWMGEN_CHX_PERIOD(axi_desc->channel),
+				 AXI_PWMGEN_CHX_PERIOD(axi_desc, axi_desc->channel),
 				 desc->enabled ? period_cnt : 0);
 	if (ret != 0)
 		return ret;
@@ -205,7 +191,7 @@ int32_t axi_pwm_set_duty_cycle(struct no_os_pwm_desc *desc,
 	tmp = (axi_desc->ref_clock_Hz / NSEC_PER_USEC) * duty_cycle_ns;
 	duty_cnt = NO_OS_DIV_ROUND_UP(tmp, USEC_PER_SEC);
 	ret = no_os_axi_io_write(axi_desc->base_addr,
-				 AXI_PWMGEN_CHX_DUTY(axi_desc->channel),
+				 AXI_PWMGEN_CHX_DUTY(axi_desc, axi_desc->channel),
 				 duty_cnt);
 	if (ret != 0)
 		return ret;
@@ -247,7 +233,7 @@ int32_t axi_pwm_set_phase(struct no_os_pwm_desc *desc, uint32_t phase_ns)
 	tmp = (axi_desc->ref_clock_Hz / NSEC_PER_USEC) * phase_ns;
 	phase_cnt = NO_OS_DIV_ROUND_UP(tmp, USEC_PER_SEC);
 	ret = no_os_axi_io_write(axi_desc->base_addr,
-				 AXI_PWMGEN_CHX_PHASE(axi_desc->channel),
+				 AXI_PWMGEN_CHX_PHASE(axi_desc, axi_desc->channel),
 				 phase_cnt);
 	if (ret != 0)
 		return ret;
@@ -327,6 +313,19 @@ int32_t axi_pwm_init(struct no_os_pwm_desc **desc,
 	ret = no_os_axi_io_write(axi_desc->base_addr, AXI_PWMGEN_REG_SCRATCHPAD,
 				 AXI_PWMGEN_TEST_DATA);
 	if (ret != 0)
+		goto error_xdesc;
+
+	/* Get Hardware version */
+	ret = no_os_axi_io_read(axi_desc->base_addr,
+				AXI_PWMGEN_REG_CORE_VERSION,
+				&data);
+	if (ret != 0)
+		goto error_xdesc;
+
+	axi_desc->hw_major_ver = AXI_PWMGEN_VERSION_MAJOR(data);
+
+	/** Check if channel is out of hw available range */
+	if (axi_desc->channel >= AXI_PWMGEN_MAX_CHANNELS(axi_desc))
 		goto error_xdesc;
 
 	ret = no_os_axi_io_read(axi_desc->base_addr,

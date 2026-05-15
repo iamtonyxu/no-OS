@@ -5,51 +5,37 @@
 *******************************************************************************
 * Copyright 2013, 2020(c) Analog Devices, Inc.
 *
-* All rights reserved.
-*
 * Redistribution and use in source and binary forms, with or without
-* modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* modification, are permitted provided that the following conditions are met:
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
-* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
-* INCIDENTAL,SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS
-* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-* DAMAGE.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 ******************************************************************************/
 
-/*****************************************************************************/
-/***************************** Include Files *********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "ad5686.h"
 #include "no_os_alloc.h"
 
-/*****************************************************************************/
-/***************************** Constant definition ***************************/
-/*****************************************************************************/
 static const uint32_t ad5683_channel_addr [] = {
 	[AD5686_CH_0] = 0,
 };
@@ -397,7 +383,7 @@ uint16_t ad5686_set_shift_reg(struct ad5686_dev *dev,
 	uint8_t data_buff [ PKT_LENGTH ] = {0, 0, 0};
 	uint16_t read_back_data = 0;
 
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
 		data_buff[0] = ((command & AD5686_CMD_MASK) << CMD_OFFSET) | \
 			       (address & ADDR_MASK);
 		data_buff[1] = (data & AD5686_MSB_MASK) >> AD5686_MSB_OFFSET;
@@ -409,9 +395,9 @@ uint16_t ad5686_set_shift_reg(struct ad5686_dev *dev,
 		data_buff[2] = (data & AD5683_LSB_MASK) << AD5683_LSB_OFFSET;
 	}
 
-	if(chip_info[dev->act_device].communication == SPI) {
+	if (chip_info[dev->act_device].communication == SPI) {
 		no_os_spi_write_and_read(dev->spi_desc, data_buff, PKT_LENGTH);
-		if(chip_info[dev->act_device].register_map == AD5686_REG_MAP)
+		if (chip_info[dev->act_device].register_map == AD5686_REG_MAP)
 			read_back_data = (data_buff[1] << AD5686_MSB_OFFSET) | data_buff[2];
 		else
 			read_back_data = (data_buff[0] & AD5683_CMD_MASK) << AD5683_MSB_OFFSET |
@@ -446,7 +432,6 @@ uint16_t ad5686_set_shift_reg(struct ad5686_dev *dev,
  *					AD5686_CH_15
  * @param data - desired value to be written in register.
  *
- * @return None.
 ******************************************************************************/
 void ad5686_write_register(struct ad5686_dev *dev,
 			   enum ad5686_dac_channels channel,
@@ -481,7 +466,6 @@ void ad5686_write_register(struct ad5686_dev *dev,
  *					AD5686_CH_13
  *					AD5686_CH_14
  *					AD5686_CH_15
-  * @return None.
 ******************************************************************************/
 void ad5686_update_register(struct ad5686_dev *dev,
 			    enum ad5686_dac_channels channel)
@@ -514,7 +498,6 @@ void ad5686_update_register(struct ad5686_dev *dev,
  *					AD5686_CH_15
  * @param data    - Desired value to be written in register.
  *
- * @return None.
 ******************************************************************************/
 void ad5686_write_update_register(struct ad5686_dev *dev,
 				  enum ad5686_dac_channels channel,
@@ -564,7 +547,7 @@ uint16_t ad5686_read_back_register(struct ad5686_dev *dev,
 	uint8_t address = chip_info[dev->act_device].channel_addr[channel];
 	uint8_t rb_data_i2c[3] = { 0 };
 
-	if(chip_info[dev->act_device].communication == SPI) {
+	if (chip_info[dev->act_device].communication == SPI) {
 		ad5686_set_shift_reg(dev, AD5686_CTRL_RB_REG, address, 0);
 		read_back_data = ad5686_set_shift_reg(dev, AD5686_CTRL_NOP, 0,
 						      0);
@@ -614,7 +597,6 @@ uint16_t ad5686_read_back_register(struct ad5686_dev *dev,
  *                  'AD5686_PWRM_THREESTATE' - Three-State
  *                  'AD5686_PWRM_100K' is not available for AD5674R/AD5679R.
  *
- * @return None.
 ******************************************************************************/
 void ad5686_power_mode(struct ad5686_dev *dev,
 		       enum ad5686_dac_channels channel,
@@ -622,12 +604,12 @@ void ad5686_power_mode(struct ad5686_dev *dev,
 {
 	uint8_t address = chip_info[dev->act_device].channel_addr[channel];
 
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
 		/* AD5674R/AD5679R have 16 channels and 2 powerdown registers */
 		if (channel > AD5686_CH_7)
 			channel -= AD5686_CH_7 + 1;
-		dev->power_down_mask &= ~(0x3 << (channel *2));
-		dev->power_down_mask |= (mode << (channel *2));
+		dev->power_down_mask &= ~(0x3 << (channel * 2));
+		dev->power_down_mask |= (mode << (channel * 2));
 		ad5686_set_shift_reg(dev, AD5686_CTRL_PWR, address,
 				     dev->power_down_mask);
 	} else {
@@ -660,13 +642,12 @@ void ad5686_power_mode(struct ad5686_dev *dev,
  *					AD5686_CH_14
  *					AD5686_CH_15
  * @param enable - Enable/disable channel.
- * @return None.
 ******************************************************************************/
 void ad5686_ldac_mask(struct ad5686_dev *dev,
 		      enum ad5686_dac_channels channel,
 		      uint8_t enable)
 {
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP) {
 		dev->ldac_mask &= ~(0x1 << channel);
 		dev->ldac_mask |= (enable << channel);
 		ad5686_set_shift_reg(dev, AD5686_CTRL_LDAC_MASK, 0, dev->ldac_mask);
@@ -678,11 +659,10 @@ void ad5686_ldac_mask(struct ad5686_dev *dev,
  *
  * @param dev - The device structure.
  *
- * @return None.
 ******************************************************************************/
 void ad5686_software_reset(struct ad5686_dev *dev)
 {
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP)
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP)
 		ad5686_set_shift_reg(dev, AD5686_CTRL_SWRESET, 0, 0);
 	else
 		ad5686_set_shift_reg(dev, AD5683_CMD_WR_CTRL_REG, 0, AD5683_SW_RESET);
@@ -697,12 +677,11 @@ void ad5686_software_reset(struct ad5686_dev *dev)
  *                Example : 'AD5686_INTREF_EN' - enable internal reference
  *                            'AD5686_INTREF_DIS' - disable internal reference
  *
- * @return None.
 ******************************************************************************/
 void ad5686_internal_reference(struct ad5686_dev *dev,
 			       uint8_t value)
 {
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP)
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP)
 		ad5686_set_shift_reg(dev, AD5686_CTRL_IREF_REG, 0, value);
 	else
 		ad5686_set_shift_reg(dev, AD5683_CMD_WR_CTRL_REG, 0,
@@ -717,12 +696,11 @@ void ad5686_internal_reference(struct ad5686_dev *dev,
  *                Example : 'AD5686_DC_EN' - daisy-chain enable
  *                          'AD5686_DC_DIS' - daisy-chain disable
  *
- * @return None.
 ******************************************************************************/
 void ad5686_daisy_chain_en(struct ad5686_dev *dev,
 			   uint8_t value)
 {
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP)
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP)
 		ad5686_set_shift_reg(dev, AD5686_CTRL_DCEN, 0, value);
 	else
 		ad5686_set_shift_reg(dev, AD5683_CMD_WR_CTRL_REG, 0, AD5683_CTRL_DCEN(value));
@@ -736,12 +714,11 @@ void ad5686_daisy_chain_en(struct ad5686_dev *dev,
  *                Example : 'AD5686_RB_EN' - daisy-chain enable
  *                          'AD5686_RB_DIS' - daisy-chain disable
  *
- * @return None.
 ******************************************************************************/
 void ad5686_read_back_en(struct ad5686_dev *dev,
 			 uint8_t value)
 {
-	if(chip_info[dev->act_device].register_map == AD5686_REG_MAP)
+	if (chip_info[dev->act_device].register_map == AD5686_REG_MAP)
 		ad5686_set_shift_reg(dev, AD5686_CTRL_RB_REG, 0, value);
 }
 
@@ -754,11 +731,10 @@ void ad5686_read_back_en(struct ad5686_dev *dev,
  *                Example : 'AD5683_GB_VREF' - 0V to VREF
  *                          'AD5683_GB_2VREF' - 0V to 2xVREF
  *
- * @return None.
 ******************************************************************************/
 int32_t ad5686_gain_mode(struct ad5686_dev *dev, uint8_t value)
 {
-	if(chip_info[dev->act_device].register_map == AD5683_REG_MAP)
+	if (chip_info[dev->act_device].register_map == AD5683_REG_MAP)
 		return ad5686_set_shift_reg(dev, AD5683_CMD_WR_CTRL_REG, 0,
 					    AD5683_CTRL_GM(value));
 	return -1;

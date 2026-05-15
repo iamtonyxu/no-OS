@@ -6,41 +6,31 @@
 *******************************************************************************
 * Copyright 2013(c) Analog Devices, Inc.
 *
-* All rights reserved.
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
 *
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*  - Redistributions of source code must retain the above copyright
-*    notice, this list of conditions and the following disclaimer.
-*  - Redistributions in binary form must reproduce the above copyright
-*    notice, this list of conditions and the following disclaimer in
-*    the documentation and/or other materials provided with the
-*    distribution.
-*  - Neither the name of Analog Devices, Inc. nor the names of its
-*    contributors may be used to endorse or promote products derived
-*    from this software without specific prior written permission.
-*  - The use of this software may or may not infringe the patent rights
-*    of one or more patent holders.  This license does not release you
-*    from the requirement that you obtain separate licenses from these
-*    patent holders to use this software.
-*  - Use of the software either in source or binary form, must be run
-*    on or directly connected to an Analog Devices Inc. component.
+* 1. Redistributions of source code must retain the above copyright notice,
+*    this list of conditions and the following disclaimer.
 *
-* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR IMPLIED
-* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT, MERCHANTABILITY
-* AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-* IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-* INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************/
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+*    this list of conditions and the following disclaimer in the documentation
+*    and/or other materials provided with the distribution.
+*
+* 3. Neither the name of Analog Devices, Inc. nor the names of its
+*    contributors may be used to endorse or promote products derived from this
+*    software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+* IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+* EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
+* INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+* OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+* LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+* EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*****************************************************************************/
 
-/*****************************************************************************/
-/****************************** Include Files ********************************/
-/*****************************************************************************/
 #include <stdlib.h>
 #include "adf4153.h"
 #include "no_os_alloc.h"
@@ -57,10 +47,6 @@
 #define ADDRESS_MASK        3
 
 #define FREQ_2_GHZ          2000000000
-
-/*****************************************************************************/
-/*************************** Functions definitions ***************************/
-/*****************************************************************************/
 
 /**************************************************************************//**
  * @brief Initialize SPI and Initial Values for ADF4106 Board.
@@ -131,7 +117,7 @@ int8_t adf4153_init(struct adf4153_dev **device,
 			     ADF4153_R2_RESYNC(dev->adf4153_st.resync)
 			    );
 	/* If resync feature is enabled */
-	if(init_param.adf4153_st.resync != 0x0) {
+	if (init_param.adf4153_st.resync != 0x0) {
 		/* Load the R divider register */
 		adf4153_update_latch(dev,
 				     ADF4153_CTRL_R_DIVIDER |
@@ -200,8 +186,6 @@ int32_t adf4153_remove(struct adf4153_dev *dev)
  *
  * @param dev          - The device structure.
  * @param   latch_data - the data which will be written to the latch
- *
- * @return
 ******************************************************************************/
 void adf4153_update_latch(struct adf4153_dev *dev,
 			  uint32_t latch_data)
@@ -210,7 +194,7 @@ void adf4153_update_latch(struct adf4153_dev *dev,
 	uint8_t latch_type = latch_data & 0x3;
 
 	/* Update the internal buffers */
-	switch(latch_type) {
+	switch (latch_type) {
 	case ADF4153_CTRL_N_DIVIDER :
 		dev->r0 = latch_data;
 		break;
@@ -253,7 +237,7 @@ void adf4153_update_latch(struct adf4153_dev *dev,
 uint32_t adf4153_read_latch(struct adf4153_dev *dev,
 			    uint8_t latch_type)
 {
-	switch(latch_type) {
+	switch (latch_type) {
 	case ADF4153_CTRL_N_DIVIDER :
 		return dev->r0;
 
@@ -292,7 +276,7 @@ uint32_t adf4153_tune_rcounter(struct adf4153_dev *dev,
 		(*r_counter)++;
 		pfd_frequency = dev->adf4153_st.ref_in * \
 				((float)(1 + ref_doubler) / (*r_counter));
-	} while(pfd_frequency > dev->adf4153_pfd_max_frq);
+	} while (pfd_frequency > dev->adf4153_pfd_max_frq);
 
 	return pfd_frequency;
 }
@@ -319,8 +303,8 @@ uint64_t adf4153_set_frequency(struct adf4153_dev *dev,
 	uint8_t device_prescaler = 0;
 	uint8_t int_min = 0;
 	/* validate the given frequency parameter */
-	if(frequency <= dev->adf4153_vco_max_frq) {
-		if(frequency >= dev->adf4153_vco_min_frq) {
+	if (frequency <= dev->adf4153_vco_max_frq) {
+		if (frequency >= dev->adf4153_vco_min_frq) {
 			vco_frequency = frequency;
 		} else {
 			vco_frequency = dev->adf4153_vco_min_frq;
@@ -333,12 +317,12 @@ uint64_t adf4153_set_frequency(struct adf4153_dev *dev,
 	mod_value = CEIL(dev->adf4153_st.ref_in,
 			 dev->adf4153_st.channel_spacing);
 	/* if the mod_value is too high, increase the channel spacing */
-	if(mod_value > dev->adf4153_mod_max) {
+	if (mod_value > dev->adf4153_mod_max) {
 		do {
 			dev->adf4153_st.channel_spacing++;
 			mod_value = CEIL(dev->adf4153_st.ref_in,
 					 dev->adf4153_st.channel_spacing);
-		} while(mod_value <= dev->adf4153_mod_max);
+		} while (mod_value <= dev->adf4153_mod_max);
 	}
 	/* define prescaler */
 	device_prescaler = (vco_frequency <= FREQ_2_GHZ) ? ADF4153_PRESCALER_4_5 : \
@@ -350,17 +334,17 @@ uint64_t adf4153_set_frequency(struct adf4153_dev *dev,
 		pfd_frequency = adf4153_tune_rcounter(dev,
 						      &r_counter);
 		int_value = vco_frequency / pfd_frequency;
-	} while(int_value < int_min);
+	} while (int_value < int_min);
 	/*define FRAC value */
 	do {
 		frac_value++;
-		buffer = int_value + ((float)frac_value/mod_value);
+		buffer = int_value + ((float)frac_value / mod_value);
 		calculated_frequency = (uint64_t)(buffer * pfd_frequency);
-	} while(calculated_frequency <= vco_frequency);
+	} while (calculated_frequency <= vco_frequency);
 	frac_value--;
 
 	/* Find the actual VCO frequency. */
-	buffer = int_value + ((float)frac_value/mod_value);
+	buffer = int_value + ((float)frac_value / mod_value);
 	calculated_frequency = (uint64_t)(buffer * pfd_frequency);
 
 	/* Enable the Counter Reset */

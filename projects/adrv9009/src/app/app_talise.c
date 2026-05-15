@@ -5,36 +5,30 @@
 ********************************************************************************
  * Copyright 2019(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. 鈥淎S IS鈥� AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 // stdlibs
 #include <string.h>
@@ -58,6 +52,7 @@
 #include "talise_arm_binary.h"
 #include "talise_stream_binary.h"
 #include "talise_reg_addr_macros.h"
+#include "talise_txqec_hw.h"
 
 // jesd
 #include "axi_jesd204_rx.h"
@@ -72,6 +67,7 @@
 #include "app_talise.h"
 #include "app_jesd.h"
 
+extern txqec_outputs_t txqecOut;
 
 bool adrv9009_check_sysref_rate(uint32_t lmfc, uint32_t sysref)
 {
@@ -125,7 +121,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 
 	/*Open Talise Hw Device*/
 	talAction = TALISE_openHw(pd);
-	if(talAction != TALACT_NO_ACTION) {
+	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
 		printf("error: TALISE_openHw() failed\n");
 		goto error_0;
@@ -266,6 +262,34 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 		goto error_11;
 	}
 
+	// read txqec correction parametes before init cal
+	TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+	printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d after init cal.\n",
+			txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+	// save uninitialized value
+	txqec_outputs_t txqecOutOrigin = txqecOut;
+
+	// write random value to rxqec correction hw
+	txqecOut.gain = 0xa5;
+	txqecOut.phase = 0xa6;
+	txqecOut.gd[0] = 0x5b;
+	txqecOut.gd[1] = 0x5c;
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_PHASE, txqecOut.phase);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GAIN, txqecOut.gain);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY, txqecOut.gd[0]);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY_2ND, txqecOut.gd[1]);
+
+	// read txqec correction parametes before init cal
+	TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+	printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d before init cal.\n",
+			txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+
+	// recover original value
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_PHASE, txqecOutOrigin.phase);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GAIN, txqecOutOrigin.gain);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY, txqecOutOrigin.gd[0]);
+	TALISE_set_phase_gain_gd(pd->devHalInfo, 0, PARAM_GROUP_DELAY_2ND, txqecOutOrigin.gd[1]);
+
 	/****************************************************/
 	/**** Run Talise ARM Initialization Calibrations ***/
 	/****************************************************/
@@ -290,8 +314,15 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 	} else {
 		/*< user code - Calibrations completed successfully > */
 		printf("talise: Calibrations completed successfully\n");
+
+		// read txqec correction parametes after init cal
+		TALISE_get_phase_gain_gd(pd->devHalInfo, 0, &txqecOut, 0x3F);
+		printf("txqecOut.phase = %d, gain = %d, gd[0] = %d, gd[1] = %d after init cal.\n",
+				txqecOut.phase, txqecOut.gain, txqecOut.gd[0], txqecOut.gd[1]);
+
 	}
 
+#ifndef ADRV9008_2
 	/***************************************************/
 	/**** Enable  Talise JESD204B Framer ***/
 	/***************************************************/
@@ -319,6 +350,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			goto error_11;
 		}
 	}
+#endif
 
 	/***************************************************/
 	/**** Enable  Talise JESD204B Framer ***/
@@ -380,13 +412,16 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 
 	ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_ON);
 
-	if(talInit.rx.rxChannels != TAL_RXOFF)
+#ifndef ADRV9008_2
+	if (talInit.rx.rxChannels != TAL_RXOFF)
 		axi_jesd204_rx_lane_clk_enable(rx_jesd);
+#endif
 
-	if(talInit.obsRx.obsRxChannelsEnable != TAL_RXOFF)
+#ifndef ADRV9008_1
+	if (talInit.obsRx.obsRxChannelsEnable != TAL_RXOFF)
 		axi_jesd204_rx_lane_clk_enable(rx_os_jesd);
 
-	if(talInit.tx.txChannels != TAL_RXOFF) {
+	if (talInit.tx.txChannels != TAL_RXOFF) {
 		axi_jesd204_tx_lane_clk_enable(tx_jesd);
 
 		/* RESET CDR */
@@ -398,6 +433,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 		ADIHAL_spiWriteByte(pd->devHalInfo, TALISE_ADDR_DES_PHY_GENERAL_CTL_1,
 				    phy_ctrl);
 	}
+#endif
 
 	ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_OFF);
 
@@ -420,6 +456,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			printf("warning: TAL_DEFRAMER_A status 0x%X\n", deframerStatus);
 	}
 
+#ifndef ADRV9008_2
 	/************************************/
 	/**** Check Talise Framer Status ***/
 	/************************************/
@@ -435,6 +472,7 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 			printf("warning: TAL_FRAMER_A status 0x%X\n", framerStatus);
 		}
 	}
+#endif
 
 	/************************************/
 	/**** Check Talise Framer Status ***/
@@ -480,7 +518,8 @@ adiHalErr_t talise_setup(taliseDevice_t * const pd, taliseInit_t * const pi)
 #ifndef ADRV9008_2
 	talAction = TALISE_setRxTxEnable(pd, TAL_RX1RX2_EN, TAL_TX1TX2);
 #else
-	talAction = TALISE_setRxTxEnable(pd, TAL_ORX1_EN, TAL_TX1TX2);
+	talAction = TALISE_setRxTxEnable(pd, talInit.obsRx.obsRxChannelsEnable << 2,
+					 TAL_TX1TX2);
 #endif
 	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
@@ -509,7 +548,9 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 		ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_OFF);
 
 		axi_jesd204_rx_lane_clk_disable(rx_os_jesd);
+#ifndef ADRV9008_2
 		axi_jesd204_rx_lane_clk_disable(rx_jesd);
+#endif
 		axi_jesd204_tx_lane_clk_disable(tx_jesd);
 		break;
 	case 1:
@@ -549,6 +590,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 		ADIHAL_sysrefReq(pd->devHalInfo, SYSREF_CONT_ON);
 		break;
 	case 8:
+#ifndef ADRV9008_2
 		/***************************************************/
 		/**** Enable Talise JESD204B Framer ***/
 		/***************************************************/
@@ -587,6 +629,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 				break;
 			}
 		}
+#endif
 
 		/***************************************************/
 		/**** Enable Talise JESD204B Framer ***/
@@ -682,7 +725,9 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 			break;
 
 		axi_jesd204_rx_lane_clk_enable(rx_os_jesd);
+#ifndef ADRV9008_2
 		axi_jesd204_rx_lane_clk_enable(rx_jesd);
+#endif
 
 		break;
 	case 10:
@@ -706,6 +751,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 				printf("TAL_DEFRAMER_A deframerStatus 0x%X\n", deframerStatus);
 		}
 
+#ifndef ADRV9008_2
 		/************************************/
 		/**** Check Talise Framer Status ***/
 		/************************************/
@@ -720,6 +766,7 @@ int talise_multi_chip_sync(taliseDevice_t * pd, int step)
 			if ((framerStatus & 0x07) != 0x05)
 				printf("TAL_FRAMER_A framerStatus 0x%X\n", framerStatus);
 		}
+#endif
 		/************************************/
 		/**** Check Talise Framer Status ***/
 		/************************************/
@@ -764,7 +811,7 @@ void talise_shutdown(taliseDevice_t * const pd)
 
 	/*Close Talise Hw Device*/
 	talAction = TALISE_closeHw(pd);
-	if(talAction != TALACT_NO_ACTION) {
+	if (talAction != TALACT_NO_ACTION) {
 		/*** < User: decide what to do based on Talise recovery action returned > ***/
 	}
 }

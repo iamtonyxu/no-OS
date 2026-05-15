@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2022(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/************************* Include Files **************************************/
-/******************************************************************************/
 
 #include <errno.h>
 #include <stdlib.h>
@@ -61,10 +51,6 @@ mxc_uart_req_t uart_irq_state[MXC_UART_INSTANCES];
 bool is_callback;
 
 static uint8_t c;
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * @brief Read data from UART device. Blocking function.
@@ -113,7 +99,7 @@ static int32_t max_uart_write(struct no_os_uart_desc *desc, const uint8_t *data,
 	int32_t transfered = 0;
 	int block_size = 8;
 
-	if(!desc || !data || !bytes_number)
+	if (!desc || !data || !bytes_number)
 		return -EINVAL;
 
 	while (bytes_number) {
@@ -122,8 +108,8 @@ static int32_t max_uart_write(struct no_os_uart_desc *desc, const uint8_t *data,
 		else
 			block_size = bytes_number;
 
-		while(!(MXC_UART_GetStatus(MXC_UART_GET_UART(desc->device_id)) &
-			MXC_F_UART_STATUS_TX_EM));
+		while (!(MXC_UART_GetStatus(MXC_UART_GET_UART(desc->device_id)) &
+			 MXC_F_UART_STATUS_TX_EM));
 		ret = MXC_UART_Write(MXC_UART_GET_UART(desc->device_id),
 				     (uint8_t *)(data + transfered),
 				     &block_size);
@@ -212,7 +198,6 @@ static int32_t max_uart_write_nonblocking(struct no_os_uart_desc *desc,
 /**
  * @brief UART receive interrupt callback function
  * @param context - UART context
- * @return none
  */
 void uart_rx_callback(void *context)
 {
@@ -256,7 +241,7 @@ static int32_t max_uart_init(struct no_os_uart_desc **desc,
 	descriptor->device_id = param->device_id;
 	descriptor->baud_rate = param->baud_rate;
 
-	switch(param->parity) {
+	switch (param->parity) {
 	case NO_OS_UART_PAR_NO:
 		parity = MXC_UART_PARITY_DISABLE;
 		break;
@@ -271,7 +256,7 @@ static int32_t max_uart_init(struct no_os_uart_desc **desc,
 		goto error;
 	}
 
-	switch(param->size) {
+	switch (param->size) {
 	case NO_OS_UART_CS_5:
 		size = 5;
 		break;
@@ -289,7 +274,7 @@ static int32_t max_uart_init(struct no_os_uart_desc **desc,
 		goto error;
 	}
 
-	switch(param->stop) {
+	switch (param->stop) {
 	case NO_OS_UART_STOP_1_BIT:
 		stop = MXC_UART_STOP_1;
 		break;
@@ -313,7 +298,7 @@ static int32_t max_uart_init(struct no_os_uart_desc **desc,
 		goto error;
 	}
 
-	ret = MXC_UART_Init(uart_regs, descriptor->baud_rate, MXC_UART_IBRO_CLK);
+	ret = MXC_UART_Init(uart_regs, descriptor->baud_rate, MXC_UART_APB_CLK);
 	if (ret != E_NO_ERROR) {
 		ret = -EINVAL;
 		goto error;

@@ -5,48 +5,35 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "adp5589.h"			// ADP5589 definitions.
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Writes data into a register.
@@ -54,8 +41,6 @@
  * @param dev              - The device structure.
  * @param register_address - Address of the register.
  * @param register_value   - Data value to write.
- *
- * @return None.
 *******************************************************************************/
 void adp5589_set_register_value(struct adp5589_dev *dev,
 				uint8_t register_address,
@@ -115,14 +100,14 @@ int8_t adp5589_init(struct adp5589_dev **device,
 		return -1;
 
 	status = no_os_i2c_init(&dev->i2c_desc, &init_param.i2c_init);
-	if((adp5589_get_register_value(dev,ADP5589_ADR_ID) & ADP5589_ID_MAN_ID) !=
+	if ((adp5589_get_register_value(dev, ADP5589_ADR_ID) & ADP5589_ID_MAN_ID) !=
 	    ADP5589_ID) {
 		status = -1;
 	}
 	/* Enable internal oscillator and set clock frequency to 500 kHz. */
 	adp5589_set_register_value(dev,
 				   ADP5589_ADR_GENERAL_CFG_B,
-				   ADP5589_GENERAL_CFG_B_OSC_EN|
+				   ADP5589_GENERAL_CFG_B_OSC_EN |
 				   ADP5589_GENERAL_CFG_B_CORE_FREQ(3));
 
 	*device = dev;
@@ -152,8 +137,6 @@ int32_t adp5589_remove(struct adp5589_dev *dev)
  * @brief Initializes the PWM generator in continuous mode.
  *
  * @param dev - The device structure.
- *
- * @return None.
 *******************************************************************************/
 void adp5589_init_pwm(struct adp5589_dev *dev)
 {
@@ -172,13 +155,11 @@ void adp5589_init_pwm(struct adp5589_dev *dev)
  * @param pmod_port  - J1 or J2 connector of PmodIOXP
  *			Example: PMOD_IOXP_J1 - J1 connector.
  *			         PMOD_IOXP_J2 - J2 connector.
- *
- * @return None.
 *******************************************************************************/
 void adp5589_init_key(struct adp5589_dev *dev,
 		      uint8_t pmod_port)
 {
-	if(!pmod_port) {
+	if (!pmod_port) {
 		/* Config row 0,1,2,3 */
 		adp5589_set_register_value(dev,
 					   ADP5589_ADR_PIN_CONFIG_A,
@@ -205,8 +186,6 @@ void adp5589_init_key(struct adp5589_dev *dev,
  * @param dev          - The device structure.
  * @param pwm_off_time - The amount of time in uS for which the PWM pulse is LOW.
  * @param pwm_on_time  - The amount of time in uS for which the PWM pulse is HIGH.
- *
- * @return None.
 *******************************************************************************/
 void adp5589_set_pwm(struct adp5589_dev *dev,
 		     uint16_t pwm_off_time,
@@ -238,8 +217,6 @@ void adp5589_set_pwm(struct adp5589_dev *dev,
  * @param dev  - The device structure.
  * @param reg  - The address of the direction register to be written.
  * @param val  - The data to be written to the direction register.
- *
- * @return None.
 *******************************************************************************/
 void adp5589_gpio_direction(struct adp5589_dev *dev,
 			    uint8_t reg,
@@ -275,7 +252,6 @@ uint8_t adp5589_get_pin_state(struct adp5589_dev *dev,
  * @param reg    - The address of the status register to be read.
  * @param state  - The value to be written to the pins.
  *
- * @return none
 *******************************************************************************/
 void adp5589_set_pin_state(struct adp5589_dev *dev,
 			   uint8_t reg,
@@ -306,10 +282,10 @@ uint8_t adp5589_key_decode(uint8_t reg,
 	uint8_t key = 0;
 
 	reg -= 0x30 * pmod_port;
-	if(event_type == ADP5589_EVENT_KEY_PRESSED) {
+	if (event_type == ADP5589_EVENT_KEY_PRESSED) {
 		reg -= 0x80;
 	}
-	switch(reg) {
+	switch (reg) {
 	case 0x25:
 		key = '1';
 		break;
@@ -375,8 +351,6 @@ uint8_t adp5589_key_decode(uint8_t reg,
  * @param pmod_port  - J1 or J2 connector of PmodIOXP
  *			Example: PMOD_IOXP_J1 - J1 connector.
  *				 PMOD_IOXP_J2 - J2 connector.
- *
- * @return key       - Actual Key on the Pmod-KYPD.
 *******************************************************************************/
 void adp5589_key_lock(struct adp5589_dev *dev,
 		      uint8_t first_event,
@@ -396,5 +370,5 @@ void adp5589_key_lock(struct adp5589_dev *dev,
 	do {
 		data = adp5589_get_register_value(dev,
 						  ADP5589_ADR_STATUS);
-	} while((data & ADP5589_STATUS_LOCK_STAT) != 0);
+	} while ((data & ADP5589_STATUS_LOCK_STAT) != 0);
 }

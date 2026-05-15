@@ -1984,7 +1984,7 @@ const char *json_profile_active_use_case = "{ \n\
           \"reserved\": 0, \n\
           \"attenMode\": 1, \n\
           \"dacFullScale\": 0, \n\
-          \"txAttenInit_mdB\": 10000 \n\
+          \"txAttenInit_mdB\": 5000 \n\
         }, \n\
         \"dacFullScale\": 0 \n\
       }, \n\
@@ -2096,7 +2096,7 @@ const char *json_profile_active_use_case = "{ \n\
           \"reserved\": 0, \n\
           \"attenMode\": 1, \n\
           \"dacFullScale\": 0, \n\
-          \"txAttenInit_mdB\": 10000 \n\
+          \"txAttenInit_mdB\": 5000 \n\
         }, \n\
         \"dacFullScale\": 0 \n\
       }, \n\
@@ -2208,7 +2208,7 @@ const char *json_profile_active_use_case = "{ \n\
           \"reserved\": 0, \n\
           \"attenMode\": 1, \n\
           \"dacFullScale\": 0, \n\
-          \"txAttenInit_mdB\": 10000 \n\
+          \"txAttenInit_mdB\": 5000 \n\
         }, \n\
         \"dacFullScale\": 0 \n\
       }, \n\
@@ -2320,7 +2320,7 @@ const char *json_profile_active_use_case = "{ \n\
           \"reserved\": 0, \n\
           \"attenMode\": 1, \n\
           \"dacFullScale\": 0, \n\
-          \"txAttenInit_mdB\": 10000 \n\
+          \"txAttenInit_mdB\": 5000 \n\
         }, \n\
         \"dacFullScale\": 0 \n\
       } \n\

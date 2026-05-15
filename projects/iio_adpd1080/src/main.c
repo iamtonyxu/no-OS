@@ -5,41 +5,31 @@
 ********************************************************************************
  * Copyright 2020(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
-
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 
 #include "app_config.h"
 #include "no_os_error.h"
@@ -98,21 +88,21 @@ static int32_t adpd1080pmod_32k_calib(struct adpd188_dev *adpd1080_dev)
 	};
 
 	status = no_os_timer_init(&cal_timer, &cal_timer_init);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	status = no_os_timer_start(cal_timer);
-	if(status != 0)
+	if (status != 0)
 		goto timer_finish;
 
 	status = no_os_gpio_get(&sync_gpio, &sync_gpio_init);
-	if(status != 0)
+	if (status != 0)
 		goto timer_finish;
 	status = no_os_gpio_direction_input(sync_gpio);
-	if(status != 0)
+	if (status != 0)
 		goto gpio_finish;
 
 	status = no_os_irq_ctrl_init(&cal_irq, &cal_irq_init);
-	if(status != 0)
+	if (status != 0)
 		goto gpio_finish;
 
 	struct no_os_callback_desc sync_gpio_cb = {
@@ -123,20 +113,20 @@ static int32_t adpd1080pmod_32k_calib(struct adpd188_dev *adpd1080_dev)
 		.peripheral = NO_OS_GPIO_IRQ
 	};
 	status = no_os_irq_register_callback(cal_irq, 0x0D, &sync_gpio_cb);
-	if(status != 0)
+	if (status != 0)
 		goto gpio_finish;
 
 	status = adpd188_adc_fsample_set(adpd1080_dev, 1000);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = adpd188_reg_write(adpd1080_dev, ADPD188_REG_GPIO_DRV,
 				   ADPD188_GPIO_DRV_GPIO0_ENA_MASK);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = adpd188_reg_write(adpd1080_dev, ADPD188_REG_GPIO_CTRL, 2);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = adpd188_mode_set(adpd1080_dev, ADPD188_NORMAL);
@@ -144,20 +134,20 @@ static int32_t adpd1080pmod_32k_calib(struct adpd188_dev *adpd1080_dev)
 		goto finish;
 
 	status = no_os_irq_enable(cal_irq, 0x0D);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	while (true) {
 		status = adpd188_reg_read(adpd1080_dev, ADPD188_REG_SAMPLE_CLK, &temp_reg);
-		if(status != 0)
+		if (status != 0)
 			goto finish;
 		status = no_os_timer_counter_get(cal_timer, &t_start);
-		if(status != 0)
+		if (status != 0)
 			goto finish;
 		sync_gpio_pulse_no = 0;
 		while (t_start >= t_stop) {
 			status = no_os_timer_counter_get(cal_timer, &t_stop);
-			if(status != 0)
+			if (status != 0)
 				goto finish;
 		}
 		if (sync_gpio_pulse_no < 1000)
@@ -169,16 +159,16 @@ static int32_t adpd1080pmod_32k_calib(struct adpd188_dev *adpd1080_dev)
 		else
 			min_diff = abs(sync_gpio_pulse_no - 1000);
 		status = adpd188_reg_write(adpd1080_dev, ADPD188_REG_SAMPLE_CLK, temp_reg);
-		if(status != 0)
+		if (status != 0)
 			goto finish;
 	}
 
 	status = no_os_irq_disable(cal_irq, 0x0D);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = no_os_irq_unregister_callback(cal_irq, 0x0D, &sync_gpio_cb);
-	if(status != 0)
+	if (status != 0)
 		goto gpio_finish;
 
 	status = adpd188_mode_set(adpd1080_dev, ADPD188_PROGRAM);
@@ -186,15 +176,15 @@ static int32_t adpd1080pmod_32k_calib(struct adpd188_dev *adpd1080_dev)
 		goto finish;
 
 	status = adpd188_adc_fsample_set(adpd1080_dev, 16);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = adpd188_reg_write(adpd1080_dev, ADPD188_REG_GPIO_DRV, 0);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 	status = adpd188_reg_write(adpd1080_dev, ADPD188_REG_GPIO_CTRL, 0);
-	if(status != 0)
+	if (status != 0)
 		goto finish;
 
 finish:
@@ -267,45 +257,45 @@ int main(void)
 		return status;
 
 	status = adpd188_adc_fsample_set(adpd1080_iio_device->drv_dev, 16);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev, ADPD188_REG_SLOT_EN,
 				  &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data |= ADPD188_SLOT_EN_RDOUT_MODE_MASK |
 		    ADPD188_SLOT_EN_FIFO_OVRN_PREVENT_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev, ADPD188_REG_SLOT_EN,
 				   reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Slot A chop mode is inverted, non-inverted, non-inverted, inverted */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev, ADPD188_REG_INT_SEQ_A,
 				  &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data |= 0x9 & ADPD188_INT_SEQ_A_INTEG_ORDER_A_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev, ADPD188_REG_INT_SEQ_A,
 				   reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	/* Slot B chop mode is inverted, non-inverted, non-inverted, inverted */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev, ADPD188_REG_INT_SEQ_B,
 				  &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data |= 0x9 & ADPD188_INT_SEQ_B_INTEG_ORDER_B_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev, ADPD188_REG_INT_SEQ_B,
 				   reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Set blue LED 1 power */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev,
 				  ADPD188_REG_ILED1_COARSE, &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_ILED1_COARSE_ILED1_COARSE_MASK;
 	reg_data |= (0x6 << ADPD188_ILED1_COARSE_ILED1_COARSE_POS) &
@@ -316,13 +306,13 @@ int main(void)
 	reg_data |= ADPD188_ILED1_COARSE_ILED1_SCALE_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev,
 				   ADPD188_REG_ILED1_COARSE, reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Slot A 4 LED pulses with 15us period */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev,
 				  ADPD188_REG_SLOTA_NUMPULSES, &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_SLOTA_NUMPULSES_SLOTA_PULSES_MASK;
 	reg_data |= (0x4 << ADPD188_SLOTA_NUMPULSES_SLOTA_PULSES_POS) &
@@ -332,13 +322,13 @@ int main(void)
 		    ADPD188_SLOTA_NUMPULSES_SLOTA_PERIOD_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev,
 				   ADPD188_REG_SLOTA_NUMPULSES, reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Slot B 4 LED pulses with 15us period */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev,
 				  ADPD188_REG_SLOTB_NUMPULSES, &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_SLOTB_NUMPULSES_SLOTB_PULSES_MASK;
 	reg_data |= (0x4 << ADPD188_SLOTB_NUMPULSES_SLOTB_PULSES_POS) &
@@ -348,13 +338,13 @@ int main(void)
 		    ADPD188_SLOTB_NUMPULSES_SLOTB_PERIOD_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev,
 				   ADPD188_REG_SLOTB_NUMPULSES, reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Slot A integrator window */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev,
 				  ADPD188_REG_SLOTA_AFE_WINDOW, &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_SLOTA_AFE_WINDOW_SLOTA_AFE_WIDTH_MASK;
 	reg_data |= (0x4 << ADPD188_SLOTA_AFE_WINDOW_SLOTA_AFE_WIDTH_POS) &
@@ -364,13 +354,13 @@ int main(void)
 		    ADPD188_SLOTA_AFE_WINDOW_SLOTA_AFE_OFFSET_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev,
 				   ADPD188_REG_SLOTA_AFE_WINDOW, reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Slot B integrator window */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev,
 				  ADPD188_REG_SLOTB_AFE_WINDOW, &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_SLOTB_AFE_WINDOW_SLOTB_AFE_WIDTH_MASK;
 	reg_data |= (0x4 << ADPD188_SLOTB_AFE_WINDOW_SLOTB_AFE_WIDTH_POS) &
@@ -380,13 +370,13 @@ int main(void)
 		    ADPD188_SLOTB_AFE_WINDOW_SLOTB_AFE_OFFSET_MASK;
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev,
 				   ADPD188_REG_SLOTB_AFE_WINDOW, reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	/* Math for chop mode is inverted, non-inverted, non-inverted, inverted */
 	status = adpd188_reg_read(adpd1080_iio_device->drv_dev, ADPD188_REG_MATH,
 				  &reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 	reg_data &= ~ADPD188_MATH_FLT_MATH34_B_MASK;
 	reg_data |= (0x01 << ADPD188_MATH_FLT_MATH34_B_POS) &
@@ -403,7 +393,7 @@ int main(void)
 
 	status = adpd188_reg_write(adpd1080_iio_device->drv_dev, ADPD188_REG_MATH,
 				   reg_data);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	status = adpd1080pmod_32k_calib(adpd1080_iio_device->drv_dev);
@@ -411,11 +401,11 @@ int main(void)
 		return status;
 
 	status = adpd188_clk32mhz_cal(adpd1080_iio_device->drv_dev);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	status = adpd188_adc_fsample_set(adpd1080_iio_device->drv_dev, 512.0);
-	if(status != 0)
+	if (status != 0)
 		return -1;
 
 	struct iio_app_device devices[] = {

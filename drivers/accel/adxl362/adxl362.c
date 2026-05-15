@@ -5,48 +5,35 @@
 ********************************************************************************
  * Copyright 2012(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "adxl362.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /***************************************************************************//**
  * @brief Initializes communication with the device and checks if the part is
@@ -74,7 +61,7 @@ int32_t adxl362_init(struct adxl362_dev **device,
 	status = no_os_spi_init(&dev->spi_desc, &init_param.spi_init);
 
 	adxl362_get_register_value(dev, &reg_value, ADXL362_REG_PARTID, 1);
-	if((reg_value != ADXL362_PART_ID))
+	if ((reg_value != ADXL362_PART_ID))
 		status = -1;
 
 	dev->selected_range = 2; // Measurement Range: +/- 2g (reset default).
@@ -109,8 +96,6 @@ int32_t adxl362_remove(struct adxl362_dev *dev)
  * @param register_value   - Data value to write.
  * @param register_address - Address of the register.
  * @param bytes_number     - Number of bytes. Accepted values: 0 - 1.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_set_register_value(struct adxl362_dev *dev,
 				uint16_t register_value,
@@ -135,8 +120,6 @@ void adxl362_set_register_value(struct adxl362_dev *dev,
  * @param read_data        - The read values are stored in this buffer.
  * @param register_address - The start address of the burst read.
  * @param bytes_number     - Number of bytes to read.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_get_register_value(struct adxl362_dev *dev,
 				uint8_t* read_data,
@@ -149,12 +132,12 @@ void adxl362_get_register_value(struct adxl362_dev *dev,
 
 	buffer[0] = ADXL362_READ_REG;
 	buffer[1] = register_address;
-	for(index = 0; index < bytes_number; index++)
+	for (index = 0; index < bytes_number; index++)
 		buffer[index + 2] = read_data[index];
 	no_os_spi_write_and_read(dev->spi_desc,
 				 buffer,
 				 bytes_number + 2);
-	for(index = 0; index < bytes_number; index++)
+	for (index = 0; index < bytes_number; index++)
 		read_data[index] = buffer[index + 2];
 }
 
@@ -164,8 +147,6 @@ void adxl362_get_register_value(struct adxl362_dev *dev,
  * @param dev          - The device structure.
  * @param buffer       - Stores the read bytes.
  * @param bytes_number - Number of bytes to read.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_get_fifo_value(struct adxl362_dev *dev,
 			    uint8_t  *buffer,
@@ -176,12 +157,12 @@ void adxl362_get_fifo_value(struct adxl362_dev *dev,
 	uint16_t index = 0;
 
 	spi_buffer[0] = ADXL362_WRITE_FIFO;
-	for(index = 0; index < bytes_number; index++)
+	for (index = 0; index < bytes_number; index++)
 		spi_buffer[index + 1] = buffer[index];
 	no_os_spi_write_and_read(dev->spi_desc,
 				 spi_buffer,
 				 bytes_number + 1);
-	for(index = 0; index < bytes_number; index++)
+	for (index = 0; index < bytes_number; index++)
 		buffer[index] = spi_buffer[index + 1];
 }
 
@@ -189,8 +170,6 @@ void adxl362_get_fifo_value(struct adxl362_dev *dev,
  * @brief Resets the device via SPI communication bus.
  *
  * @param dev - The device structure.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_software_reset(struct adxl362_dev *dev)
 {
@@ -207,8 +186,6 @@ void adxl362_software_reset(struct adxl362_dev *dev)
  * @param pwr_mode - Power mode.
  *                   Example: 0 - standby mode.
  *                            1 - measure mode.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_set_power_mode(struct adxl362_dev *dev,
 			    uint8_t pwr_mode)
@@ -237,8 +214,6 @@ void adxl362_set_power_mode(struct adxl362_dev *dev,
  *                  Example: ADXL362_RANGE_2G  -  +-2 g
  *                           ADXL362_RANGE_4G  -  +-4 g
  *                           ADXL362_RANGE_8G  -  +-8 g
- *
- * @return None.
 *******************************************************************************/
 void adxl362_set_range(struct adxl362_dev *dev,
 		       uint8_t g_range)
@@ -270,8 +245,6 @@ void adxl362_set_range(struct adxl362_dev *dev,
  *                            ADXL362_ODR_100_HZ   -  100Hz
  *                            ADXL362_ODR_200_HZ   -  200Hz
  *                            ADXL362_ODR_400_HZ   -  400Hz
- *
- * @return None.
 *******************************************************************************/
 void adxl362_set_output_rate(struct adxl362_dev *dev,
 			     uint8_t out_rate)
@@ -298,8 +271,6 @@ void adxl362_set_output_rate(struct adxl362_dev *dev,
  * @param x   - Stores the X-axis data(as two's complement).
  * @param y   - Stores the Y-axis data(as two's complement).
  * @param z   - Stores the Z-axis data(as two's complement).
- *
- * @return None.
 *******************************************************************************/
 void adxl362_get_xyz(struct adxl362_dev *dev,
 		     int16_t* x,
@@ -324,8 +295,6 @@ void adxl362_get_xyz(struct adxl362_dev *dev,
  * @param x   - Stores the X-axis data.
  * @param y   - Stores the Y-axis data.
  * @param z   - Stores the Z-axis data.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_get_g_xyz(struct adxl362_dev *dev,
 		       float* x,
@@ -383,8 +352,6 @@ float adxl362_read_temperature(struct adxl362_dev *dev)
  *                         Example: 1 - temperature data is stored in the FIFO
  *                                      together with x-, y- and x-axis data.
  *                                  0 - temperature data is skipped.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_fifo_setup(struct adxl362_dev *dev,
 			uint8_t  mode,
@@ -418,8 +385,6 @@ void adxl362_fifo_setup(struct adxl362_dev *dev,
  * @param time      - 8-bit value written to the activity timer register. The
  *                    amount of time (in seconds) is: time / ODR, where ODR - is
  *                    the output data rate.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_setup_activity_detection(struct adxl362_dev *dev,
 				      uint8_t  ref_or_abs,
@@ -465,8 +430,6 @@ void adxl362_setup_activity_detection(struct adxl362_dev *dev,
  * @param time      - 16-bit value written to the inactivity timer register. The
  *                    amount of time (in seconds) is: time / ODR, where ODR - is
  *                    the output data rate.
- *
- * @return None.
 *******************************************************************************/
 void adxl362_setup_inactivity_detection(struct adxl362_dev *dev,
 					uint8_t  ref_or_abs,

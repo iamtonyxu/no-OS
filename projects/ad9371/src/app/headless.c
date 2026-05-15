@@ -4,41 +4,32 @@
 ********************************************************************************
  * Copyright 2017(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
 #include "common.h"
@@ -73,16 +64,13 @@
 #include "xilinx_uart.h"
 
 #endif // IIO_SUPPORT
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
 extern ad9528Device_t clockAD9528_;
 extern mykonosDevice_t mykDevice;
 
 #if defined(DMA_EXAMPLE) || defined(IIO_SUPPORT)
-uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__ ((aligned));
-uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__ ((
-			aligned));
+uint32_t dac_buffer[DAC_BUFFER_SAMPLES] __attribute__((aligned(1024)));
+uint16_t adc_buffer[ADC_BUFFER_SAMPLES * ADC_CHANNELS] __attribute__((
+			aligned(1024)));
 #endif
 /***************************************************************************//**
  * @brief main
@@ -962,7 +950,7 @@ int main(void)
 	axi_dmac_transfer_start(rx_dmac, &read_transfer);
 	/* Wait until transfer finishes */
 	status = axi_dmac_transfer_wait_completion(rx_dmac, 500);
-	if(status)
+	if (status)
 		return status;
 #ifndef ALTERA_PLATFORM
 	Xil_DCacheInvalidateRange((uintptr_t)adc_buffer, sizeof(adc_buffer));
@@ -1043,11 +1031,6 @@ int main(void)
 	struct iio_axi_dac_init_param iio_axi_dac_init_par;
 
 	/**
-	 * iio application instance descriptor.
-	 */
-	struct iio_desc *iio_app_desc;
-
-	/**
 	 * iio instance descriptor.
 	 */
 	struct iio_axi_adc_desc *iio_axi_adc_desc;
@@ -1068,7 +1051,15 @@ int main(void)
 	struct iio_device *adc_dev_desc, *dac_dev_desc;
 
 	status = axi_dmac_init(&tx_dmac, &tx_dmac_init);
-	if(status < 0)
+	if (status < 0)
+		return status;
+
+	status = axi_dmac_init(&rx_dmac, &rx_dmac_init);
+	if (status < 0)
+		return status;
+
+	status = axi_dmac_init(&rx_obs_dmac, &rx_obs_dmac_init);
+	if (status < 0)
 		return status;
 
 	iio_axi_adc_init_par = (struct iio_axi_adc_init_param) {
@@ -1081,7 +1072,7 @@ int main(void)
 	};
 
 	status = iio_axi_adc_init(&iio_axi_adc_desc, &iio_axi_adc_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	iio_axi_adc_obs_init_par = (struct iio_axi_adc_init_param) {
@@ -1095,7 +1086,7 @@ int main(void)
 
 	status = iio_axi_adc_init(&iio_axi_adc_obs_desc,
 				  &iio_axi_adc_obs_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 
 	struct iio_data_buffer read_buff = {
@@ -1115,7 +1106,7 @@ int main(void)
 	};
 
 	status = iio_axi_dac_init(&iio_axi_dac_desc, &iio_axi_dac_init_par);
-	if(status < 0)
+	if (status < 0)
 		return status;
 	struct iio_data_buffer write_buff = {
 		.buff = (void *)dac_buffer,

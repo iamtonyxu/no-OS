@@ -5,58 +5,41 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include "adf7023_config.h"
 #include "adf7023.h"
 #include "no_os_alloc.h"
 
-/******************************************************************************/
-/*************************** Macros Definitions *******************************/
-/******************************************************************************/
 #define ADF7023_CS_ASSERT   no_os_gpio_set_value(dev->gpio_cs,  \
 			    NO_OS_GPIO_LOW)
 #define ADF7023_CS_DEASSERT no_os_gpio_set_value(dev->gpio_cs,  \
 			    NO_OS_GPIO_HIGH)
-
-/******************************************************************************/
-/************************ Variables Definitions *******************************/
-/******************************************************************************/
-
 
 /***************************************************************************//**
  * @brief Transfers one byte of data.
@@ -64,8 +47,6 @@
  * @param dev        - The device structure.
  * @param write_byte - Write data.
  * @param read_byte  - Read data.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_write_read_byte(struct adf7023_dev *dev,
 			     uint8_t write_byte,
@@ -127,7 +108,7 @@ int32_t adf7023_init(struct adf7023_dev **device,
 	if (timeout == 1000)
 		ret = -1;
 
-	while(!(status & STATUS_CMD_READY))
+	while (!(status & STATUS_CMD_READY))
 		adf7023_get_status(dev, &status);
 
 	adf7023_set_ram(dev, 0x100, 64, (uint8_t*)&dev->adf7023_bbram_current);
@@ -162,8 +143,6 @@ int32_t adf7023_remove(struct adf7023_dev *dev)
  *
  * @param dev    - The device structure.
  * @param status - Status word.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_get_status(struct adf7023_dev *dev,
 			uint8_t* status)
@@ -179,8 +158,6 @@ void adf7023_get_status(struct adf7023_dev *dev,
  *
  * @param dev     - The device structure.
  * @param command - Command.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_command(struct adf7023_dev *dev,
 			 uint8_t command)
@@ -195,15 +172,13 @@ void adf7023_set_command(struct adf7023_dev *dev,
  *
  * @param dev      - The device structure.
  * @param fw_state - FW state.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_fw_state(struct adf7023_dev *dev,
 			  uint8_t fw_state)
 {
 	uint8_t status = 0;
 
-	switch(fw_state) {
+	switch (fw_state) {
 	case FW_STATE_PHY_OFF:
 		adf7023_set_command(dev, CMD_PHY_OFF);
 		break;
@@ -219,7 +194,7 @@ void adf7023_set_fw_state(struct adf7023_dev *dev,
 	default:
 		adf7023_set_command(dev, CMD_PHY_SLEEP);
 	}
-	while((status & STATUS_FW_STATE) != fw_state) {
+	while ((status & STATUS_FW_STATE) != fw_state) {
 		adf7023_get_status(dev, &status);
 	}
 }
@@ -231,8 +206,6 @@ void adf7023_set_fw_state(struct adf7023_dev *dev,
  * @param address - Start address.
  * @param length  - Number of bytes to write.
  * @param data    - Read buffer.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_get_ram(struct adf7023_dev *dev,
 		     uint32_t address,
@@ -243,7 +216,7 @@ void adf7023_get_ram(struct adf7023_dev *dev,
 	adf7023_write_read_byte(dev, SPI_MEM_RD | ((address & 0x700) >> 8), 0);
 	adf7023_write_read_byte(dev, address & 0xFF, 0);
 	adf7023_write_read_byte(dev, SPI_NOP, 0);
-	while(length--) {
+	while (length--) {
 		adf7023_write_read_byte(dev, SPI_NOP, data++);
 	}
 	ADF7023_CS_DEASSERT;
@@ -256,8 +229,6 @@ void adf7023_get_ram(struct adf7023_dev *dev,
  * @param address - Start address.
  * @param length  - Number of bytes to write.
  * @param data    - Write buffer.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_ram(struct adf7023_dev *dev,
 		     uint32_t address,
@@ -267,7 +238,7 @@ void adf7023_set_ram(struct adf7023_dev *dev,
 	ADF7023_CS_ASSERT;
 	adf7023_write_read_byte(dev, SPI_MEM_WR | ((address & 0x700) >> 8), 0);
 	adf7023_write_read_byte(dev, address & 0xFF, 0);
-	while(length--) {
+	while (length--) {
 		adf7023_write_read_byte(dev, *(data++), 0);
 	}
 	ADF7023_CS_DEASSERT;
@@ -279,8 +250,6 @@ void adf7023_set_ram(struct adf7023_dev *dev,
  * @param dev    - The device structure.
  * @param packet - Data buffer.
  * @param length - Number of received bytes.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_receive_packet(struct adf7023_dev *dev,
 			    uint8_t* packet,
@@ -290,7 +259,7 @@ void adf7023_receive_packet(struct adf7023_dev *dev,
 
 	adf7023_set_fw_state(dev, FW_STATE_PHY_ON);
 	adf7023_set_fw_state(dev, FW_STATE_PHY_RX);
-	while(!(interrupt_reg & BBRAM_INTERRUPT_MASK_0_INTERRUPT_CRC_CORRECT)) {
+	while (!(interrupt_reg & BBRAM_INTERRUPT_MASK_0_INTERRUPT_CRC_CORRECT)) {
 		adf7023_get_ram(dev, MCR_REG_INTERRUPT_SOURCE_0,
 				0x1,
 				&interrupt_reg);
@@ -308,8 +277,6 @@ void adf7023_receive_packet(struct adf7023_dev *dev,
  * @param dev    - The device structure.
  * @param packet - Data buffer.
  * @param length - Number of bytes to transmit.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_transmit_packet(struct adf7023_dev *dev,
 			     uint8_t* packet,
@@ -324,7 +291,7 @@ void adf7023_transmit_packet(struct adf7023_dev *dev,
 	adf7023_set_ram(dev, 0x12, length, packet);
 	adf7023_set_fw_state(dev, FW_STATE_PHY_ON);
 	adf7023_set_fw_state(dev, FW_STATE_PHY_TX);
-	while(!(interrupt_reg & BBRAM_INTERRUPT_MASK_0_INTERRUPT_TX_EOF)) {
+	while (!(interrupt_reg & BBRAM_INTERRUPT_MASK_0_INTERRUPT_TX_EOF)) {
 		adf7023_get_ram(dev, MCR_REG_INTERRUPT_SOURCE_0,
 				0x1,
 				&interrupt_reg);
@@ -336,8 +303,6 @@ void adf7023_transmit_packet(struct adf7023_dev *dev,
  *
  * @param dev    - The device structure.
  * @param ch_freq - Channel frequency.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_channel_frequency(struct adf7023_dev *dev,
 				   uint32_t ch_freq)
@@ -354,8 +319,6 @@ void adf7023_set_channel_frequency(struct adf7023_dev *dev,
  *
  * @param dev       - The device structure.
  * @param data_rate - Data rate.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_data_rate(struct adf7023_dev *dev,
 			   uint32_t data_rate)
@@ -376,8 +339,6 @@ void adf7023_set_data_rate(struct adf7023_dev *dev,
  *
  * @param dev      - The device structure.
  * @param freq_dev - Frequency deviation.
- *
- * @return None.
 *******************************************************************************/
 void adf7023_set_frequency_deviation(struct adf7023_dev *dev,
 				     uint32_t freq_dev)

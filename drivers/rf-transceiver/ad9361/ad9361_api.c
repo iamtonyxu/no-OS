@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright 2013(c) Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "ad9361.h"
 #include "ad9361_api.h"
 #include "no_os_delay.h"
@@ -52,9 +43,6 @@
 #include "axi_adc_core.h"
 #include "axi_dac_core.h"
 
-/******************************************************************************/
-/************************ Constants Definitions *******************************/
-/******************************************************************************/
 static struct axiadc_chip_info axiadc_chip_info_tbl[] = {
 	{
 		"4_CH_DEV",
@@ -79,8 +67,8 @@ extern struct gain_table_info ad9361_adi_gt_info[];
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_init (struct ad9361_rf_phy **ad9361_phy,
-		     AD9361_InitParam *init_param)
+int32_t ad9361_init(struct ad9361_rf_phy **ad9361_phy,
+		    AD9361_InitParam *init_param)
 {
 	struct ad9361_rf_phy *phy;
 	int32_t ret = 0;
@@ -180,10 +168,10 @@ int32_t ad9361_init (struct ad9361_rf_phy **ad9361_phy,
 		init_param->tx_lo_powerdown_managed_enable;
 
 	/* Rate & BW Control */
-	for(i = 0; i < 6; i++) {
+	for (i = 0; i < 6; i++) {
 		phy->pdata->rx_path_clks[i] = init_param->rx_path_clock_frequencies[i];
 	}
-	for(i = 0; i < 6; i++) {
+	for (i = 0; i < 6; i++) {
 		phy->pdata->tx_path_clks[i] = init_param->tx_path_clock_frequencies[i];
 	}
 	phy->pdata->rf_rx_bandwidth_Hz = init_param->rf_rx_bandwidth_hz;
@@ -635,7 +623,7 @@ int32_t ad9361_remove(struct ad9361_rf_phy *phy)
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_en_state_machine_mode (struct ad9361_rf_phy *phy,
+int32_t ad9361_set_en_state_machine_mode(struct ad9361_rf_phy *phy,
 		uint32_t mode)
 {
 	int32_t ret;
@@ -687,7 +675,7 @@ int32_t ad9361_set_en_state_machine_mode (struct ad9361_rf_phy *phy,
  * @param mode A variable to store the selected ENSM mode.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_en_state_machine_mode (struct ad9361_rf_phy *phy,
+int32_t ad9361_get_en_state_machine_mode(struct ad9361_rf_phy *phy,
 		uint32_t *mode)
 {
 	uint8_t ensm_state;
@@ -746,8 +734,8 @@ int32_t ad9361_get_en_state_machine_mode (struct ad9361_rf_phy *phy,
  * 				   10 (10 dB)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_rf_gain (struct ad9361_rf_phy *phy,
-			       uint8_t ch, int32_t gain_db)
+int32_t ad9361_set_rx_rf_gain(struct ad9361_rf_phy *phy,
+			      uint8_t ch, int32_t gain_db)
 {
 	struct rf_rx_gain rx_gain = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	int32_t ret = 0;
@@ -772,8 +760,8 @@ int32_t ad9361_set_rx_rf_gain (struct ad9361_rf_phy *phy,
  * @param gain_db A variable to store the RF gain (dB).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_rf_gain (struct ad9361_rf_phy *phy,
-			       uint8_t ch, int32_t *gain_db)
+int32_t ad9361_get_rx_rf_gain(struct ad9361_rf_phy *phy,
+			      uint8_t ch, int32_t *gain_db)
 {
 	struct rf_rx_gain rx_gain = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	int32_t ret = 0;
@@ -796,8 +784,8 @@ int32_t ad9361_get_rx_rf_gain (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_rx_rf_bandwidth (struct ad9361_rf_phy *phy,
-				    uint32_t bandwidth_hz)
+int32_t ad9361_set_rx_rf_bandwidth(struct ad9361_rf_phy *phy,
+				   uint32_t bandwidth_hz)
 {
 	int32_t ret = 0;
 
@@ -818,8 +806,8 @@ int32_t ad9361_set_rx_rf_bandwidth (struct ad9361_rf_phy *phy,
  * @param bandwidth_hz A variable to store the bandwidth value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_rf_bandwidth (struct ad9361_rf_phy *phy,
-				    uint32_t *bandwidth_hz)
+int32_t ad9361_get_rx_rf_bandwidth(struct ad9361_rf_phy *phy,
+				   uint32_t *bandwidth_hz)
 {
 	*bandwidth_hz = phy->current_rx_bw_Hz;
 
@@ -836,8 +824,8 @@ int32_t ad9361_get_rx_rf_bandwidth (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_rx_sampling_freq (struct ad9361_rf_phy *phy,
-				     uint32_t sampling_freq_hz)
+int32_t ad9361_set_rx_sampling_freq(struct ad9361_rf_phy *phy,
+				    uint32_t sampling_freq_hz)
 {
 	int32_t ret;
 	uint32_t rx[6], tx[6];
@@ -861,8 +849,8 @@ int32_t ad9361_set_rx_sampling_freq (struct ad9361_rf_phy *phy,
  * @param sampling_freq_hz A variable to store the frequency value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_sampling_freq (struct ad9361_rf_phy *phy,
-				     uint32_t *sampling_freq_hz)
+int32_t ad9361_get_rx_sampling_freq(struct ad9361_rf_phy *phy,
+				    uint32_t *sampling_freq_hz)
 {
 	*sampling_freq_hz = (uint32_t)clk_get_rate(phy,
 			    phy->ref_clk_scale[RX_SAMPL_CLK]);
@@ -880,13 +868,13 @@ int32_t ad9361_get_rx_sampling_freq (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_rx_lo_freq (struct ad9361_rf_phy *phy,
-			       uint64_t lo_freq_hz)
+int32_t ad9361_set_rx_lo_freq(struct ad9361_rf_phy *phy,
+			      uint64_t lo_freq_hz)
 {
 	int32_t ret;
 
-	ret = no_os_clk_set_rate(phy, phy->ref_clk_scale[RX_RFPLL],
-				 ad9361_to_clk(lo_freq_hz));
+	ret = clk_set_rate(phy, phy->ref_clk_scale[RX_RFPLL],
+			   ad9361_to_clk(lo_freq_hz));
 
 	return ret;
 }
@@ -897,8 +885,8 @@ int32_t ad9361_set_rx_lo_freq (struct ad9361_rf_phy *phy,
  * @param lo_freq_hz A variable to store the frequency value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_lo_freq (struct ad9361_rf_phy *phy,
-			       uint64_t *lo_freq_hz)
+int32_t ad9361_get_rx_lo_freq(struct ad9361_rf_phy *phy,
+			      uint64_t *lo_freq_hz)
 {
 	*lo_freq_hz = ad9361_from_clk(clk_get_rate(phy,
 				      phy->ref_clk_scale[RX_RFPLL]));
@@ -939,8 +927,8 @@ int32_t ad9361_set_rx_lo_int_ext(struct ad9361_rf_phy *phy, uint8_t int_ext)
  * @param rssi A variable to store the RSSI.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_rssi (struct ad9361_rf_phy *phy,
-			    uint8_t ch, struct rf_rssi *rssi)
+int32_t ad9361_get_rx_rssi(struct ad9361_rf_phy *phy,
+			   uint8_t ch, struct rf_rssi *rssi)
 {
 	int32_t ret;
 
@@ -969,8 +957,8 @@ int32_t ad9361_get_rx_rssi (struct ad9361_rf_phy *phy,
  *				   RF_GAIN_HYBRID_AGC (hybrid)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_gain_control_mode (struct ad9361_rf_phy *phy,
-		uint8_t ch, uint8_t gc_mode)
+int32_t ad9361_set_rx_gain_control_mode(struct ad9361_rf_phy *phy,
+					uint8_t ch, uint8_t gc_mode)
 {
 	struct rf_gain_ctrl gc = {0, 0};
 
@@ -992,8 +980,8 @@ int32_t ad9361_set_rx_gain_control_mode (struct ad9361_rf_phy *phy,
  * @param gc_mode A variable to store the gain control mode.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_gain_control_mode (struct ad9361_rf_phy *phy,
-		uint8_t ch, uint8_t *gc_mode)
+int32_t ad9361_get_rx_gain_control_mode(struct ad9361_rf_phy *phy,
+					uint8_t ch, uint8_t *gc_mode)
 {
 	*gc_mode = phy->agc_mode[ch];
 
@@ -1008,8 +996,8 @@ int32_t ad9361_get_rx_gain_control_mode (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_rx_fir_config (struct ad9361_rf_phy *phy,
-				  AD9361_RXFIRConfig fir_cfg)
+int32_t ad9361_set_rx_fir_config(struct ad9361_rf_phy *phy,
+				 AD9361_RXFIRConfig fir_cfg)
 {
 	int32_t ret;
 
@@ -1040,14 +1028,14 @@ int32_t ad9361_get_rx_fir_config(struct ad9361_rf_phy *phy, uint8_t rx_ch,
 	rx_ch += 1;
 
 	ret = ad9361_spi_read(phy->spi, REG_RX_FILTER_CONFIG);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 	fir_conf = ret;
 
 	fir_cfg->rx_coef_size = (((fir_conf & FIR_NUM_TAPS(7)) >> 5) + 1) * 16;
 
 	ret = ad9361_spi_read(phy->spi, REG_RX_FILTER_GAIN);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 	fir_cfg->rx_gain = -6 * (ret & FILTER_GAIN(3)) + 6;
 	fir_cfg->rx = rx_ch;
@@ -1056,14 +1044,14 @@ int32_t ad9361_get_rx_fir_config(struct ad9361_rf_phy *phy, uint8_t rx_ch,
 	fir_conf |= FIR_SELECT(rx_ch) | FIR_START_CLK;
 	ad9361_spi_write(phy->spi, REG_RX_FILTER_CONFIG, fir_conf);
 
-	for(index = 0; index < 128; index++) {
+	for (index = 0; index < 128; index++) {
 		ad9361_spi_write(phy->spi, REG_RX_FILTER_COEF_ADDR, index);
 		ret = ad9361_spi_read(phy->spi, REG_RX_FILTER_COEF_READ_DATA_1);
-		if(ret < 0)
+		if (ret < 0)
 			return ret;
 		fir_cfg->rx_coef[index] = ret;
 		ret = ad9361_spi_read(phy->spi, REG_RX_FILTER_COEF_READ_DATA_2);
-		if(ret < 0)
+		if (ret < 0)
 			return ret;
 		fir_cfg->rx_coef[index] |= (ret << 8);
 	}
@@ -1087,12 +1075,12 @@ int32_t ad9361_get_rx_fir_config(struct ad9361_rf_phy *phy, uint8_t rx_ch,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_rx_fir_en_dis (struct ad9361_rf_phy *phy,
-				  uint8_t en_dis)
+int32_t ad9361_set_rx_fir_en_dis(struct ad9361_rf_phy *phy,
+				 uint8_t en_dis)
 {
 	int32_t ret = 0;
 
-	if(phy->bypass_rx_fir == !en_dis)
+	if (phy->bypass_rx_fir == !en_dis)
 		return ret;
 
 	phy->bypass_rx_fir = !en_dis;
@@ -1110,8 +1098,8 @@ int32_t ad9361_set_rx_fir_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_fir_en_dis (struct ad9361_rf_phy *phy,
-				  uint8_t *en_dis)
+int32_t ad9361_get_rx_fir_en_dis(struct ad9361_rf_phy *phy,
+				 uint8_t *en_dis)
 {
 	*en_dis = !phy->bypass_rx_fir;
 
@@ -1127,12 +1115,12 @@ int32_t ad9361_get_rx_fir_en_dis (struct ad9361_rf_phy *phy,
  * 				  DISABLE (0)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_rfdc_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t en_dis)
+int32_t ad9361_set_rx_rfdc_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t en_dis)
 {
 	int32_t ret = 0;
 
-	if(phy->rfdc_track_en == en_dis)
+	if (phy->rfdc_track_en == en_dis)
 		return ret;
 
 	phy->rfdc_track_en = en_dis;
@@ -1148,8 +1136,8 @@ int32_t ad9361_set_rx_rfdc_track_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_rfdc_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t *en_dis)
+int32_t ad9361_get_rx_rfdc_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t *en_dis)
 {
 	*en_dis = phy->rfdc_track_en;
 
@@ -1165,12 +1153,12 @@ int32_t ad9361_get_rx_rfdc_track_en_dis (struct ad9361_rf_phy *phy,
  * 				  DISABLE (0)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_bbdc_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t en_dis)
+int32_t ad9361_set_rx_bbdc_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t en_dis)
 {
 	int32_t ret = 0;
 
-	if(phy->bbdc_track_en == en_dis)
+	if (phy->bbdc_track_en == en_dis)
 		return ret;
 
 	phy->bbdc_track_en = en_dis;
@@ -1186,8 +1174,8 @@ int32_t ad9361_set_rx_bbdc_track_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_bbdc_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t *en_dis)
+int32_t ad9361_get_rx_bbdc_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t *en_dis)
 {
 	*en_dis = phy->bbdc_track_en;
 
@@ -1203,12 +1191,12 @@ int32_t ad9361_get_rx_bbdc_track_en_dis (struct ad9361_rf_phy *phy,
  * 				  DISABLE (0)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_quad_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t en_dis)
+int32_t ad9361_set_rx_quad_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t en_dis)
 {
 	int32_t ret = 0;
 
-	if(phy->quad_track_en == en_dis)
+	if (phy->quad_track_en == en_dis)
 		return ret;
 
 	phy->quad_track_en = en_dis;
@@ -1224,8 +1212,8 @@ int32_t ad9361_set_rx_quad_track_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_quad_track_en_dis (struct ad9361_rf_phy *phy,
-		uint8_t *en_dis)
+int32_t ad9361_get_rx_quad_track_en_dis(struct ad9361_rf_phy *phy,
+					uint8_t *en_dis)
 {
 	*en_dis = phy->quad_track_en;
 
@@ -1251,8 +1239,8 @@ int32_t ad9361_get_rx_quad_track_en_dis (struct ad9361_rf_phy *phy,
  *				TX_MON1_2  (11 - TX_MONITOR1 & TX_MONITOR2)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_rx_rf_port_input (struct ad9361_rf_phy *phy,
-				     uint32_t mode)
+int32_t ad9361_set_rx_rf_port_input(struct ad9361_rf_phy *phy,
+				    uint32_t mode)
 {
 	int32_t ret;
 
@@ -1271,8 +1259,8 @@ int32_t ad9361_set_rx_rf_port_input (struct ad9361_rf_phy *phy,
  * @param mode The RF port.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_rx_rf_port_input (struct ad9361_rf_phy *phy,
-				     uint32_t *mode)
+int32_t ad9361_get_rx_rf_port_input(struct ad9361_rf_phy *phy,
+				    uint32_t *mode)
 {
 	*mode = phy->pdata->rf_rx_input_sel;
 
@@ -1384,8 +1372,8 @@ int32_t ad9361_get_rx_lo_power(struct ad9361_rf_phy *phy, uint8_t *option)
  * 						   10000 (10 dB)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_tx_attenuation (struct ad9361_rf_phy *phy,
-				   uint8_t ch, uint32_t attenuation_mdb)
+int32_t ad9361_set_tx_attenuation(struct ad9361_rf_phy *phy,
+				  uint8_t ch, uint32_t attenuation_mdb)
 {
 	int32_t ret;
 	int32_t channel;
@@ -1410,8 +1398,8 @@ int32_t ad9361_set_tx_attenuation (struct ad9361_rf_phy *phy,
  * @param attenuation_mdb A variable to store the attenuation value (mdB).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_attenuation (struct ad9361_rf_phy *phy,
-				   uint8_t ch, uint32_t *attenuation_mdb)
+int32_t ad9361_get_tx_attenuation(struct ad9361_rf_phy *phy,
+				  uint8_t ch, uint32_t *attenuation_mdb)
 {
 	int32_t ret;
 
@@ -1419,7 +1407,7 @@ int32_t ad9361_get_tx_attenuation (struct ad9361_rf_phy *phy,
 				  ad9361_1rx1tx_channel_map(phy, true,
 						  ch + 1));
 
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 	*attenuation_mdb = ret;
 
@@ -1436,8 +1424,8 @@ int32_t ad9361_get_tx_attenuation (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_tx_rf_bandwidth (struct ad9361_rf_phy *phy,
-				    uint32_t  bandwidth_hz)
+int32_t ad9361_set_tx_rf_bandwidth(struct ad9361_rf_phy *phy,
+				   uint32_t  bandwidth_hz)
 {
 	int32_t ret = 0;
 
@@ -1458,8 +1446,8 @@ int32_t ad9361_set_tx_rf_bandwidth (struct ad9361_rf_phy *phy,
  * @param bandwidth_hz A variable to store the bandwidth value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_rf_bandwidth (struct ad9361_rf_phy *phy,
-				    uint32_t *bandwidth_hz)
+int32_t ad9361_get_tx_rf_bandwidth(struct ad9361_rf_phy *phy,
+				   uint32_t *bandwidth_hz)
 {
 	*bandwidth_hz = phy->current_tx_bw_Hz;
 
@@ -1476,8 +1464,8 @@ int32_t ad9361_get_tx_rf_bandwidth (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_tx_sampling_freq (struct ad9361_rf_phy *phy,
-				     uint32_t sampling_freq_hz)
+int32_t ad9361_set_tx_sampling_freq(struct ad9361_rf_phy *phy,
+				    uint32_t sampling_freq_hz)
 {
 	int32_t ret;
 	uint32_t rx[6], tx[6];
@@ -1501,8 +1489,8 @@ int32_t ad9361_set_tx_sampling_freq (struct ad9361_rf_phy *phy,
  * @param sampling_freq_hz A variable to store the frequency value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_sampling_freq (struct ad9361_rf_phy *phy,
-				     uint32_t *sampling_freq_hz)
+int32_t ad9361_get_tx_sampling_freq(struct ad9361_rf_phy *phy,
+				    uint32_t *sampling_freq_hz)
 {
 	*sampling_freq_hz = (uint32_t)clk_get_rate(phy,
 			    phy->ref_clk_scale[TX_SAMPL_CLK]);
@@ -1520,13 +1508,13 @@ int32_t ad9361_get_tx_sampling_freq (struct ad9361_rf_phy *phy,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_tx_lo_freq (struct ad9361_rf_phy *phy,
-			       uint64_t lo_freq_hz)
+int32_t ad9361_set_tx_lo_freq(struct ad9361_rf_phy *phy,
+			      uint64_t lo_freq_hz)
 {
 	int32_t ret;
 
-	ret = no_os_clk_set_rate(phy, phy->ref_clk_scale[TX_RFPLL],
-				 ad9361_to_clk(lo_freq_hz));
+	ret = clk_set_rate(phy, phy->ref_clk_scale[TX_RFPLL],
+			   ad9361_to_clk(lo_freq_hz));
 
 	return ret;
 }
@@ -1537,8 +1525,8 @@ int32_t ad9361_set_tx_lo_freq (struct ad9361_rf_phy *phy,
  * @param lo_freq_hz A variable to store the frequency value (Hz).
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_lo_freq (struct ad9361_rf_phy *phy,
-			       uint64_t *lo_freq_hz)
+int32_t ad9361_get_tx_lo_freq(struct ad9361_rf_phy *phy,
+			      uint64_t *lo_freq_hz)
 {
 	*lo_freq_hz = ad9361_from_clk(clk_get_rate(phy,
 				      phy->ref_clk_scale[TX_RFPLL]));
@@ -1575,8 +1563,8 @@ int32_t ad9361_set_tx_lo_int_ext(struct ad9361_rf_phy *phy, uint8_t int_ext)
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_tx_fir_config (struct ad9361_rf_phy *phy,
-				  AD9361_TXFIRConfig fir_cfg)
+int32_t ad9361_set_tx_fir_config(struct ad9361_rf_phy *phy,
+				 AD9361_TXFIRConfig fir_cfg)
 {
 	int32_t ret;
 
@@ -1607,7 +1595,7 @@ int32_t ad9361_get_tx_fir_config(struct ad9361_rf_phy *phy, uint8_t tx_ch,
 	tx_ch += 1;
 
 	ret = ad9361_spi_read(phy->spi, REG_TX_FILTER_CONF);
-	if(ret < 0)
+	if (ret < 0)
 		return ret;
 	fir_conf = ret;
 	fir_cfg->tx_coef_size = (((fir_conf & FIR_NUM_TAPS(7)) >> 5) + 1) * 16;
@@ -1618,14 +1606,14 @@ int32_t ad9361_get_tx_fir_config(struct ad9361_rf_phy *phy, uint8_t tx_ch,
 	fir_conf |= FIR_SELECT(tx_ch) | FIR_START_CLK;
 	ad9361_spi_write(phy->spi, REG_TX_FILTER_CONF, fir_conf);
 
-	for(index = 0; index < 128; index++) {
+	for (index = 0; index < 128; index++) {
 		ad9361_spi_write(phy->spi, REG_TX_FILTER_COEF_ADDR, index);
 		ret = ad9361_spi_read(phy->spi, REG_TX_FILTER_COEF_READ_DATA_1);
-		if(ret < 0)
+		if (ret < 0)
 			return ret;
 		fir_cfg->tx_coef[index] = ret;
 		ret = ad9361_spi_read(phy->spi, REG_TX_FILTER_COEF_READ_DATA_2);
-		if(ret < 0)
+		if (ret < 0)
 			return ret;
 		fir_cfg->tx_coef[index] |= (ret << 8);
 	}
@@ -1649,12 +1637,12 @@ int32_t ad9361_get_tx_fir_config(struct ad9361_rf_phy *phy, uint8_t tx_ch,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_tx_fir_en_dis (struct ad9361_rf_phy *phy,
-				  uint8_t en_dis)
+int32_t ad9361_set_tx_fir_en_dis(struct ad9361_rf_phy *phy,
+				 uint8_t en_dis)
 {
 	int32_t ret = 0;
 
-	if(phy->bypass_tx_fir == !en_dis)
+	if (phy->bypass_tx_fir == !en_dis)
 		return ret;
 
 	phy->bypass_tx_fir = !en_dis;
@@ -1672,8 +1660,8 @@ int32_t ad9361_set_tx_fir_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_fir_en_dis (struct ad9361_rf_phy *phy,
-				  uint8_t *en_dis)
+int32_t ad9361_get_tx_fir_en_dis(struct ad9361_rf_phy *phy,
+				 uint8_t *en_dis)
 {
 	*en_dis = !phy->bypass_tx_fir;
 
@@ -1690,9 +1678,9 @@ int32_t ad9361_get_tx_fir_en_dis (struct ad9361_rf_phy *phy,
  * @param rssi_db_x_1000 A variable to store the RSSI.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_rssi (struct ad9361_rf_phy *phy,
-			    uint8_t ch,
-			    uint32_t *rssi_db_x_1000)
+int32_t ad9361_get_tx_rssi(struct ad9361_rf_phy *phy,
+			   uint8_t ch,
+			   uint32_t *rssi_db_x_1000)
 {
 	uint8_t reg_val_buf[3];
 	uint32_t val;
@@ -1732,8 +1720,8 @@ int32_t ad9361_get_tx_rssi (struct ad9361_rf_phy *phy,
  *				TXB	(1)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_tx_rf_port_output (struct ad9361_rf_phy *phy,
-				      uint32_t mode)
+int32_t ad9361_set_tx_rf_port_output(struct ad9361_rf_phy *phy,
+				     uint32_t mode)
 {
 	int32_t ret;
 
@@ -1752,8 +1740,8 @@ int32_t ad9361_set_tx_rf_port_output (struct ad9361_rf_phy *phy,
  * @param mode The RF port.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_rf_port_output (struct ad9361_rf_phy *phy,
-				      uint32_t *mode)
+int32_t ad9361_get_tx_rf_port_output(struct ad9361_rf_phy *phy,
+				     uint32_t *mode)
 {
 	*mode = phy->pdata->rf_tx_output_sel;
 
@@ -1769,8 +1757,8 @@ int32_t ad9361_get_tx_rf_port_output (struct ad9361_rf_phy *phy,
  * 				  DISABLE (0)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_tx_auto_cal_en_dis (struct ad9361_rf_phy *phy,
-				       uint8_t en_dis)
+int32_t ad9361_set_tx_auto_cal_en_dis(struct ad9361_rf_phy *phy,
+				      uint8_t en_dis)
 {
 	if (en_dis == 0)
 		phy->auto_cal_en = 0;
@@ -1786,8 +1774,8 @@ int32_t ad9361_set_tx_auto_cal_en_dis (struct ad9361_rf_phy *phy,
  * @param en_dis The enable/disable status buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_tx_auto_cal_en_dis (struct ad9361_rf_phy *phy,
-				       uint8_t *en_dis)
+int32_t ad9361_get_tx_auto_cal_en_dis(struct ad9361_rf_phy *phy,
+				      uint8_t *en_dis)
 {
 	*en_dis = phy->auto_cal_en;
 
@@ -2064,8 +2052,8 @@ int32_t ad9361_do_mcs(struct ad9361_rf_phy *phy_master,
  *
  * Note: This function will/may affect the data path.
  */
-int32_t ad9361_set_trx_fir_en_dis (struct ad9361_rf_phy *phy,
-				   uint8_t en_dis)
+int32_t ad9361_set_trx_fir_en_dis(struct ad9361_rf_phy *phy,
+				  uint8_t en_dis)
 {
 	int32_t ret = 0;
 
@@ -2093,7 +2081,7 @@ int32_t ad9361_set_trx_fir_en_dis (struct ad9361_rf_phy *phy,
  * 					NOMINAL_OSR (1 - nominal)
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_set_trx_rate_gov (struct ad9361_rf_phy *phy, uint32_t rate_gov)
+int32_t ad9361_set_trx_rate_gov(struct ad9361_rf_phy *phy, uint32_t rate_gov)
 {
 	if (rate_gov == 0)
 		phy->rate_governor = 0;
@@ -2109,7 +2097,7 @@ int32_t ad9361_set_trx_rate_gov (struct ad9361_rf_phy *phy, uint32_t rate_gov)
  * @param rate_gov Option buffer.
  * @return 0 in case of success, negative error code otherwise.
  */
-int32_t ad9361_get_trx_rate_gov (struct ad9361_rf_phy *phy, uint32_t *rate_gov)
+int32_t ad9361_get_trx_rate_gov(struct ad9361_rf_phy *phy, uint32_t *rate_gov)
 {
 	*rate_gov = phy->rate_governor;
 

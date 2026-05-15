@@ -5,41 +5,32 @@
 ********************************************************************************
  * Copyright (c) 2023 Analog Devices, Inc.
  *
- * All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  - Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *  - Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *  - Neither the name of Analog Devices, Inc. nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *  - The use of this software may or may not infringe the patent rights
- *    of one or more patent holders.  This license does not release you
- *    from the requirement that you obtain separate licenses from these
- *    patent holders to use this software.
- *  - Use of the software either in source or binary form, must be run
- *    on or directly connected to an Analog Devices Inc. component.
  *
- * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES "AS IS" AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, NON-INFRINGEMENT,
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ANALOG DEVICES BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Analog Devices, Inc. nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
+ *    software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY ANALOG DEVICES, INC. “AS IS” AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL ANALOG DEVICES, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, INTELLECTUAL PROPERTY RIGHTS, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include "no_os_print_log.h"
 #include "state_machine.h"
 #include "no_os_delay.h"
@@ -51,6 +42,9 @@
 #include "ade9113.h"
 #include "supply.h"
 #include "pilot.h"
+#if defined(REV_D)
+#include "inter.h"
+#endif
 #include "relay.h"
 #include "gpio.h"
 #include "rcd.h"
@@ -60,9 +54,6 @@ uint16_t zcross_cnt;
 // Charging state
 uint8_t is_charging;
 
-/******************************************************************************/
-/************************ Functions Declarations ******************************/
-/******************************************************************************/
 /**
  * @brief State machine main execution
  *
@@ -74,18 +65,8 @@ int state_machine()
 	/**************************************************************************/
 	/****************************Variables declaration*************************/
 	/**************************************************************************/
-	// Input voltage maximum value over one periode
-	int32_t v1_max = 0;
-	// Relay voltage maximum value over one periode
-	int32_t v2_max = 0;
-	// The sume of the relay maximum values over 10 periodes used to compute the mean value
+	// The sume of the relay rms voltage over 10 cycles used to compute the mean value
 	int32_t v2_sum = 0;
-	// The maximum current value over one periode
-	int32_t i_max = 0;
-	// intermediate value of the input voltage used for scaling
-	int64_t v1 = 0;
-	// intermediate value of the relay voltage used for scaling
-	int64_t v2 = 0;
 	// State machine events; default value S_M_NO_EVENT
 	enum state_machine_events_e event = S_M_NO_EVENT;
 	// PWM duty cycle value dependent on the output current set value
@@ -106,21 +87,17 @@ int state_machine()
 	uint32_t rcd_test_s = current_time.s;
 	// The time interval in which the print values is disabled
 	uint32_t print_values_s = current_time.s;
-	// The time interval in which the print charging is disabled
-	uint32_t print_charging_s = current_time.s;
 	// The time passed since the last RCD test
 	uint32_t s_elapsed_since_rcd_test = 0;
 	// The time passed since the last print values
 	uint32_t s_elapsed_since_print_values = 0;
-	// The time passed since the last print charging
-	uint32_t s_elapsed_since_print_charging_state = 0;
 	// Time when values were interpreted
 	uint32_t recalc_time_us = current_time.us;
 	// Time passed from last values update
 	uint32_t us_elapsed_since_recalc = 0;
 	// Variable indicating multiple of 20ms used to compute the ADE9113 values on multiple periods
 	uint8_t multiple_20ms = 0;
-	// Variable indicating a multiple of the periodes used to compute ADE9113 values.
+	// Variable indicating a multiple of the cycles used to compute ADE9113 values.
 	// Used to compute the Vrelay value
 	uint8_t multiple_20ms_2 = 0;
 	// Variable used for reading the ADT75 at an inteval multiple of 20ms
@@ -133,15 +110,20 @@ int state_machine()
 	uint8_t update_ade9113_values = 0;
 	// Used for led blinking during charging
 	uint8_t cnt_disp = 0;
+	// Used for updating the rms values after the self test
+	uint8_t cnt = 0;
 	// Variables used to read and compute the temperature from ADT75
 	int32_t adt75_value = 0;
-	// Variable used for the values read continuously from ADE9113
-	int32_t i_val = 0, v1_val = 0, v2_val = 0;
+	// Variables used to read the RCD status
+	uint8_t val_rcddc = 0;
+	uint8_t val_rcdac = 0;
 	// Pointer to the state machine structure
 	struct stout *stout;
 	// Pointer to the adt75_desc structure
 	struct adt75_desc *adt75_desc;
+	struct rms_adc_values *rms_adc_values;
 	int ret = -22;
+
 	/**************************************************************************/
 	/**********************End of variables declaration************************/
 	/**************************************************************************/
@@ -152,17 +134,32 @@ int state_machine()
 	/* Clear the screen. */
 	printf("%c%c%c%c", 27, '[', '2', 'J');
 	no_os_mdelay(5);
-	pr_debug("\nSTOUT app FIRMWARE VERSION: %s \n\n",FIRMWARE_VERSION);
+	pr_debug("\nSTOUT app FIRMWARE VERSION: %s\n", FIRMWARE_VERSION);
+	/*Board revision*/
+#if defined(REV_A)
+	pr_debug("STOUT app BOARD REVISION A\n\n");
+#elif defined(REV_D)
+	pr_debug("STOUT app BOARD REVISION D\n\n");
+#endif
 
-	/* Allocate mempory for application structure */
+	/* Allocate memory for application structure */
 	stout = (struct stout *)no_os_calloc(1, sizeof(*stout));
 	if (!stout)
 		return -ENOMEM;
+
+	/* Allocate memory for rms & adc values structure */
+	rms_adc_values = (struct rms_adc_values *)no_os_calloc(1,
+			 sizeof(*rms_adc_values));
+	if (!rms_adc_values) {
+		no_os_free(stout);
+		return -ENOMEM;
+	}
 
 	/* Initialize I2C adt75*/
 	ret = adt75_init(&adt75_desc, &adt75_ip);
 	if (ret) {
 		no_os_free(stout);
+		no_os_free(rms_adc_values);
 		return ret;
 	}
 
@@ -170,6 +167,7 @@ int state_machine()
 	ret = interface_init(&stout->gpio_led[0]);
 	if (ret) {
 		no_os_free(stout);
+		no_os_free(rms_adc_values);
 		adt75_remove(adt75_desc);
 		return ret;
 	}
@@ -195,6 +193,13 @@ int state_machine()
 	if (ret)
 		goto error;
 
+#if defined(REV_D)
+	/* Initialize GPIO2_3 interrupt */
+	ret = inter_init(stout);
+	if (ret)
+		goto error;
+#endif
+
 	/* Open relay */
 	ret = relay_open(stout->relay);
 	if (ret)
@@ -219,15 +224,14 @@ int state_machine()
 	/****************************Start-up Test*********************************/
 	/**************************************************************************/
 	/* Run startup test */
-	ret = self_test_startup(stout);
-
+	ret = self_test_startup(stout, rms_adc_values);
 	if (ret == INTF_INPUT_V_ERR) {
 		interface_disp(stout);
 		event = S_M_UNDERVOLTAGE;
-		if (stout->grid >= 1 ) {
-			if (VIN_LOW_LIMIT_2 > v1_max)
+		if (stout->grid >= 1) {
+			if (VIN_LOW_LIMIT_2 > rms_adc_values->v1_rms)
 				ret = INTF_INPUT_V_ERR_U;
-			else if (VIN_HIGH_LIMIT_2 < v1_max) {
+			else if (VIN_HIGH_LIMIT_2 < rms_adc_values->v1_rms) {
 				ret = INTF_INPUT_V_ERR_O;
 				stout->current_state = STATE_FAULT;
 				stout->err_status = ret;
@@ -235,9 +239,9 @@ int state_machine()
 				pilot_pwm_timer_set_duty_cycle(stout, PWM_OFF);
 				goto error;
 			}
-		} else if (VIN_LOW_LIMIT > v1_max)
+		} else if (VIN_LOW_LIMIT > rms_adc_values->v1_rms)
 			ret = INTF_INPUT_V_ERR_U;
-		else if (VIN_HIGH_LIMIT < v1_max) {
+		else if (VIN_HIGH_LIMIT < rms_adc_values->v1_rms) {
 			ret = INTF_INPUT_V_ERR_O;
 			stout->current_state = STATE_FAULT;
 			stout->err_status = ret;
@@ -248,10 +252,10 @@ int state_machine()
 		stout->err_status = ret;
 		// Wait until no undervoltage
 		do {
-			ret = self_test_supply(stout);
+			ret = self_test_supply(stout, rms_adc_values);
 		} while (ret == INTF_INPUT_V_ERR_U);
 		// Run tests again if voltage back to normal
-		ret = self_test_startup(stout);
+		ret = self_test_startup(stout, rms_adc_values);
 	}
 	if (ret) {
 		stout->current_state = STATE_FAULT;
@@ -261,9 +265,15 @@ int state_machine()
 		goto error;
 	}
 
-	// Skip one period
-	while(!get_zero_cross_flag_state());
-	reset_zero_cross_flag_state();
+	//Update the rms values after self test
+	while (SKIP_CYCLES_AFTER_SELF_TEST >= cnt) {
+		while (!get_zero_cross_flag_state()) {
+			ret = rms_adc_values_read(stout, rms_adc_values);
+		}
+		reset_zero_cross_flag_state();
+		cnt++;
+	}
+	cnt = 0;
 
 	// Disable the zero corssing interrupt
 	ret = no_os_irq_disable(stout->ade9113->irq_ctrl, GPIO_ZC_PIN);
@@ -285,7 +295,7 @@ int state_machine()
 	/*******************************************************************************************************/
 	/************The main loop of the State Machine (runs continuously if no error detected)****************/
 	/*******************************************************************************************************/
-	while(1) {
+	while (1) {
 		// Update PWM LOW and PWM HIGH values each time a new conversion takes place
 		if (get_pwm_low_flag_state()) {
 			// Update values for computing PWM LOW and PWM HIGH averages
@@ -322,27 +332,13 @@ int state_machine()
 			// If time elapsed larger than PRINT_VALUES_TIME seconds, reenable print
 			if ((PRINT_VALUES_TIME < s_elapsed_since_print_values) && (0 == print_values))
 				print_values = 1;
-			// Compute time elapsed since last print values
-			s_elapsed_since_print_charging_state = current_time.s - print_charging_s;
-			// If time elapsed larger than PRINT_VALUES_TIME seconds, reenable print
-			if ((PRINT_CHARGING_TIME < s_elapsed_since_print_charging_state)
-			    && (0 == print_charging))
-				print_charging = 1;
 
 			reset_pwm_low_flag_state();
 		}
 
-		// --------------------- COMPUTE ADE9113 VALUEAS AND EXTRACT MAXIMUM VALUES --------------
-		ret = supply_conv_vals_to_mv(stout, &i_val, &v1_val, &v2_val);
-		if (ret)
-			goto error;
-
-		v1 = supply_scale_v1(v1_val);
-		v2 = supply_scale_v2(v2_val);
-		v1_max = no_os_max_t(int32_t, v1, v1_max);
-		v2_max = no_os_max_t(int32_t, v2, v2_max);
-		i_max = no_os_max_t(int32_t, i_val, i_max);
-		// ----------------------------- END COMPUTE MAX -----------------------------------------
+		// ------------------------- COMPUTE ADE9113 & RMS VALUES -----------------------------------
+		ret = rms_adc_values_read(stout, rms_adc_values);
+		// ----------------------------- END COMPUTE VALUES -----------------------------------------
 
 		//-----UPDATE THE VALUES OF THE STOUT STRUCTURE WITH THE VALUES COMPUTED FROM ADE9113-----
 		if (update_ade9113_values == 1) {
@@ -351,26 +347,21 @@ int state_machine()
 			// Compute the values Vin and Iout each 20*COMPUTE_VALUES_INTERVAL
 			if ((COMPUTE_VALUES_INTERVAL <= multiple_20ms)
 			    && (COMPUTE_VRELAY_INTERVAL > multiple_20ms_2)) {
-				// Update V1 and V2 maximum values
-				stout->v1_max = v1_max;
-				stout->i_val = i_max;
+				// Update V1 and V2 values
+				stout->v1_val = rms_adc_values->v1_rms;
+				stout->i_val = rms_adc_values->i_rms;
 				if (1 == print_values) {
-					pr_debug("Iout: %d mA, Vin: %d mV\n", stout->i_val, stout->v1_max);
+					pr_debug("Iout: %d mA, Vin: %d mV\n", stout->i_val, stout->v1_val);
 					print_values_s = current_time.s;
 					print_values = 0;
 				}
 				// The state machine runs every COMPUTE_VALUES_INTERVAL * 20ms
 				event = state_machine_det_event_supply(stout, event);
 				// Relay voltage is summed each 20 ms interval (first value is skipped)
-				// Variable v2_sum will be used to compute the average of the relay maximum amplitude
+				// Variable v2_sum will be used to compute the average of the relay voltage value
 				// over the COMPUTE_VREALY_INTERVAL
-				if ((1 <= v2_read) && (1 <= multiple_20ms_2)) {
-					v2_sum += v2_max;
-				}
-				// Reset V1, V2 and I maximum values
-				v1_max = 0;
-				i_max = 0;
-				v2_max = 0;
+				if ((1 <= v2_read) && (1 <= multiple_20ms_2))
+					v2_sum += rms_adc_values->v2_rms;
 				// Reset the 20ms variable
 				multiple_20ms = 0;
 				// Increment the counter for Vrelay compute time interval
@@ -380,7 +371,7 @@ int state_machine()
 				if (v2_read >= 1) {
 					// The relay stuck detection state is active (a reading of Vrelay is needed)
 					// Compute the average Vrelay value over the COMPUTE_VRELAY_INTERVAL
-					stout->v2_max = v2_sum/(multiple_20ms_2-1);
+					stout->v2_val = v2_sum / (multiple_20ms_2 - 1);
 					// reset the 20 ms counter to start with new values
 					multiple_20ms = 0;
 					// Indicates that the Vrealy value is available for the state machine
@@ -388,10 +379,6 @@ int state_machine()
 				}
 				// Reset flag for computing Vrelay
 				multiple_20ms_2 = 0;
-				// Reset Vrelay max value
-				v2_max = 0;
-				v1_max = 0;
-				i_max = 0;
 			}
 			// Reset flag for updating values
 			update_ade9113_values = 0;
@@ -418,6 +405,18 @@ int state_machine()
 		}
 		// ----------------------------- END READ TEMPERATURE----------------------------------------
 
+#if defined(REV_D)
+		// ------------------------------ PE UPSTREAM ERROR -----------------------------------------
+		// If PE interrupt triggere device has to be UNPLUGGED
+		if (1 <= get_gpio_flag_state()) {
+			// If PE fault go to error
+			stout->previous_state = stout->current_state;
+			stout->current_state = STATE_FAULT;
+			stout->err_status = INTF_PE_UPSTREAM_ERR;
+		}
+		// -------------------------------- END RCD ACTIOM ---------------------------------------
+#endif
+
 		// -------------------------------- RCD ACTIOM ------------------------------------------
 		// If RCD interrupt triggered, and it is not after RELAY OPEN, then device
 		// has to be UNPLUGGED
@@ -427,9 +426,20 @@ int state_machine()
 				reset_rcd_flag_state();
 				stout->err_status = INTF_NO_ERR;
 			} else {
-				stout->previous_state = stout->current_state;
-				stout->current_state = STATE_FAULT;
-				stout->err_status = INTF_RCD_ERROR;
+				ret = no_os_gpio_get_value(stout->gpio_rcdac, &val_rcdac);
+				if (ret)
+					return ret;
+				ret = no_os_gpio_get_value(stout->gpio_rcddc, &val_rcddc);
+				if (ret)
+					return ret;
+				if ((val_rcddc == NO_OS_GPIO_HIGH) || (val_rcdac == NO_OS_GPIO_HIGH)) {
+					stout->previous_state = stout->current_state;
+					stout->current_state = STATE_FAULT;
+					stout->err_status = INTF_RCD_ERROR;
+				} else {
+					reset_rcd_flag_state();
+					stout->err_status = INTF_NO_ERR;
+				}
 			}
 			stout->previous_state = stout->current_state;
 		}
@@ -463,7 +473,6 @@ int state_machine()
 					v2_read = 1;
 					multiple_20ms_2 = 0;
 					v2_sum = 0;
-					v2_max = 0;
 					// EVSE not ready during the test
 					pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
 				}
@@ -583,9 +592,9 @@ int state_machine()
 				if (stout->current_state != stout->previous_state) {
 					// Debug message
 					pr_debug("STATE A\n");
+					// The CP is set to DC
+					pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
 				}
-				// The CP is set to DC
-				pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
 				// Cable disconnected while charging
 				if ((S_M_CHARGING == event) || (S_M_CHARGING_D == event)) {
 					// Open the relay
@@ -619,19 +628,30 @@ int state_machine()
 			case STATE_C:
 				// Debug message
 				if (stout->current_state != stout->previous_state) {
-					pr_debug("STATE C\n");
+					current_set = current_value_limit;
+					// Set the PWM value based on Iout value
+					pilot_pwm_timer_set_duty_cycle(stout, current_set);
+					print_charging = 1;
 				}
 				// If overtemperature detected limit the current to 10A else the current is 16A
 				if (S_M_OVER_TEMPERATURE_1 == event) {
 					current_value_limit = PWM_DUTY_10A;
-					//pr_debug("State C LIMIT CURRENT 10A\n");
+					if (1 == print_charging || current_set != current_value_limit) {
+						pilot_pwm_timer_set_duty_cycle(stout, current_value_limit);
+						current_set = current_value_limit;
+						pr_debug("STATE C LIMIT CURRENT 10A\n");
+						print_charging = 0;
+					}
 				} else {
 					current_value_limit = PWM_DUTY_16A;
-					//pr_debug("State C 16A\n");
+					if (1 == print_charging || current_set != current_value_limit) {
+						pilot_pwm_timer_set_duty_cycle(stout, current_value_limit);
+						current_set = current_value_limit;
+						pr_debug("STATE C 16A\n");
+						print_charging = 0;
+					}
 				}
-				current_set = current_value_limit;
-				// Set the PWM value based on Iout value
-				pilot_pwm_timer_set_duty_cycle(stout, current_set);
+
 				// Check the diode before charging
 				if (S_M_DIODE_ERR_CHECK == event) {
 					// Wait for 20 ms
@@ -657,20 +677,10 @@ int state_machine()
 				} else if ((S_M_CHARGING == event) && (LED_BLINKING_16A <= cnt_disp)) {
 					// The LED will blink with a higher frequency if Iout is 16A and with a lower one if Iout is 10A
 					interface_disp(stout);
-					if (1 == print_charging) {
-						pr_debug("State C 16A\n");
-						print_charging_s = current_time.s;
-						print_charging = 0;
-					}
 					cnt_disp = 0;
 				} else if ((S_M_OVER_TEMPERATURE_1 == event)
 					   && (LED_BLINKING_10A <= cnt_disp)) {
 					interface_disp(stout);
-					if (1 == print_charging) {
-						pr_debug("State C LIMIT CURRENT 10A\n");
-						print_charging_s = current_time.s;
-						print_charging = 0;
-					}
 					cnt_disp = 0;
 				}
 				// Increment the counter used for LED blinking
@@ -682,9 +692,12 @@ int state_machine()
 			// In this state the EVSE is ready, the EV is connected and a charging session with ventilation required
 			// was initiated by the EV
 			case STATE_D:
-				// Set the CP PWM duty cycle based on the Iout limit
-				current_set = current_value_limit;
-				pilot_pwm_timer_set_duty_cycle(stout, current_set);
+				if (stout->current_state != stout->previous_state) {
+					pr_debug("State D 10A \n");
+					// Set the CP PWM duty cycle based on the Iout limit
+					current_set = current_value_limit;
+					pilot_pwm_timer_set_duty_cycle(stout, current_set);
+				}
 				// Check the diode before charging
 				if (S_M_DIODE_ERR_CHECK == event) {
 					// Wait for 20 ms
@@ -697,7 +710,7 @@ int state_machine()
 							pr_debug("Diode OK \n");
 						}
 					}
-				} else if ( S_M_CHARGING_START == event) {
+				} else if (S_M_CHARGING_START == event) {
 					pr_debug("CLOSE THE RELAY STATE D\n");
 					// Close the relay
 					ret = relay_close(stout->relay);
@@ -709,11 +722,6 @@ int state_machine()
 					cnt_disp = 0;
 				} else if ((S_M_CHARGING_D == event) && (LED_BLINKING_10A <= cnt_disp)) {
 					interface_disp(stout);
-					if (1 == print_charging) {
-						pr_debug("State D charging with 10A \n");
-						print_charging_s = current_time.s;
-						print_charging = 0;
-					}
 					cnt_disp = 0;
 				}
 				// Increment the counter used for LED blinking
@@ -764,7 +772,7 @@ int state_machine()
 				// Non latching fault
 				case INTF_INPUT_V_ERR_U:
 					if (S_M_UNDERVOLTAGE == event) {
-						pr_debug("Supply undervoltage error! Vin = %d mV\n", stout->v1_max);
+						pr_debug("Supply undervoltage error! Vin = %d mV\n", stout->v1_val);
 						// CP value set to DC indicating EVSE not ready
 						pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
 						// Open relay
@@ -778,7 +786,7 @@ int state_machine()
 				//----------------Input overrvoltage detected-----------------
 				// Non latching fault
 				case INTF_INPUT_V_ERR_O:
-					pr_debug("Supply overvoltage error! Vin = %d mV\n", stout->v1_max);
+					pr_debug("Supply overvoltage error! Vin = %d mV\n", stout->v1_val);
 					// CP value set to DC indicating EVSE not ready
 					pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
 					// Open relay
@@ -849,7 +857,24 @@ int state_machine()
 					pilot_pwm_timer_set_duty_cycle(stout, PWM_OFF);
 					goto error;
 					break;
-				//------------------PE error end-------------
+					//------------------PE error end-------------
+#if defined(REV_D)
+				//------------------PE upstream error--------
+				case INTF_PE_UPSTREAM_ERR:
+					pr_debug("PE UPSTREAM ERROR!\n");
+					// CP value set to DC indicating EVSE not ready
+					pilot_pwm_timer_set_duty_cycle(stout, PWM_DC);
+					// Open relay
+					relay_open(stout->relay);
+					reset_relay_status();
+					stop_charging();
+					// Stop the CP signal
+					pilot_pwm_timer_set_duty_cycle(stout, PWM_OFF);
+					goto error;
+					break;
+					//-------------PE upstream error end---------
+#endif
+
 				default:
 					// Insert code for an error state other than the above treated ones
 					break;
@@ -876,13 +901,6 @@ error:
 	return ret;
 	/*****************************************ERROR latching and display END****************************************/
 }
-/*******************************************************************************************************************/
-/************************************************ State Machine function END****************************************/
-/*******************************************************************************************************************/
-
-/*******************************************************************************************************************/
-/**************************************************** CP event function ********************************************/
-/*******************************************************************************************************************/
 /**
  * @brief Determine next state based on CP measurements and previous events
  * @param stout - state machine descriptor
@@ -1167,13 +1185,6 @@ enum state_machine_events_e state_machine_det_event_cp(struct stout *stout,
 	}
 	return event;
 }
-/*******************************************************************************************************************/
-/**************************************************** CP event function END ****************************************/
-/*******************************************************************************************************************/
-
-/*******************************************************************************************************************/
-/************************************************* Temperature event function **************************************/
-/*******************************************************************************************************************/
 /**
  * @brief Determine next state based on temperature measurements and previous events
  * @param stout - state machine descriptor
@@ -1212,13 +1223,6 @@ enum state_machine_events_e state_machine_det_event_temperature(
 
 	return event;
 }
-/*******************************************************************************************************************/
-/********************************************** Temperature event function END *************************************/
-/*******************************************************************************************************************/
-
-/*******************************************************************************************************************/
-/*********************************************** Vin and Iout event function ***************************************/
-/*******************************************************************************************************************/
 /**
  * @brief Determine next state based on supply measurements and previous events
  * @param stout - state machine descriptor
@@ -1230,42 +1234,41 @@ enum state_machine_events_e state_machine_det_event_supply(struct stout *stout,
 {
 	enum state_machine_events_e event = event_in;
 
-	if (((VIN_HIGH_LIMIT_2 < stout->v1_max) && (1 <= stout->grid)
+	if (((VIN_HIGH_LIMIT_2 < stout->v1_val) && (1 <= stout->grid)
 	     && (S_M_CHECK_STUCK_RELAY != event))
-	    || ((VIN_HIGH_LIMIT < stout->v1_max) && (0 == stout->grid)
+	    || ((VIN_HIGH_LIMIT < stout->v1_val) && (0 == stout->grid)
 		&& (S_M_CHECK_STUCK_RELAY != event))) {
 		event = S_M_OVERVOLTAGE;
 		stout->previous_state = stout->current_state;
 		stout->current_state = STATE_FAULT;
 		stout->err_status = INTF_INPUT_V_ERR_O;
-	} else if (((VIN_LOW_LIMIT_2 > stout->v1_max) && (S_M_UNDERVOLTAGE != event)
+	} else if (((VIN_LOW_LIMIT_2 > stout->v1_val) && (S_M_UNDERVOLTAGE != event)
 		    && (S_M_CHECK_STUCK_RELAY != event) && (1 <= stout->grid))
-		   || ((VIN_LOW_LIMIT > stout->v1_max) && (S_M_UNDERVOLTAGE != event)
+		   || ((VIN_LOW_LIMIT > stout->v1_val) && (S_M_UNDERVOLTAGE != event)
 		       && (S_M_CHECK_STUCK_RELAY != event) && (0 == stout->grid))) {
 		// If undervoltage go to fault state
 		event = S_M_UNDERVOLTAGE;
 		stout->previous_state = stout->current_state;
 		stout->current_state = STATE_FAULT;
 		stout->err_status = INTF_INPUT_V_ERR_U;
-	} else if (((VIN_LOW_LIMIT_2 > stout->v1_max) && (S_M_UNDERVOLTAGE == event)
+	} else if (((VIN_LOW_LIMIT_2 > stout->v1_val) && (S_M_UNDERVOLTAGE == event)
 		    && (S_M_CHECK_STUCK_RELAY != event) && (1 <= stout->grid))
-		   || ((VIN_LOW_LIMIT > stout->v1_max) && (S_M_UNDERVOLTAGE == event)
+		   || ((VIN_LOW_LIMIT > stout->v1_val) && (S_M_UNDERVOLTAGE == event)
 		       && (S_M_CHECK_STUCK_RELAY != event) && (0 == stout->grid))) {
 		// If undervoltage detected wait until Vin is in range
 		event = S_M_UNDERVOLTAGE_WAIT;
 		stout->previous_state = stout->current_state;
 		stout->current_state = STATE_FAULT;
 		stout->err_status = INTF_INPUT_V_ERR_U;
-	} else if (((VIN_LOW_LIMIT_2 < stout->v1_max) && ((S_M_UNDERVOLTAGE == event)
+	} else if (((VIN_LOW_LIMIT_2 < stout->v1_val) && ((S_M_UNDERVOLTAGE == event)
 			|| (S_M_UNDERVOLTAGE_WAIT == event)) && (1 <= stout->grid))
-		   || ((VIN_LOW_LIMIT < stout->v1_max) && ((S_M_UNDERVOLTAGE == event)
+		   || ((VIN_LOW_LIMIT < stout->v1_val) && ((S_M_UNDERVOLTAGE == event)
 				   || (S_M_UNDERVOLTAGE_WAIT == event)) && (0 == stout->grid))) {
 		// If voltage in range recover
 		event = S_M_VIN_RECOVER;
 		stout->err_status = INTF_NO_ERR;
 		reset_count_ms();
 	}
-	//###################### IMPLEMENT OVERVOLTAGE ################################
 
 	if ((S_M_CHARGING == event) || (S_M_CHARGING_D == event)
 	    || (S_M_OVERCURRENT_WAIT == event)
@@ -1297,10 +1300,6 @@ enum state_machine_events_e state_machine_det_event_supply(struct stout *stout,
 	return event;
 }
 
-/*******************************************************************************************************************/
-/*********************************************** Vin and Iout event function END***************************************/
-/*******************************************************************************************************************/
-
 /**
  * @brief Get take action flag
  *
@@ -1314,7 +1313,6 @@ uint16_t get_action(void)
 /**
  * @brief Set take action flag
  *
- * @return none
  */
 void set_action_flag(void)
 {
@@ -1324,7 +1322,6 @@ void set_action_flag(void)
 /**
  * @brief Reset take action flag
  *
- * @return none
  */
 void reset_action_flag(void)
 {
@@ -1334,7 +1331,6 @@ void reset_action_flag(void)
 /**
  * @brief Increment take action flag
  *
- * @return none
  */
 void inc_action_flag(void)
 {
@@ -1344,7 +1340,6 @@ void inc_action_flag(void)
 /**
  * @brief Signal that EV starts charging
  *
- * @return none
  */
 void start_charging(void)
 {
@@ -1354,7 +1349,6 @@ void start_charging(void)
 /**
  * @brief Signal that EV stops charging
  *
- * @return none
  */
 void stop_charging(void)
 {

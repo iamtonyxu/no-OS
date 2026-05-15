@@ -44,17 +44,10 @@ ongoing work.
  *  Library for LTC2315: 12/14-Bit 1Msps ADC
  *  */
 
-/******************************************************************************/
-/***************************** Include Files **********************************/
-/******************************************************************************/
 #include <stdlib.h>
 #include <math.h>
 #include "ltc2312.h"
 #include "no_os_alloc.h"
-
-/******************************************************************************/
-/************************ Functions Definitions *******************************/
-/******************************************************************************/
 
 /**
  * Initializes the ltc2312 device handler.
@@ -72,11 +65,11 @@ int32_t ltc2312_setup(struct ltc2312_dev **device,
 	int32_t ret;
 
 	dev = no_os_malloc(sizeof(*dev));
-	if(!dev)
+	if (!dev)
 		return -1;
 
 	ret = no_os_spi_init(&dev->spi_desc, &init_param->spi_init);
-	if(ret != 0)
+	if (ret != 0)
 		goto error;
 
 	dev->type = init_param->type;
@@ -101,11 +94,11 @@ int32_t ltc2312_remove(struct ltc2312_dev *dev)
 {
 	int32_t ret;
 
-	if(!dev)
+	if (!dev)
 		return -1;
 
 	ret = no_os_spi_remove(dev->spi_desc);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 
 	no_os_free(dev);
@@ -124,11 +117,10 @@ int32_t ltc2312_remove(struct ltc2312_dev *dev)
  * @param [in]  dev 		 - The device structure.
  * @param [out] ptr_adc_code - Read data.
  *
- * @return void
  */
 static uint8_t ltc2312_get_shift(struct ltc2312_dev *dev)
 {
-	switch(dev->type) {
+	switch (dev->type) {
 	case LTC2312_12:
 		return 4;
 		break;
@@ -163,7 +155,7 @@ int32_t ltc2312_read(struct ltc2312_dev *dev, uint16_t *ptr_adc_code)
 
 	/* Dummy read to update  */
 	ret = no_os_spi_write_and_read(dev->spi_desc, adc_array, bytes_no);
-	if(ret != 0)
+	if (ret != 0)
 		return ret;
 
 	/* Gather values for averaging */
@@ -172,7 +164,7 @@ int32_t ltc2312_read(struct ltc2312_dev *dev, uint16_t *ptr_adc_code)
 
 		/* Read the value of the ADC */
 		ret = no_os_spi_write_and_read(dev->spi_desc, adc_array, bytes_no);
-		if(ret != 0) {
+		if (ret != 0) {
 			return ret;
 		}
 
@@ -200,7 +192,6 @@ int32_t ltc2312_read(struct ltc2312_dev *dev, uint16_t *ptr_adc_code)
  * @param [in]  vref	 - The reference voltage of the ADC.
  * @param [out] voltage	 - Voltage value calculated.
  *
- * @return void
  */
 void ltc2312_code_to_voltage(struct ltc2312_dev *dev, uint16_t adc_code,
 			     float vref, float *voltage)
@@ -212,7 +203,7 @@ void ltc2312_code_to_voltage(struct ltc2312_dev *dev, uint16_t adc_code,
 	*  (dimensionless)
 	*  */
 	shift = ltc2312_get_shift(dev);
-	*voltage = *voltage / (pow(2,(16 - shift))-1);
+	*voltage = *voltage / (pow(2, (16 - shift)) - 1);
 	/* 3) Multiply fraction by Vref to get the actual voltage at the input
 	*  (in volts)
 	*  */
