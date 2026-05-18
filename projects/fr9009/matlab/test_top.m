@@ -1,88 +1,38 @@
 close all;
 clear all;
 
-if 1
-%% read capture data from cap_buf
-readdata = readtable('.\readdata_rx2.txt');
+%% data source select: "file" | "serial"
+dataSource = "file";
 
-signal_i = zeros(1, size(readdata, 1));
-signal_q = zeros(1, size(readdata, 1));
+%% shared capture length config from C side
+CAP_LENGTH_MAX = 16384;
+CAP_LENGTH_READ = CAP_LENGTH_MAX / 4;
+expectedIqPairs = CAP_LENGTH_READ * 2;  % one loop prints rx1 and rx2
 
-for i = 1:length(signal_i)
+switch lower(dataSource)
+case "file"
+    %% read capture data from saved txt file
+    fileCfg.path = '.\readdata_rx2.txt';
+    signal = read_signal_from_file(fileCfg.path);
+    rx1 = signal(1:2:end);
+    rx2 = signal(2:2:end);
 
-%     signal_i(i) = readdata(i,1).Var1;
-%     signal_q(i) = readdata(i,2).Var2;
+case "serial"
+    %% read capture data from serial in real-time
+    serialCfg.port = "COM3";          % modify by your local setup
+    serialCfg.baudRate = 115200;
+    serialCfg.command = uint8('G');
+    serialCfg.totalTimeoutSec = 25;    % full frame timeout
+    serialCfg.idleTimeoutSec = 2;      % inter-line timeout
+    serialCfg.pollIntervalSec = 0.005;
+    serialCfg.waitCapMarker = true;    % wait "cap_buffer=" before parsing
 
-    if readdata(i,1).Var1 >= 2^15
-        signal_i(i) = readdata(i,1).Var1 - 2^16;
-    else
-        signal_i(i) = readdata(i,1).Var1;
-    end
-   
-    if readdata(i,2).Var2 >= 2^15
-        signal_q(i) = readdata(i,2).Var2 - 2^16;
-    else
-        signal_q(i) = readdata(i,2).Var2;
-    end
+    signal = read_signal_from_serial(serialCfg, expectedIqPairs);
+    rx1 = signal(1:2:end);
+    rx2 = signal(2:2:end);
 
-end
-signal = signal_i + 1i*signal_q;
-rx1 = signal(1:2:end);
-rx2 = signal(2:2:end);
-
-else
-%% read capture data from ila
-% 读取并解析'ila_data.txt'
-% 每个数值A都是32bit的十六进制，且A=[data_q[7:0], data_q[15:8], data_i[7:0], data_i[15:8]]
-% 将data_i, data_q解析出来
-
-% 读取每行32-bit HEX（允许带/不带 0x 前缀）
-fid = fopen('ila_data.txt', 'r');
-assert(fid ~= -1, 'Cannot open ila_data.txt');
-C = textscan(fid, '%s', 'Delimiter', {'\r','\n','\t',' '}, 'MultipleDelimsAsOne', true);
-fclose(fid);
-
-hexStr = string(C{1});
-hexStr = strtrim(hexStr);
-hexStr(hexStr == "") = [];
-hexStr = erase(hexStr, "0x");
-hexStr = erase(hexStr, "0X");
-
-% HEX -> uint32（4e9 < 2^53，hex2dec 的 double 可精确表示，再转 uint32）
-A_u32 = uint32(hex2dec(char(hexStr)));
-
-% 拆分出两个“字节反序”的16-bit：高16位为Q，低16位为I
-q_swapped_u16 = uint16(bitshift(A_u32, -16));
-i_swapped_u16 = uint16(bitand(A_u32, uint32(65535)));
-
-% 修正字节序：[7:0][15:8] -> [15:8][7:0]
-q_u16 = swapbytes(q_swapped_u16);
-i_u16 = swapbytes(i_swapped_u16);
-
-%data_q = double(typecast(q_u16, 'int16'));
-%data_i = double(typecast(i_u16, 'int16'));
-data_q = zeros(length(q_u16), 1);
-data_i = zeros(length(q_u16), 1);
-
-% 转为有符号 int16，再转 double 便于后续运算/绘图
-for i = 1:length(q_u16)
-    if q_u16(i) >= 2^15
-        data_q(i) = int16((2^16 - q_u16(i)))*(-1);
-    else
-        data_q(i) = q_u16(i);
-    end
-   
-    if i_u16(i) >= 2^15
-        data_i(i) =  int16((2^16 - i_u16(i)))*(-1);
-    else
-        data_i(i) = i_u16(i);
-    end
-end
-
-% 复数IQ
-rx1 = (data_i + 1j*data_q);
-rx1 = rx1.'; rx2 = rx1;
-
+otherwise
+    error("Unsupported dataSource: %s", dataSource);
 end
 
 figure;
@@ -104,3 +54,74 @@ useHann = true;%wrong if useHann = true!
 cfg_fs_bb = 245.76e6;
 PlotFFT(rx1, nHarmonics, nBits, useHann, cfg_fs_bb);
 PlotFFT(rx2, nHarmonics, nBits, useHann, cfg_fs_bb);
+
+function signal = read_signal_from_file(filePath)
+    readdata = readtable(filePath);
+    raw = table2array(readdata(:, 1:2));
+
+    signal_i = to_signed_16(raw(:, 1));
+    signal_q = to_signed_16(raw(:, 2));
+    signal = (signal_i + 1i * signal_q).';
+end
+
+function signal = read_signal_from_serial(cfg, expectedIqPairs)
+    existing = serialportfind("Port", cfg.port);
+    if ~isempty(existing)
+        clear existing;
+    end
+
+    s = serialport(cfg.port, cfg.baudRate, "Timeout", 1);
+    cleanupObj = onCleanup(@() clear("s")); %#ok<NASGU>
+
+    configureTerminator(s, "LF");
+    flush(s);
+    write(s, cfg.command, "uint8");
+
+    vals = zeros(expectedIqPairs, 2);
+    got = 0;
+    capMarkerSeen = ~cfg.waitCapMarker;
+    tTotal = tic;
+    tIdle = tic;
+
+    while got < expectedIqPairs
+        if toc(tTotal) > cfg.totalTimeoutSec
+            error("Serial total timeout: got %d/%d IQ pairs.", got, expectedIqPairs);
+        end
+
+        if got > 0 && toc(tIdle) > cfg.idleTimeoutSec
+            error("Serial idle timeout after %d IQ pairs.", got);
+        end
+
+        if s.NumBytesAvailable == 0
+            pause(cfg.pollIntervalSec);
+            continue;
+        end
+
+        line = strtrim(readline(s));
+        tIdle = tic;
+
+        if ~capMarkerSeen
+            if contains(line, "cap_buffer=")
+                capMarkerSeen = true;
+            end
+            continue;
+        end
+
+        m = regexp(line, '^\s*(-?\d+)\s+(-?\d+)\s*$', 'tokens', 'once');
+        if isempty(m)
+            continue;
+        end
+
+        got = got + 1;
+        vals(got, 1) = str2double(m{1});
+        vals(got, 2) = str2double(m{2});
+    end
+
+    signal = vals(:,1).' + 1i * vals(:,2).';
+end
+
+function y = to_signed_16(x)
+    y = double(x);
+    mask = y >= 2^15;
+    y(mask) = y(mask) - 2^16;
+end

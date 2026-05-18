@@ -76,17 +76,28 @@ int trigger_capture(void)
 {
 	uint8_t status = 0;
 	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR; // XPAR_AXI_FR9009_CONFIG_0_BASEADDR
-	uint32_t oldcfg, newcfg = 0u;
+	uint32_t cfg;
+	uint32_t cleared_cfg;
+	uint32_t set_cfg;
 
-	// Read rx_cap_config, clear bit[0], then set it again to trigger capture.
-	oldcfg = FPGA_ReadReg(baseaddr, OFFSET_RX_CAP_CONFIG);
-	newcfg = oldcfg & 0xFEu;
-	FPGA_WriteReg(baseaddr, OFFSET_RX_CAP_CONFIG, newcfg);
-	newcfg = oldcfg | 0x01u;
-	FPGA_WriteReg(baseaddr, OFFSET_RX_CAP_CONFIG, newcfg);
+	/*
+	 * rx_cap_config[0] is edge-triggered (0->1), not self-clearing:
+	 * each trigger must generate a low-to-high transition explicitly.
+	 */
+	cfg = FPGA_ReadReg(baseaddr, OFFSET_RX_CAP_CONFIG);
 
-	newcfg = FPGA_ReadReg(baseaddr, OFFSET_RX_CAP_CONFIG);
-	status = (newcfg & 0x01u) ? 0u : 1u;
+	/* Force low first. */
+	cleared_cfg = (cfg & 0xFEu);
+	FPGA_WriteReg(baseaddr, OFFSET_RX_CAP_CONFIG, cleared_cfg);
+	(void)FPGA_ReadReg(baseaddr, OFFSET_RX_CAP_CONFIG);
+
+	/* Then drive high to create 0->1 edge. */
+	set_cfg = (cleared_cfg | 0x01u);
+	FPGA_WriteReg(baseaddr, OFFSET_RX_CAP_CONFIG, set_cfg);
+	cfg = FPGA_ReadReg(baseaddr, OFFSET_RX_CAP_CONFIG);
+
+	if ((cfg & 0x01u) == 0u)
+		status = 1u;
 
 	return status;
 }

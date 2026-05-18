@@ -96,7 +96,7 @@ fr9009_config_t fr9009_config = {
 	.mapper_sel = 1u, // 1: JESD L=2, M=4, S=1, DAC=245.76M
 #endif
 	.ddr_play_ctrl = 1u, // Enable play Tx of module data2fpga
-	.ddr_play_len = 0u, // [31]=1 enable; [22:0] data length bytes
+	.ddr_play_len = 0u, // [31]=1 enable; [22:0] data length bytes，default 0 means 16k bytes (16k samples) as configured in data2fpga.v
 	.const_data_0 = 0x11223344u,
 	.const_data_1 = 0x55667788u,
 	.dds_sync = 1u, // dds_sync[0]=0 as default; 1 triggers alignment, then self-clears
