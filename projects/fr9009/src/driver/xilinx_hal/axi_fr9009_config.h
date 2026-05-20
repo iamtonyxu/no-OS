@@ -25,6 +25,10 @@
 #define FPGA_ReadReg(BaseAddress, RegOffset) \
     Xil_In32((BaseAddress) + (RegOffset))
 
+#define FR9009_SRC_SEL_DDS      0u
+#define FR9009_SRC_SEL_DDR      1u
+#define FR9009_SRC_SEL_CONST    2u
+
 /* structure definition */
 typedef struct
 {
@@ -44,5 +48,7 @@ typedef struct
 
 int axi_fr9009_selfTest(void);
 int axi_fr9009_config_init(fr9009_config_t *pConfig);
+int axi_fr9009_set_src_sel(uint8_t src_sel);
+int axi_fr9009_get_src_sel(uint8_t *src_sel);
 
 #endif

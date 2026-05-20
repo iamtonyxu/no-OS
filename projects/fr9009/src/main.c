@@ -57,6 +57,7 @@
 #else
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "ad9528_app.h"
 #include "axi_fr9009_config.h"
 #include "fr9009_tx.h"
@@ -71,6 +72,8 @@
 //#include "no_os_uart.h"
 #include "xuartps_hw.h"
 #include <parameters.h>
+
+
 
 /* JESD Mode
  * 0: JESD L=4, M=4, S=2, DAC=491.52M
@@ -89,7 +92,7 @@
 uint32_t cap_buf[CAP_LENGTH_MAX];
 
 fr9009_config_t fr9009_config = {
-	.src_sel = 1u, // 0: fpga dds; 1: ddr; 2: const_data
+	.src_sel = 0u, // 0: fpga dds; 1: ddr; 2: const_data
 #if JESD_MODE == 0
 	.mapper_sel = 0u, // 0: JESD L=4, M=4, S=2, DAC=491.52M
 #else
@@ -110,6 +113,28 @@ fr9009_config_t fr9009_config = {
 /* extern variables */
 extern fr9009Device_t brDev[DEVICE_NUMS];
 void main_step(void);
+
+
+#define UART_BASE_ADDR XPAR_XUARTPS_0_BASEADDR
+#define WF_MAGIC_0 'F'
+#define WF_MAGIC_1 '0'
+#define WF_MAGIC_2 '9'
+#define WF_RATE_491M 0u
+#define WF_RATE_245M 1u
+
+/*
+ * Waveform download frame over UART (little-endian):
+ *   Host sends: 'W' + 'F''0''9' + rateSel(1B) + sampleCount(2B)
+ *               + payload(sampleCount * 4B) + checksum(4B)
+ *   payload word format: [31:16] = Q(int16), [15:0] = I(int16)
+ */
+
+// Function declarations
+static int uart_read_byte_timeout(uint8_t *out, uint32_t timeout_cycles);
+static int uart_read_exact(uint8_t *buf, uint32_t len, uint32_t timeout_cycles);
+static void dump_capture_buffer(void);
+static void handle_src_sel_update(void);
+static void handle_waveform_download(void);
 
 #endif
 
@@ -140,18 +165,20 @@ int main()
 	return 0;
 }
 #else
+#if NOUPDATES
 int main()
 {
-	shell_init();
+	gpio_init();
+	main_step();
 	while (1)
-	{
-		if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR)) {
-			char c = (char)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
-			shell(c);
-		}
-	}
+		;
 
- 	uint8_t status = XST_FAILURE;
+	return 0;
+}
+#else
+int main()
+{
+	uint8_t status = XST_FAILURE;
 #if 1
 	/* disable DDR DCache */
 	Xil_DCacheDisable();
@@ -166,7 +193,7 @@ int main()
 	status = axi_fr9009_selfTest();
 	if (status == XST_SUCCESS)
 	{
-		// CONFIG_8_REG for Tx test
+		// fr9009_config initialization, including setting default values for the configuration structure etc.
 		axi_fr9009_config_init(&fr9009_config);
 	}
 
@@ -175,44 +202,37 @@ int main()
 	main_step();
 #endif
 
-	/* read capture buffer */
 	usleep(100);
-	printf("Enter 'G' to read capture buffer...\n");
+	printf("Commands: 'G' capture, 'S'+srcSel configure TX source, frame 'WF09' download waveform.\n");
+
 	while (1)
 	{
-		char c = getchar();
-		if (c == 'G')
-		{
-			trigger_capture();
-			printf("cap_buffer=\n");
-			read_capture(cap_buf, CAP_LENGTH_MAX);
+		/* Heartbeat: tell host every 1s that board is alive and ready. */
+		const char ready_msg[] = "READY\n";
+		for (unsigned i = 0; i < sizeof(ready_msg) - 1; ++i)
+			XUartPs_SendByte(UART_BASE_ADDR, ready_msg[i]);
+		mdelay(1000);
 
-			for (int i = 0; i < CAP_LENGTH_READ; i++)
-			{
-				int j = i * 4;
-				int16_t rx1_i = (int16_t)(((cap_buf[j] >> 8) & 0xff) |
-							      ((cap_buf[j] & 0xff) << 8));
-				int16_t rx1_q = (int16_t)(((cap_buf[i] >> 24) & 0xff) |
-							      ((cap_buf[j] >> 8) & 0xff00));
-
-				int16_t rx2_i = (int16_t)(((cap_buf[i + 1] >> 8) & 0xff) |
-							      ((cap_buf[j + 1] & 0xff) << 8));
-				int16_t rx2_q = (int16_t)(((cap_buf[i + 1] >> 24) & 0xff) |
-							      ((cap_buf[j + 1] >> 8) & 0xff00));
-
-				printf("%d %d\n", rx1_i, rx1_q);
-				printf("%d %d\n", rx2_i, rx2_q);
+		/* Command parser:
+		 *   'G' -> capture and dump ADC samples
+		 *   'S' -> receive one src_sel byte and update TX source select
+		 *   'W' -> receive waveform frame and update TX LUT+DDR
+		 *   'E' -> exit command loop
+		 */
+		if (XUartPs_IsReceiveData(UART_BASE_ADDR)) {
+			char c = (char)XUartPs_RecvByte(UART_BASE_ADDR);
+			if (c == 'G') {
+				dump_capture_buffer();
+			} else if (c == 'S') {
+				handle_src_sel_update();
+			} else if (c == 'W') {
+				handle_waveform_download();
+			} else if (c == 'E') {
+				printf("Exit...\n");
+				break;
+			} else {
+				printf("Invalid command!\n");
 			}
-		}
-		else if (c == 'E')
-		{
-			printf("Exit...\n");
-			break;
-		}
-		else
-		{
-			// do nothing
-			printf("Invalid command!\n");
 		}
 	}
 
@@ -220,6 +240,146 @@ int main()
 		;
 
 	return 0;
+}
+#endif
+
+// ---- Subfunction definitions moved below main ----
+
+static int uart_read_byte_timeout(uint8_t *out, uint32_t timeout_cycles)
+{
+	/* Poll RX FIFO until byte arrives or timeout. */
+	uint32_t i;
+	for (i = 0; i < timeout_cycles; i++) {
+		if (XUartPs_IsReceiveData(UART_BASE_ADDR)) {
+			*out = XUartPs_RecvByte(UART_BASE_ADDR);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+static int uart_read_exact(uint8_t *buf, uint32_t len, uint32_t timeout_cycles)
+{
+	/* Read exactly len bytes (blocking with timeout per byte). */
+	uint32_t i;
+	for (i = 0; i < len; i++) {
+		if (uart_read_byte_timeout(&buf[i], timeout_cycles) != 0)
+			return -1;
+	}
+	return 0;
+}
+
+static void dump_capture_buffer(void)
+{
+	/* Trigger FPGA capture and print parsed I/Q pairs for MATLAB parser. */
+	trigger_capture();
+	printf("cap_buffer=\n");
+	read_capture(cap_buf, CAP_LENGTH_MAX);
+	for (int i = 0; i < CAP_LENGTH_READ; i++) {
+		int j = i * 4;
+		/* Word format from capture path: [31:16]=Q, [15:0]=I */
+		int16_t rx1_i = (int16_t)(cap_buf[j] & 0xffffu);
+		int16_t rx1_q = (int16_t)((cap_buf[j] >> 16) & 0xffffu);
+		int16_t rx2_i = (int16_t)(cap_buf[j + 1] & 0xffffu);
+		int16_t rx2_q = (int16_t)((cap_buf[j + 1] >> 16) & 0xffffu);
+		printf("%d %d\n", rx1_i, rx1_q);
+		printf("%d %d\n", rx2_i, rx2_q);
+	}
+}
+
+static void handle_src_sel_update(void)
+{
+	uint8_t src_sel;
+	int status;
+
+	if (uart_read_exact(&src_sel, 1u, 5000000u) != 0) {
+		printf("SRC:ERR:TIMEOUT\n");
+		return;
+	}
+
+	if (src_sel > 2u) {
+		printf("SRC:ERR:VALUE\n");
+		return;
+	}
+
+	status = axi_fr9009_set_src_sel(src_sel);
+	if (status != XST_SUCCESS) {
+		printf("SRC:ERR:WRITE\n");
+		return;
+	}
+
+	fr9009_config.src_sel = src_sel;
+	printf("SRC:OK src_sel=%u\n", src_sel);
+}
+
+static void handle_waveform_download(void)
+{
+	/*
+	 * Receive and validate one waveform frame, then:
+	 * 1) update selected LUT buffer (491M or 245M)
+	 * 2) zero-fill tail when sample_count < TX_BUF_LEN
+	 * 3) copy whole LUT to DDR TX buffer
+	 */
+	uint8_t hdr[6];
+	uint8_t raw_word[4];
+	uint8_t raw_checksum[4];
+	uint16_t sample_count;
+	uint32_t rx_checksum = 0u;
+	uint32_t calc_checksum = 0u;
+	uint32_t *target_lut = NULL;
+	if (uart_read_exact(hdr, sizeof(hdr), 5000000u) != 0) {
+		printf("WF:ERR:TIMEOUT_HDR\n");
+		return;
+	}
+	if ((hdr[0] != WF_MAGIC_0) || (hdr[1] != WF_MAGIC_1) || (hdr[2] != WF_MAGIC_2)) {
+		printf("WF:ERR:MAGIC\n");
+		return;
+	}
+	if (hdr[3] == WF_RATE_491M) {
+		target_lut = tone_lut_iq_491M;
+	} else if (hdr[3] == WF_RATE_245M) {
+		target_lut = tone_lut_iq_245M;
+	} else {
+		printf("WF:ERR:RATE\n");
+		return;
+	}
+	sample_count = (uint16_t)hdr[4] | ((uint16_t)hdr[5] << 8);
+	/* sample_count is number of uint32 IQ words, not bytes. */
+	if ((sample_count == 0u) || (sample_count > TX_BUF_LEN)) {
+		printf("WF:ERR:LEN\n");
+		return;
+	}
+	for (uint32_t i = 0; i < sample_count; i++) {
+		uint32_t w;
+		if (uart_read_exact(raw_word, sizeof(raw_word), 5000000u) != 0) {
+			printf("WF:ERR:TIMEOUT_PAYLOAD\n");
+			return;
+		}
+		w = ((uint32_t)raw_word[0]) |
+		    ((uint32_t)raw_word[1] << 8) |
+		    ((uint32_t)raw_word[2] << 16) |
+		    ((uint32_t)raw_word[3] << 24);
+		target_lut[i] = w;
+		calc_checksum += w;
+	}
+	for (uint32_t i = sample_count; i < TX_BUF_LEN; i++)
+		target_lut[i] = 0u;
+	if (uart_read_exact(raw_checksum, sizeof(raw_checksum), 5000000u) != 0) {
+		printf("WF:ERR:TIMEOUT_CKS\n");
+		return;
+	}
+	rx_checksum = ((uint32_t)raw_checksum[0]) |
+		      ((uint32_t)raw_checksum[1] << 8) |
+		      ((uint32_t)raw_checksum[2] << 16) |
+		      ((uint32_t)raw_checksum[3] << 24);
+	if (rx_checksum != calc_checksum) {
+		printf("WF:ERR:CKS\n");
+		return;
+	}
+	/* Push full LUT to DDR so stale tail data is never transmitted. */
+	copy_waveform_to_ddr(target_lut, TX_BUF_LEN * sizeof(uint32_t));
+	printf("WF:OK rate=%u samples=%u checksum=0x%08lx\n",
+	       hdr[3], sample_count, (unsigned long)calc_checksum);
 }
 #endif
 

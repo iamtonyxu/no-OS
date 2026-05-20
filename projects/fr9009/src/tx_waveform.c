@@ -224,9 +224,9 @@ const uint32_t sine_lut_iq[1024] = {
 };
 
 #if TX_SOURCE_SEL == 0
-const uint32_t tone_lut_iq_245M[TX_BUF_LEN] = {0};
+uint32_t tone_lut_iq_245M[TX_BUF_LEN] = {0};
 #else
-const uint32_t tone_lut_iq_245M[TX_BUF_LEN] = {
+uint32_t tone_lut_iq_245M[TX_BUF_LEN] = {
 		0x00007332, 0x1D226F74, 0x385F6476, 0x4FF152F1, 0x62523C07,
 		0x6E4E2137, 0x731E043D, 0x7073E6FE, 0x6678CB5E, 0x55D4B32A,
 		0x3F9B9FF5, 0x254092FE, 0x08798D1E, 0xEB258EB5, 0xCF2C97AA,
@@ -3507,7 +3507,7 @@ const uint32_t tone_lut_iq_245M[TX_BUF_LEN] = {
 };
 #endif
 
-const uint32_t tone_lut_iq_491M[TX_BUF_LEN] = {
+uint32_t tone_lut_iq_491M[TX_BUF_LEN] = {
 		0x00000CCD, 0x01F50CA6, 0x03DE0C34, 0x05AF0B78, 0x075F0A77,
 		0x08E20937, 0x0A3007C0, 0x0B40061A, 0x0C0D0450, 0x0C92026C,
 		0x0CCA0079, 0x0CB6FE83, 0x0C56FC96, 0x0BABFABE, 0x0ABBF905,

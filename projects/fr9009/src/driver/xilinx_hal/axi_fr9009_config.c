@@ -1,6 +1,36 @@
 #include "parameters.h"
 #include "axi_fr9009_config.h"
 
+int axi_fr9009_set_src_sel(uint8_t src_sel)
+{
+	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR;
+	uint32_t wr_src_sel;
+	uint32_t rd_src_sel;
+
+	if (src_sel > FR9009_SRC_SEL_CONST)
+		return XST_INVALID_PARAM;
+
+	wr_src_sel = (uint32_t)(src_sel & 0x03u);
+	FPGA_WriteReg(baseaddr, OFFSET_SRC_SEL, wr_src_sel);
+	rd_src_sel = FPGA_ReadReg(baseaddr, OFFSET_SRC_SEL);
+
+	if (rd_src_sel != wr_src_sel)
+		return XST_FAILURE;
+
+	return XST_SUCCESS;
+}
+
+int axi_fr9009_get_src_sel(uint8_t *src_sel)
+{
+	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR;
+
+	if (src_sel == NULL)
+		return XST_INVALID_PARAM;
+
+	*src_sel = (uint8_t)(FPGA_ReadReg(baseaddr, OFFSET_SRC_SEL) & 0x03u);
+	return XST_SUCCESS;
+}
+
 int axi_fr9009_selfTest(void)
 {
 	uint8_t status = 0;
@@ -29,7 +59,7 @@ int axi_fr9009_config_init(fr9009_config_t *pConfig)
 	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR;
 	uint32_t src_sel = (pConfig->src_sel & 0x03);
 	uint32_t mapper_sel = (pConfig->mapper_sel & 0x01);
-	uint32_t ddr_play_ctrl = (pConfig->mapper_sel & 0x01);
+	uint32_t ddr_play_ctrl = (pConfig->ddr_play_ctrl & 0x01);
 #if 0
 	uint32_t ddr_play_len = pConfig->ddr_play_len;
 #else
@@ -46,7 +76,13 @@ int axi_fr9009_config_init(fr9009_config_t *pConfig)
 
 	FPGA_WriteReg(baseaddr, OFFSET_SRC_SEL, src_sel);
 	FPGA_WriteReg(baseaddr, OFFSET_MAPPER_SEL, mapper_sel);
-	FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_CTRL, ddr_play_ctrl);
+	if (ddr_play_ctrl == 1u) {
+		FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_CTRL, 0u);
+		(void)FPGA_ReadReg(baseaddr, OFFSET_DDR_PLAY_CTRL);
+		FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_CTRL, 1u);
+	} else {
+		FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_CTRL, ddr_play_ctrl);
+	}
 	FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_LEN, ddr_play_len);
 	FPGA_WriteReg(baseaddr, OFFSET_CONST_DATA0, const_data_0);
 	FPGA_WriteReg(baseaddr, OFFSET_CONST_DATA1, const_data_1);
