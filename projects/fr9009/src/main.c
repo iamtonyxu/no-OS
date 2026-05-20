@@ -1,50 +1,4 @@
-/******************************************************************************
-*
-* Copyright (C) 2009 - 2014 Xilinx, Inc.  All rights reserved.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* Use of the Software is limited solely to applications:
-* (a) running on a Xilinx device, or
-* (b) that interact with a Xilinx device through a bus or interconnect.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-* XILINX  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
-* OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*
-* Except as contained in this notice, the name of the Xilinx shall not be used
-* in advertising or otherwise to promote the sale, use or other dealings in
-* this Software without prior written authorization from Xilinx.
-*
-******************************************************************************/
-
-/*
- * helloworld.c: simple test application
- *
- * This application configures UART 16550 to baud rate 9600.
- * PS7 UART (Zynq) is not initialized by this application, since
- * bootrom/bsp configures it to baud rate 115200
- *
- * ------------------------------------------------
- * | UART TYPE   BAUD RATE                        |
- * ------------------------------------------------
- *   uartns550   9600
- *   uartlite    Configurable only in HW design
- *   ps7_uart    115200 (configured by bootrom/bsp)
- */
-
+//TODO: remove NOUPDATES later
 #define NOUPDATES 0
 
 #if NOUPDATES
@@ -88,6 +42,7 @@
 /* global variables */
 uint32_t cap_buf[CAP_LENGTH_MAX];
 
+#if FR9009_DEVICE
 fr9009_config_t fr9009_config = {
 	.src_sel = 1u, // 0: fpga dds; 1: ddr; 2: const_data
 #if JESD_MODE == 0
@@ -106,6 +61,33 @@ fr9009_config_t fr9009_config = {
 	.tone_2_freq_word = 0xa6bu, // round(tone_freq/clk_freq)*2^16, 10MHz: 0xa6b
 	.rx_cap_config = 1u // Enable capture of module rx_data_capture
 };
+#else
+config8_reg_t config8 = {
+		.dds_ctrl = 3u, //dds_ctrl[0]=1,enable I; dds_ctrl[1]=1,enable Q Data
+		.src_sel = 0u, //0:fpga dds; 1:ddr; 2:const_data
+#if JESD_MODE == 0
+		.mapper_sel = 0u,//0:JESD L=4,M=4,S=2,DAC=491.52M
+#else
+		.mapper_sel = 1u,//1:JESD L=2,M=4,S=1,DAC=245.76M
+#endif
+		.play_ctrl = 1u,//Enable play Tx of module data2fpga
+		.capture_en = 1u,//enable capture of module rx_data_capture
+		/* 	dds_pinc		frequency
+		*	0x14D5555u		5M
+		*	0x29AAAAAu		10M (default)
+		*	0x3333333u		12.288M
+		*	0x5355555u		20M
+		*	0x8000000		30.72M
+		*/
+		.dds_pinc_0 = 0x14D5555u, //default: 10M
+		.dds_poff_0 = 0u,
+		.dds_pinc_1 = 0u,
+		.dds_poff_1 = 0u,
+		.const_data_0 = 0x11223344u,
+		.const_data_1 = 0x55667788u,
+		.play_len_cfg = 0u //[31]=1,enable;[22:0]:data length bytes
+};
+#endif
 
 /* extern variables */
 extern fr9009Device_t brDev[DEVICE_NUMS];
@@ -115,7 +97,7 @@ void main_step(void);
 
 void main_step(void)
 {
-	print("Hello World\n\r");
+	print("Hello FR9009\n\r");
 	ad9528_device_init();
 	ad9528_cfg();
 	Xil_Out32((RX_JESD_BASEADDR + 0x20), talInit.jesd204Settings.framerA.F - 1); // F: 4
@@ -142,15 +124,6 @@ int main()
 #else
 int main()
 {
-	shell_init();
-	while (1)
-	{
-		if (XUartPs_IsReceiveData(XPAR_XUARTPS_0_BASEADDR)) {
-			char c = (char)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
-			shell(c);
-		}
-	}
-
  	uint8_t status = XST_FAILURE;
 #if 1
 	/* disable DDR DCache */
@@ -163,12 +136,21 @@ int main()
 	copy_waveform_to_ddr(tone_lut_iq_245M, sizeof(tone_lut_iq_245M));
 #endif
 
+#if FR9009_DEVICE
 	status = axi_fr9009_selfTest();
 	if (status == XST_SUCCESS)
 	{
 		// CONFIG_8_REG for Tx test
 		axi_fr9009_config_init(&fr9009_config);
 	}
+#else
+    status = CONFIG_8_REG_Reg_SelfTest((void*)CONFIG_8_REG_BASEADDR);
+    if(status == XST_SUCCESS)
+    {
+    	// CONFIG_8_REG for Tx test
+    	CONFIG_8_REG_init(&config8);
+    }
+#endif
 
 	/* gpio and fr9009 init */
 	gpio_init();
@@ -180,7 +162,11 @@ int main()
 	printf("Enter 'G' to read capture buffer...\n");
 	while (1)
 	{
+#if 0
 		char c = getchar();
+#else
+		char c = (char)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
+#endif
 		if (c == 'G')
 		{
 			trigger_capture();

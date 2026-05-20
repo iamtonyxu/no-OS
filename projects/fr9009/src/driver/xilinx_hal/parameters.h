@@ -48,6 +48,7 @@
 /******************************************************************************/
 /********************** Macros and Constants Definitions **********************/
 /******************************************************************************/
+#define FR9009_DEVICE		 0
 
 #define GPIO_OFFSET          54
 
@@ -85,7 +86,12 @@
 //#define JESD0_DATA_ADDR_LANE_1     XPAR_BRAM_1_BASEADDR
 //#define JESD1_DATA_ADDR_LANE_0     XPAR_BRAM_2_BASEADDR
 
+#if FR9009_DEVICE
 #define FR9009_CONFIG_REG_BASEADDR XPAR_AXI_FR9009_CONFIG_0_BASEADDR
+#else
+#define CONFIG_8_REG_BASEADDR   XPAR_AXI_CONFIG_8_REG_0_BASEADDR
+#endif
+
 #define CAPBUF_BASEADDR            XPAR_BRAM_0_BASEADDR
 
 // TX_BUF_ADDR is fixed in data2fpga.v (wrapped in user ip axi_fr9009_config)

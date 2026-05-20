@@ -2,7 +2,7 @@ close all;
 clear all;
 
 %% data source select: "file" | "serial"
-dataSource = "file";
+dataSource = "serial";
 
 %% shared capture length config from C side
 CAP_LENGTH_MAX = 16384;
@@ -35,25 +35,9 @@ otherwise
     error("Unsupported dataSource: %s", dataSource);
 end
 
-figure;
-subplot(2,1,1);
-plot(real(rx1)/2^16);title("real(rx1) in time-domain");
-subplot(2,1,2);
-plot(imag(rx1)/2^16);title("imag(rx1) in time-domain");
-
-figure;
-subplot(2,1,1);
-plot(real(rx2)/2^16);title("real(rx2) in time-domain");
-subplot(2,1,2);
-plot(imag(rx2)/2^16);title("imag(rx2) in time-domain");
-
-%% FFT analysis
-nBits = 16;
-nHarmonics = 1;
-useHann = true;%wrong if useHann = true!
-cfg_fs_bb = 245.76e6;
-PlotFFT(rx1, nHarmonics, nBits, useHann, cfg_fs_bb);
-PlotFFT(rx2, nHarmonics, nBits, useHann, cfg_fs_bb);
+cfg_fs_bb = 245.76e6; % 245.76e6， 491.52e6?
+plot_channel_overview(rx1, cfg_fs_bb, "rx1");
+plot_channel_overview(rx2, cfg_fs_bb, "rx2");
 
 function signal = read_signal_from_file(filePath)
     readdata = readtable(filePath);
@@ -65,9 +49,17 @@ function signal = read_signal_from_file(filePath)
 end
 
 function signal = read_signal_from_serial(cfg, expectedIqPairs)
-    existing = serialportfind("Port", cfg.port);
-    if ~isempty(existing)
-        clear existing;
+    if exist('serialportfind', 'file') || exist('serialportfind', 'builtin')
+        existing = serialportfind("Port", cfg.port);
+        if ~isempty(existing)
+            delete(existing);
+        end
+    elseif exist('instrfind', 'file') || exist('instrfind', 'builtin')
+        existing = instrfind('Port', char(cfg.port));
+        if ~isempty(existing)
+            fclose(existing);
+            delete(existing);
+        end
     end
 
     s = serialport(cfg.port, cfg.baudRate, "Timeout", 1);
@@ -124,4 +116,45 @@ function y = to_signed_16(x)
     y = double(x);
     mask = y >= 2^15;
     y(mask) = y(mask) - 2^16;
+end
+
+function plot_channel_overview(rx, fsHz, rxName)
+    n = numel(rx);
+    t = (0:n-1) / fsHz;
+    timeI = real(rx) / 2^16;
+    timeQ = imag(rx) / 2^16;
+
+    spectrum = fftshift(fft(rx));
+    freqAxisHz = ((-floor(n/2)):(ceil(n/2)-1)) * (fsHz / n);
+    mag = abs(spectrum);
+    magDb = 20 * log10(max(mag / max(mag), eps));
+    [~, peakIdx] = max(mag);
+    peakFreqHz = freqAxisHz(peakIdx);
+    peakMagDb = magDb(peakIdx);
+
+    figure('Name', char(rxName), 'NumberTitle', 'off');
+
+    subplot(2,1,1);
+    plot(t * 1e6, timeI, 'b', 'LineWidth', 1.0);
+    hold on;
+    plot(t * 1e6, timeQ, 'r', 'LineWidth', 1.0);
+    hold off;
+    grid on;
+    xlabel('Time (us)');
+    ylabel('Amplitude (FS)');
+    title(sprintf('%s Time Domain', rxName));
+    legend('I', 'Q');
+
+    subplot(2,1,2);
+    plot(freqAxisHz / 1e6, magDb, 'k', 'LineWidth', 1.0);
+    grid on;
+    ylim([-100, 10]);
+    xlabel('Frequency (MHz)');
+    ylabel('Magnitude (dBFS, normalized)');
+    title(sprintf('%s Frequency Domain', rxName));
+    hold on;
+    plot(peakFreqHz / 1e6, peakMagDb, 'ro', 'MarkerSize', 8, 'LineWidth', 1.5);
+    text(peakFreqHz / 1e6, peakMagDb, sprintf('  Peak: %.3f MHz', peakFreqHz / 1e6), ...
+        'Color', 'r', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
+    hold off;
 end
