@@ -248,7 +248,7 @@ fr9009Init_t talInit =
         .clkPllHsDiv = 5,                       /* CLKPLL high speed clock divider */
         .rfPllUseExternalLo = 0,                /* 1= Use external LO for RF PLL, 0 = use internal LO generation for RF PLL */
         .rfPllPhaseSyncMode = FR_RFPLLMCS_NOSYNC,               /* RFPLL MCS (Phase sync) mode */
-        .rfpllFreq_hz = 2354720000, //default: 2354720000Hz = 2.35472GHz
+        .rfpllFreq_hz = 2400000000, //default: 2354720000Hz = 2.35472GHz
         .orfpllFreq_hz = 0,
         .bbpllStatusGpio={
             .en = 0,

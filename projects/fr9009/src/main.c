@@ -64,7 +64,7 @@ fr9009_config_t fr9009_config = {
 #else
 config8_reg_t config8 = {
 		.dds_ctrl = 3u, //dds_ctrl[0]=1,enable I; dds_ctrl[1]=1,enable Q Data
-		.src_sel = 0u, //0:fpga dds; 1:ddr; 2:const_data
+		.src_sel = 2u, //0:fpga dds; 1:ddr; 2:const_data
 #if JESD_MODE == 0
 		.mapper_sel = 0u,//0:JESD L=4,M=4,S=2,DAC=491.52M
 #else
