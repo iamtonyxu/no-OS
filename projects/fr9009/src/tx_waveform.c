@@ -5,7 +5,7 @@
 //0: zeros; 1: tone
 #define TX_SOURCE_SEL 1
 
-void copy_waveform_to_ddr(uint32_t *src, uint32_t length)
+void copy_waveform_to_ddr(const uint32_t *src, uint32_t length)
 {
 	uint32_t *dest = (uint32_t *)TX_BUF_ADDR; //TX_BUF_ADDR = 0x3F00_0000
 	memcpy(dest, src, length);

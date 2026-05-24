@@ -39,6 +39,21 @@
 #define UART_IRQ_ID             XPAR_XUARTPS_1_INTR
 #endif
 
+/* UART command protocol:
+ * C: configure tx source/registers
+ * D: download waveform payload to DDR
+ * G: trigger capture and print IQ samples
+ * W0/W1: load built-in waveform table
+ * E: exit loop
+ */
+#define CMD_CAPTURE			'G'
+#define CMD_EXIT			'E'
+#define CMD_TX_WAVEFORM		'W'
+#define CMD_TX_DOWNLOAD		'D'
+#define CMD_TX_CONFIG			'C'
+#define CMD_TX_WAVEFORM_491M	'0'
+#define CMD_TX_WAVEFORM_245M	'1'
+
 /* global variables */
 uint32_t cap_buf[CAP_LENGTH_MAX];
 
@@ -63,35 +78,39 @@ fr9009_config_t fr9009_config = {
 };
 #else
 config8_reg_t config8 = {
-		.dds_ctrl = 3u, //dds_ctrl[0]=1,enable I; dds_ctrl[1]=1,enable Q Data
-		.src_sel = 2u, //0:fpga dds; 1:ddr; 2:const_data
+	.dds_ctrl = 3u, //dds_ctrl[0]=1,enable I; dds_ctrl[1]=1,enable Q Data
+	.src_sel = 1u, //0:fpga dds; 1:ddr; 2:const_data
 #if JESD_MODE == 0
-		.mapper_sel = 0u,//0:JESD L=4,M=4,S=2,DAC=491.52M
+	.mapper_sel = 0u, //0:JESD L=4,M=4,S=2,DAC=491.52M
 #else
-		.mapper_sel = 1u,//1:JESD L=2,M=4,S=1,DAC=245.76M
+	.mapper_sel = 1u, //1:JESD L=2,M=4,S=1,DAC=245.76M
 #endif
-		.play_ctrl = 1u,//Enable play Tx of module data2fpga
-		.capture_en = 1u,//enable capture of module rx_data_capture
-		/* 	dds_pinc		frequency
-		*	0x14D5555u		5M
-		*	0x29AAAAAu		10M (default)
-		*	0x3333333u		12.288M
-		*	0x5355555u		20M
-		*	0x8000000		30.72M
-		*/
-		.dds_pinc_0 = 0x14D5555u, //default: 10M
-		.dds_poff_0 = 0u,
-		.dds_pinc_1 = 0u,
-		.dds_poff_1 = 0u,
-		.const_data_0 = 0x11223344u,
-		.const_data_1 = 0x55667788u,
-		.play_len_cfg = 0u //[31]=1,enable;[22:0]:data length bytes
+	.play_ctrl = 1u, //Enable play Tx of module data2fpga
+	.capture_en = 1u, //enable capture of module rx_data_capture
+	/* 	dds_pinc		frequency
+	*	0x14D5555u		5M
+	*	0x29AAAAAu		10M (default)
+	*	0x3333333u		12.288M
+	*	0x5355555u		20M
+	*	0x8000000		30.72M
+	*/
+	.dds_pinc_0 = 0x14D5555u, //default: 10M
+	.dds_poff_0 = 0u,
+	.dds_pinc_1 = 0u,
+	.dds_poff_1 = 0u,
+	.const_data_0 = 0x11223344u,
+	.const_data_1 = 0x55667788u,
+	.play_len_cfg = 0u // [31]=1,enable;[22:0]:data length bytes
 };
 #endif
 
 /* extern variables */
 extern fr9009Device_t brDev[DEVICE_NUMS];
 void main_step(void);
+static void load_tx_waveform(uint8_t waveform_sel);
+static uint32_t uart_recv_u32_le(void);
+static int download_tx_waveform_from_uart(void);
+static int config_tx_source_from_uart(void);
 
 #endif
 
@@ -111,6 +130,93 @@ void main_step(void)
 	rf_initialize();
 }
 
+static void load_tx_waveform(uint8_t waveform_sel)
+{
+	switch (waveform_sel)
+	{
+	case CMD_TX_WAVEFORM_491M:
+		copy_waveform_to_ddr(tone_lut_iq_491M, sizeof(tone_lut_iq_491M));
+		printf("tx_waveform=491M\n");
+		break;
+	case CMD_TX_WAVEFORM_245M:
+		copy_waveform_to_ddr(tone_lut_iq_245M, sizeof(tone_lut_iq_245M));
+		printf("tx_waveform=245M\n");
+		break;
+	default:
+		printf("Invalid tx waveform command: %c\n", waveform_sel);
+		break;
+	}
+}
+
+static uint32_t uart_recv_u32_le(void)
+{
+	uint32_t val = 0u;
+
+	for (uint32_t i = 0u; i < 4u; i++)
+		val |= ((uint32_t)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR)) << (8u * i);
+
+	return val;
+}
+
+static int download_tx_waveform_from_uart(void)
+{
+	uint32_t word_count = uart_recv_u32_le();
+	uint32_t *dest = (uint32_t *)TX_BUF_ADDR;
+
+	if (word_count == 0u || word_count > TX_BUF_LEN)
+	{
+		printf("waveform_download_err_len=%lu\n", (unsigned long)word_count);
+		return -1;
+	}
+
+	for (uint32_t i = 0u; i < word_count; i++)
+		dest[i] = uart_recv_u32_le();
+
+	printf("waveform_download_ok words=%lu\n", (unsigned long)word_count);
+	return 0;
+}
+
+static int config_tx_source_from_uart(void)
+{
+	uint8_t src_sel = (uint8_t)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
+
+#if FR9009_DEVICE
+	printf("tx_config_err_unsupported\n");
+	return -1;
+#else
+	config8.src_sel = src_sel;
+
+	switch (src_sel)
+	{
+	case 0u: /* fpga dds */
+		config8.dds_pinc_0 = uart_recv_u32_le();
+		config8.dds_poff_0 = uart_recv_u32_le();
+		config8.dds_pinc_1 = uart_recv_u32_le();
+		config8.dds_poff_1 = uart_recv_u32_le();
+		break;
+	case 1u: /* ddr */
+		/* no extra payload */
+		break;
+	case 2u: /* dc const data */
+		config8.const_data_0 = uart_recv_u32_le();
+		config8.const_data_1 = uart_recv_u32_le();
+		break;
+	default:
+		printf("tx_config_err_src=%u\n", (unsigned)src_sel);
+		return -1;
+	}
+
+	if (CONFIG_8_REG_init(&config8) != 0)
+	{
+		printf("tx_config_err_apply src=%u\n", (unsigned)src_sel);
+		return -1;
+	}
+
+	printf("tx_config_ok src=%u\n", (unsigned)src_sel);
+	return 0;
+#endif
+}
+
 #if NOUPDATES
 int main()
 {
@@ -124,16 +230,16 @@ int main()
 #else
 int main()
 {
- 	uint8_t status = XST_FAILURE;
+	uint8_t status = XST_FAILURE;
 #if 1
 	/* disable DDR DCache */
 	Xil_DCacheDisable();
 
 #if JESD_MODE == 0
 	/* copy tx waveform into ddr */
-	copy_waveform_to_ddr(tone_lut_iq_491M, sizeof(tone_lut_iq_491M));
+	load_tx_waveform(CMD_TX_WAVEFORM_491M);
 #else
-	copy_waveform_to_ddr(tone_lut_iq_245M, sizeof(tone_lut_iq_245M));
+	load_tx_waveform(CMD_TX_WAVEFORM_245M);
 #endif
 
 #if FR9009_DEVICE
@@ -144,12 +250,12 @@ int main()
 		axi_fr9009_config_init(&fr9009_config);
 	}
 #else
-    status = CONFIG_8_REG_Reg_SelfTest((void*)CONFIG_8_REG_BASEADDR);
-    if(status == XST_SUCCESS)
-    {
-    	// CONFIG_8_REG for Tx test
-    	CONFIG_8_REG_init(&config8);
-    }
+	status = CONFIG_8_REG_Reg_SelfTest((void *)CONFIG_8_REG_BASEADDR);
+	if (status == XST_SUCCESS)
+	{
+		// CONFIG_8_REG for Tx test
+		CONFIG_8_REG_init(&config8);
+	}
 #endif
 
 	/* gpio and fr9009 init */
@@ -159,7 +265,7 @@ int main()
 
 	/* read capture buffer */
 	usleep(100);
-	printf("Enter 'G' to read capture buffer...\n");
+	printf("Enter 'C' to configure tx source, 'G' to read capture buffer, 'D' to download tx waveform, 'W0' for 491M tx waveform, 'W1' for 245M tx waveform, 'E' to exit...\n");
 	while (1)
 	{
 #if 0
@@ -167,7 +273,20 @@ int main()
 #else
 		char c = (char)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
 #endif
-		if (c == 'G')
+		if (c == CMD_TX_WAVEFORM || c == 'w')
+		{
+			uint8_t waveform_sel = (uint8_t)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
+			load_tx_waveform(waveform_sel);
+		}
+		else if (c == CMD_TX_CONFIG || c == 'c')
+		{
+			config_tx_source_from_uart();
+		}
+		else if (c == CMD_TX_DOWNLOAD || c == 'd')
+		{
+			download_tx_waveform_from_uart();
+		}
+		else if (c == CMD_CAPTURE)
 		{
 			trigger_capture();
 			printf("cap_buffer=\n");
@@ -190,7 +309,7 @@ int main()
 				printf("%d %d\n", rx2_i, rx2_q);
 			}
 		}
-		else if (c == 'E')
+		else if (c == CMD_EXIT)
 		{
 			printf("Exit...\n");
 			break;
