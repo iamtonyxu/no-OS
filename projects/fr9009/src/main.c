@@ -16,7 +16,6 @@
 #include "axi_fr9009_config.h"
 #include "fr9009_tx.h"
 #include "headless.h"
-#include "nr_micro_shell.h"
 #include "rx_capture.h"
 #include "sleep.h"
 #include "tx_waveform.h"
