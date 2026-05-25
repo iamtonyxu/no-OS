@@ -21,7 +21,8 @@
 extern "C" {
 #endif
 
-#define REFCLK_FREQ_KHZ     122880
+//#define REFCLK_FREQ_KHZ     122880
+#define REFCLK_FREQ_KHZ     125000
 #define RX_OUTRATE_IS_REF_MULT  2
 #define ORX_OUTRATE_IS_REF_MULT  4
 #define TX_INRATE_IS_REF_MULT  4

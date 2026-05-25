@@ -1,36 +1,7 @@
 #include "parameters.h"
 #include "axi_fr9009_config.h"
 
-int axi_fr9009_set_src_sel(uint8_t src_sel)
-{
-	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR;
-	uint32_t wr_src_sel;
-	uint32_t rd_src_sel;
-
-	if (src_sel > FR9009_SRC_SEL_CONST)
-		return XST_INVALID_PARAM;
-
-	wr_src_sel = (uint32_t)(src_sel & 0x03u);
-	FPGA_WriteReg(baseaddr, OFFSET_SRC_SEL, wr_src_sel);
-	rd_src_sel = FPGA_ReadReg(baseaddr, OFFSET_SRC_SEL);
-
-	if (rd_src_sel != wr_src_sel)
-		return XST_FAILURE;
-
-	return XST_SUCCESS;
-}
-
-int axi_fr9009_get_src_sel(uint8_t *src_sel)
-{
-	void *baseaddr = (void *)FR9009_CONFIG_REG_BASEADDR;
-
-	if (src_sel == NULL)
-		return XST_INVALID_PARAM;
-
-	*src_sel = (uint8_t)(FPGA_ReadReg(baseaddr, OFFSET_SRC_SEL) & 0x03u);
-	return XST_SUCCESS;
-}
-
+#if FR9009_DEVICE
 int axi_fr9009_selfTest(void)
 {
 	uint8_t status = 0;
@@ -137,3 +108,92 @@ int trigger_capture(void)
 
 	return status;
 }
+
+#else
+
+#define READ_WRITE_MUL_FACTOR 0x10
+
+XStatus CONFIG_8_REG_Reg_SelfTest(void * baseaddr_p)
+{
+	u32 baseaddr = (u32) baseaddr_p;
+	int write_loop_index;
+	int read_loop_index;
+	int Index;
+
+	/* Write to user logic slave module register(s) and read back */
+	for (write_loop_index = 0 ; write_loop_index < 4; write_loop_index++)
+	  CONFIG_8_REG_mWriteReg (baseaddr, write_loop_index*4, (write_loop_index+1)*READ_WRITE_MUL_FACTOR);
+	for (read_loop_index = 0 ; read_loop_index < 4; read_loop_index++)
+	  if ( CONFIG_8_REG_mReadReg (baseaddr, read_loop_index*4) != (read_loop_index+1)*READ_WRITE_MUL_FACTOR)
+	  {
+		  return XST_FAILURE;
+	  }
+
+	return XST_SUCCESS;
+}
+
+int trigger_capture(void)
+{
+	uint8_t status = 0;
+	void * baseaddr = (void *)CONFIG_8_REG_BASEADDR; //0x43C30000
+	uint32_t oldcfg0, newcfg0 = 0u;
+
+	// read cfg0, clear capture_en of cfg0(bit6) then reset it to trigger capture
+	oldcfg0 = CONFIG_8_REG_mReadReg(baseaddr, 0);
+	newcfg0 = oldcfg0 & 0xbfu;
+	CONFIG_8_REG_mWriteReg(baseaddr, 0, newcfg0);
+	newcfg0 = oldcfg0 | 0x40u;
+	CONFIG_8_REG_mWriteReg(baseaddr, 0, newcfg0);
+
+	newcfg0 = CONFIG_8_REG_mReadReg(baseaddr, 0);
+	status = (newcfg0 & 0x40u) ? 0u : 1u;
+
+	return status;
+}
+
+int CONFIG_8_REG_init(config8_reg_t *pConfig8)
+{
+	uint8_t status = 0;
+	void * baseaddr = (void *)CONFIG_8_REG_BASEADDR;
+	uint32_t cfg0 = (pConfig8->dds_ctrl & 0x03) |
+					((pConfig8->src_sel << 2) & 0x0C) |
+					((pConfig8->mapper_sel << 4) & 0x10) |
+					((pConfig8->play_ctrl << 5) & 0x20) |
+					((pConfig8->capture_en << 6) & 0x40);
+	uint32_t cfg1 = pConfig8->dds_pinc_0;
+	uint32_t cfg2 = pConfig8->dds_poff_0;
+	uint32_t cfg3 = pConfig8->dds_pinc_1;
+	uint32_t cfg4 = pConfig8->dds_poff_1;
+	uint32_t cfg5 = pConfig8->const_data_0;
+	uint32_t cfg6 = pConfig8->const_data_1;
+#if 1
+	pConfig8->play_len_cfg = 0x80000000 | (TX_BUF_LEN);
+#endif
+	uint32_t cfg7 = pConfig8->play_len_cfg;
+
+	CONFIG_8_REG_mWriteReg(baseaddr, 0, cfg0);
+	CONFIG_8_REG_mWriteReg(baseaddr, 4, cfg1);
+	CONFIG_8_REG_mWriteReg(baseaddr, 8, cfg2);
+	CONFIG_8_REG_mWriteReg(baseaddr, 12, cfg3);
+	CONFIG_8_REG_mWriteReg(baseaddr, 16, cfg4);
+	CONFIG_8_REG_mWriteReg(baseaddr, 20, cfg5);
+	CONFIG_8_REG_mWriteReg(baseaddr, 24, cfg6);
+	CONFIG_8_REG_mWriteReg(baseaddr, 28, cfg7);
+
+	//cfg0=0x67 when dds_ctrl=3,src_sel=1,mapper_sel=0,play_ctrl=1,capture_en=1
+	cfg0 = CONFIG_8_REG_mReadReg(baseaddr, 0);
+	cfg5 = CONFIG_8_REG_mReadReg(baseaddr, 20);
+	cfg6 = CONFIG_8_REG_mReadReg(baseaddr, 24);
+
+	if(((cfg0 & 0x03) != pConfig8->dds_ctrl) ||
+			(cfg5 != pConfig8->const_data_0) ||
+			(cfg6 != pConfig8->const_data_1))
+	{
+		status = 1;
+	}
+
+	return status;
+}
+
+#endif
+
