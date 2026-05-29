@@ -71,11 +71,11 @@ fr9009_config_t fr9009_config = {
 	.ddr_play_len = 0u, // [31]=1 enable; [22:0] data length bytes，default 0 means 16k bytes (16k samples) as configured in data2fpga.v
 	.const_data_0 = 0x11223344u,
 	.const_data_1 = 0x55667788u,
-	.dds_sync = 1u, // dds_sync[0]=0 as default; 1 triggers alignment, then self-clears
-	.tone_1_scale = 0x4000u, // 1/2 full scale: 0x4000
-	.tone_1_freq_word = 0x10bu, // round(tone_freq/clk_freq)*2^16, 1MHz: 0x10b
-	.tone_2_scale = 0x2000u, // 1/4 full scale: 0x2000
-	.tone_2_freq_word = 0xa6bu, // round(tone_freq/clk_freq)*2^16, 10MHz: 0xa6b
+	.dds_ctrl = 3u, //dds_ctrl[0]=1,enable I; dds_ctrl[1]=1,enable Q Data
+	.dds_pinc_0 = 0x14D5555u, //default: 10M
+	.dds_poff_0 = 0u,
+	.dds_pinc_1 = 0x14D5555u, //default: 10M
+	.dds_poff_1 = 0u,
 	.rx_cap_config = 1u // Enable capture of module rx_data_capture
 };
 #else
@@ -177,6 +177,12 @@ static uint32_t uart_recv_u32_le(void)
 	return val;
 }
 
+static uint32_t dds_pinc30_to_freqword16(uint32_t dds_pinc)
+{
+	/* Host sends 30-bit DDS phase increment; FR9009 tone register uses 16-bit word. */
+	return ((dds_pinc + (1u << 13u)) >> 14u) & 0xFFFFu;
+}
+
 static int download_tx_waveform_from_uart(void)
 {
 	uint32_t word_count = uart_recv_u32_le();
@@ -200,8 +206,47 @@ static int config_tx_source_from_uart(void)
 	uint8_t src_sel = (uint8_t)XUartPs_RecvByte(XPAR_XUARTPS_0_BASEADDR);
 
 #if FR9009_DEVICE
-	printf("tx_config_err_unsupported\n");
-	return -1;
+	fr9009_config.src_sel = src_sel;
+
+	switch (src_sel)
+	{
+	case FR9009_SRC_SEL_DDS: /* fpga dds */
+	{
+		uint32_t dds_pinc_0 = uart_recv_u32_le();
+		uint32_t dds_poff_0 = uart_recv_u32_le();
+		uint32_t dds_pinc_1 = uart_recv_u32_le();
+		uint32_t dds_poff_1 = uart_recv_u32_le();
+
+		fr9009_config.dds_pinc_0 = dds_pinc_0;
+		fr9009_config.dds_poff_0 = dds_poff_0;
+		fr9009_config.dds_pinc_1 = dds_pinc_1;
+		fr9009_config.dds_poff_1 = dds_poff_1;
+		fr9009_config.ddr_play_ctrl = 0u;
+		fr9009_config.dds_ctrl = 0x03u;
+		break;
+	}
+	case FR9009_SRC_SEL_DDR: /* ddr */
+		/* no extra payload */
+		fr9009_config.ddr_play_ctrl = 1u;
+		break;
+	case FR9009_SRC_SEL_CONST: /* dc const data */
+		fr9009_config.const_data_0 = uart_recv_u32_le();
+		fr9009_config.const_data_1 = uart_recv_u32_le();
+		fr9009_config.ddr_play_ctrl = 0u;
+		break;
+	default:
+		printf("tx_config_err_src=%u\n", (unsigned)src_sel);
+		return -1;
+	}
+
+	if (axi_fr9009_config_init(&fr9009_config) != 0)
+	{
+		printf("tx_config_err_apply src=%u\n", (unsigned)src_sel);
+		return -1;
+	}
+
+	printf("tx_config_ok src=%u\n", (unsigned)src_sel);
+	return 0;
 #else
 	config8.src_sel = src_sel;
 

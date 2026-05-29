@@ -5,7 +5,7 @@ clear all;
 dataSource = "serial";
 
 %% serial action select: "download" | "capture"
-serialAction = "capture";
+serialAction = "download";
 
 %% download waveform source: "file" | "generate"
 downloadWaveformSource = "generate";
@@ -19,16 +19,16 @@ cfg_fs_bb = 245.76e6; % default for file mode; serial mode overrides this per wa
 %% tx waveform select must match the Zynq command and plot sample rate
 %% "491M" -> tone_lut_iq_491M / W0 / 491.52e6
 %% "245M" -> tone_lut_iq_245M / W1 / 245.76e6
-txWaveformMode = "491M";
+txWaveformMode = "491M"; % Should be 500M as ref clock is 125M instead of 122.88M
 
 %% tx source config: "dds" | "ddr" | "dc"
-txSourceCfg.source = "dds";
+txSourceCfg.source = "ddr";
 
 % source="dds" uses freq0/freq1 (Hz), script computes pinc0/pinc1 automatically
 % Formula: dds_pinc = round(freqHz / fsHz * 2^30)
 % Example at fs=245.76 MHz:
 % 5M -> 0x14D5555, 10M -> 0x29AAAAA, 12.288M -> 0x3333333, 20M -> 0x5355555, 30.72M -> 0x8000000
-txSourceCfg.dds.freq0Hz = 10e6;
+txSourceCfg.dds.freq0Hz = 18e6;
 txSourceCfg.dds.freq1Hz = 20e6;
 txSourceCfg.dds.poff0 = uint32(0);
 txSourceCfg.dds.poff1 = uint32(0);
@@ -62,20 +62,20 @@ case "serial"
 
     waveformCfg.source = lower(downloadWaveformSource);
     waveformCfg.path = '.\br3109_waveform_hex_15M.txt';
-    waveformCfg.gen.toneFreqHz = 10e6;
+    waveformCfg.gen.toneFreqHz = 20e6;
     waveformCfg.gen.ampFS = 0.1;
     waveformCfg.gen.phaseRad = 0;
     waveformCfg.gen.numSamples = CAP_LENGTH_MAX;
     waveformCfg.gen.roundingMode = "round";
-    txSourceCfg.dds.fsHz = 245.76e6; % according to FPGA DDS config
+    txSourceCfg.dds.fsHz = 250e6; % according to FPGA DDS config
 
     switch txWaveformMode
         case "491M"
-            cfg_fs_bb = 491.52e6;
-            waveformCfg.gen.fsHz = 491.52e6;
+            cfg_fs_bb = 500e6; % 491.52e6
+            waveformCfg.gen.fsHz = 500e6; % 491.52e6
         case "245M"
-            cfg_fs_bb = 245.76e6;
-            waveformCfg.gen.fsHz = 245.76e6;
+            cfg_fs_bb = 250e6;%245.76e6;
+            waveformCfg.gen.fsHz = 250e6;%245.76e6;
         otherwise
             error("Unsupported txWaveformMode: %s", txWaveformMode);
     end
@@ -199,6 +199,7 @@ function configure_tx_source_over_serial(cfg, txSourceCfg, ~)
     tStart = tic;
     lastLine = "";
     ackOk = false;
+    unsupportedCmd = false;
     while toc(tStart) < cfg.configAckTimeoutSec
         if s.NumBytesAvailable == 0
             pause(cfg.pollIntervalSec);
@@ -211,9 +212,19 @@ function configure_tx_source_over_serial(cfg, txSourceCfg, ~)
             break;
         end
 
+        if contains(lastLine, "tx_config_err_unsupported")
+            unsupportedCmd = true;
+            break;
+        end
+
         if contains(lastLine, "tx_config_err")
             error("Tx source config failed: %s", lastLine);
         end
+    end
+
+    if unsupportedCmd
+        fprintf("Tx source config command unsupported by current firmware, continue without runtime tx source update.\n");
+        return;
     end
 
     if ~ackOk

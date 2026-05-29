@@ -16,7 +16,7 @@ int axi_fr9009_selfTest(void)
 	uint32_t rd_const_data_1 = FPGA_ReadReg(baseaddr, OFFSET_CONST_DATA1);
 
 	if ((rd_const_data_0 != const_data_0) ||
-	    (rd_const_data_0 != const_data_1))
+	    (rd_const_data_1 != const_data_1))
 	{
 		status = 1; // err
 	}
@@ -38,11 +38,11 @@ int axi_fr9009_config_init(fr9009_config_t *pConfig)
 #endif
 	uint32_t const_data_0 = pConfig->const_data_0;
 	uint32_t const_data_1 = pConfig->const_data_1;
-	uint32_t dds_sync = (pConfig->dds_sync & 0x01);
-	uint32_t tone_1_scale = (pConfig->tone_1_scale & 0xffffu);
-	uint32_t tone_1_freq_word = (pConfig->tone_1_freq_word & 0xffffu);
-	uint32_t tone_2_scale = (pConfig->tone_2_scale & 0xffffu);
-	uint32_t tone_2_freq_word = (pConfig->tone_2_freq_word & 0xffffu);
+	uint32_t dds_ctrl = (pConfig->dds_ctrl & 0x03);
+	uint32_t dds_pinc_0 = pConfig->dds_pinc_0;
+	uint32_t dds_poff_0 = pConfig->dds_poff_0;
+	uint32_t dds_pinc_1 = pConfig->dds_pinc_1;
+	uint32_t dds_poff_1 = pConfig->dds_poff_1;
 	uint32_t rx_cap_config = pConfig->rx_cap_config;
 
 	FPGA_WriteReg(baseaddr, OFFSET_SRC_SEL, src_sel);
@@ -57,11 +57,11 @@ int axi_fr9009_config_init(fr9009_config_t *pConfig)
 	FPGA_WriteReg(baseaddr, OFFSET_DDR_PLAY_LEN, ddr_play_len);
 	FPGA_WriteReg(baseaddr, OFFSET_CONST_DATA0, const_data_0);
 	FPGA_WriteReg(baseaddr, OFFSET_CONST_DATA1, const_data_1);
-	FPGA_WriteReg(baseaddr, OFFSET_DDS_SYNC, dds_sync);
-	FPGA_WriteReg(baseaddr, OFFSET_TONE_1_SCALE, tone_1_scale);
-	FPGA_WriteReg(baseaddr, OFFSET_TONE_1_FREQWORD, tone_1_freq_word);
-	FPGA_WriteReg(baseaddr, OFFSET_TONE_2_SCALE, tone_2_scale);
-	FPGA_WriteReg(baseaddr, OFFSET_TONE_2_FREQWORD, tone_2_freq_word);
+	FPGA_WriteReg(baseaddr, OFFSET_DDS_CTRL, dds_ctrl);
+	FPGA_WriteReg(baseaddr, OFFSET_DDS_PINC_0, dds_pinc_0);
+	FPGA_WriteReg(baseaddr, OFFSET_DDS_POFF_0, dds_poff_0);
+	FPGA_WriteReg(baseaddr, OFFSET_DDS_PINC_1, dds_pinc_1);
+	FPGA_WriteReg(baseaddr, OFFSET_DDS_POFF_1, dds_poff_1);
 	FPGA_WriteReg(baseaddr, OFFSET_RX_CAP_CONFIG, rx_cap_config);
 
 	// cfg0=0x67 when dds_ctrl=3,src_sel=1,mapper_sel=0,play_ctrl=1,capture_en=1
@@ -71,7 +71,7 @@ int axi_fr9009_config_init(fr9009_config_t *pConfig)
 
 	if ((rd_src_sel != src_sel) ||
 	    (rd_const_data_0 != const_data_0) ||
-	    (rd_const_data_0 != const_data_1))
+	    (rd_const_data_1 != const_data_1))
 	{
 		status = 1; // err
 	}

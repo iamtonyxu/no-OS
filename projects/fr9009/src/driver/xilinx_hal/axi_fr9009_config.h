@@ -12,11 +12,11 @@
 #define OFFSET_DDR_PLAY_LEN     12
 #define OFFSET_CONST_DATA0		16
 #define OFFSET_CONST_DATA1		20
-#define OFFSET_DDS_SYNC			24
-#define OFFSET_TONE_1_SCALE		28
-#define OFFSET_TONE_1_FREQWORD	32
-#define OFFSET_TONE_2_SCALE		36
-#define OFFSET_TONE_2_FREQWORD	40
+#define OFFSET_DDS_CTRL			24
+#define OFFSET_DDS_PINC_0		28
+#define OFFSET_DDS_POFF_0		32
+#define OFFSET_DDS_PINC_1		36
+#define OFFSET_DDS_POFF_1		40
 #define OFFSET_RX_CAP_CONFIG	64
 
 
@@ -39,11 +39,11 @@ typedef struct
 	uint32_t ddr_play_len;
 	uint32_t const_data_0;
 	uint32_t const_data_1;
-	uint8_t dds_sync;
-	uint32_t tone_1_scale;
-	uint32_t tone_1_freq_word;
-	uint32_t tone_2_scale;
-	uint32_t tone_2_freq_word;
+	uint8_t dds_ctrl;
+	uint32_t dds_pinc_0;
+	uint32_t dds_poff_0;
+	uint32_t dds_pinc_1;
+	uint32_t dds_poff_1;
 	uint8_t rx_cap_config;
 } fr9009_config_t;
 
