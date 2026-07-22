@@ -50,14 +50,22 @@ int16_t rxFlatnessFlt_IQ[RX_FLATNESSCOEFS_LEN] = {0};
 
 #define PRE_CALI_FREQ_LEN   10
 uint32_t rfpreCaliFreqs_khz[PRE_CALI_FREQ_LEN] ={300000, 800000, 1000000, 1500000, 2000000, 2500000, 3500000, 4000000, 4500000, 500000};
+
+#if 0
 #define FHM_RF_LEN  10
 int32_t FhmRfFreqs_khz[FHM_RF_LEN]={435000, 650000, 900000, 1450000, 1800000, 2600000,  3200000, 4150000,  5300000, 5200000};
 #define FHM_ORF_LEN  10
 int32_t FhmORfFreqs_khz[FHM_ORF_LEN]={380000, 800000, 1280000, 1600000, 1950000, 2900000,  3500000, 5100000,  4050000, 1300000};
+#else
+#define FHM_RF_LEN  2
+int32_t FhmRfFreqs_khz[FHM_RF_LEN]={1500000, 1800000};
+#define FHM_ORF_LEN  2
+int32_t FhmORfFreqs_khz[FHM_ORF_LEN]={1600000, 1700000};
+#endif
 
 #define FHM_RX_NCO_LEN  10
 int32_t rxNcoFreqs[FHM_RX_NCO_LEN]={10000000, -10000000, 20000000, -20000000, 30000000, -30000000,  40000000, -40000000,  50000000, -50000000};
-#define FHM_TX_NCO_LEN  20
+#define FHM_TX_NCO_LEN  10
 int32_t txNcoFreqs[FHM_TX_NCO_LEN]={1000, -1000, 2000, -2000, 3000, -3000,  4000, -4000,  5000, -5000};
 
 fr9009Init_t talInit =
@@ -193,7 +201,7 @@ fr9009Init_t talInit =
         .txAttenStepSize = FR_TXATTEN_0P05_DB,            /* Tx Attenuation step size */
         .tx1Atten_mdB = 0,                            /* Initial Tx1 Attenuation */
         .tx2Atten_mdB = 0,                            /* Initial Tx2 Attenuation */
-        .txLoSource = {FR_LO_RF_PLL, FR_LO_RF_PLL},  
+        .txLoSource = {FR_LO_RF_PLL, FR_LO_AUX_PLL},
     },
 
 
@@ -286,9 +294,9 @@ fr9009Init_t talInit =
             .syncbInLvdsMode = 1,
             .syncbInLvdsPnInvert = 0,
             .enableManualLaneXbar = 1, /* 0=auto, 1=manual */
-            .MFdisableCharReplacement = 0,      /*0:澶氬抚杈圭晫鎸夌収204B瑙勮寖锛屽閲嶅鐨勬暟鎹繘琛孠鐮佹浛鎹紝 1:澶氬抚杈圭晫涓嶈繘琛孠鐮佹浛鎹� */
-            .sysrefDisable = 0,                 /*0锛欶rameA/B 姝ｅ父鐩戞祴澶栭儴sysref 1锛氫笉浣跨敤澶栭儴sysref淇″彿*/
-            .sysrefOneShot = 0,                 /*0: 鎸夌収姝ｅ父鐨勫缓閾捐姹傦紝鎸佺画鐩戞祴sysref 1锛氬缓閾捐繃绋嬪彧瑕佹眰鐩戞祴鍒颁竴娆ysref淇″彿*/
+            .MFdisableCharReplacement = 0,      /*0:婢舵艾鎶氭潏鍦櫕閹稿鍙�204B鐟欏嫯瀵栭敍灞筋嚠闁插秴顦查惃鍕殶閹诡喛绻樼悰瀛犻惍浣规禌閹诡澁绱� 1:婢舵艾鎶氭潏鍦櫕娑撳秷绻樼悰瀛犻惍浣规禌閹癸拷 */
+            .sysrefDisable = 0,                 /*0閿涙rameA/B 濮濓絽鐖堕惄鎴炵ゴ婢舵牠鍎磗ysref 1閿涙矮绗夋担璺ㄦ暏婢舵牠鍎磗ysref娣団�冲娇*/
+            .sysrefOneShot = 0,                 /*0: 閹稿鍙庡锝呯埗閻ㄥ嫬缂撻柧鎹愵洣濮瑰偊绱濋幐浣虹敾閻╂垶绁磗ysref 1閿涙艾缂撻柧鎹愮箖缁嬪褰х憰浣圭湴閻╂垶绁撮崚棰佺濞嗩摴ysref娣団�冲娇*/
         },
         /* Framer B settings */
         .framerB = 
@@ -309,9 +317,9 @@ fr9009Init_t talInit =
             .syncbInLvdsMode = 1,
             .syncbInLvdsPnInvert = 0,
             .enableManualLaneXbar = 1, /* 0=auto, 1=manual */
-            .MFdisableCharReplacement = 0,      /*0:澶氬抚杈圭晫鎸夌収204B瑙勮寖锛屽閲嶅鐨勬暟鎹繘琛孠鐮佹浛鎹紝 1:澶氬抚杈圭晫涓嶈繘琛孠鐮佹浛鎹� */
-            .sysrefDisable = 0,                 /*0锛欶rameA/B 姝ｅ父鐩戞祴sysref 1锛氫笉浣跨敤sysref淇″彿*/
-            .sysrefOneShot = 0,                 /*0: 鎸夌収姝ｅ父鐨勫缓閾捐姹傦紝鎸佺画鐩戞祴sysref 1锛氬缓閾捐繃绋嬪彧瑕佹眰鐩戞祴鍒颁竴娆ysref淇″彿*/
+            .MFdisableCharReplacement = 0,      /*0:婢舵艾鎶氭潏鍦櫕閹稿鍙�204B鐟欏嫯瀵栭敍灞筋嚠闁插秴顦查惃鍕殶閹诡喛绻樼悰瀛犻惍浣规禌閹诡澁绱� 1:婢舵艾鎶氭潏鍦櫕娑撳秷绻樼悰瀛犻惍浣规禌閹癸拷 */
+            .sysrefDisable = 0,                 /*0閿涙rameA/B 濮濓絽鐖堕惄鎴炵ゴsysref 1閿涙矮绗夋担璺ㄦ暏sysref娣団�冲娇*/
+            .sysrefOneShot = 0,                 /*0: 閹稿鍙庡锝呯埗閻ㄥ嫬缂撻柧鎹愵洣濮瑰偊绱濋幐浣虹敾閻╂垶绁磗ysref 1閿涙艾缂撻柧鎹愮箖缁嬪褰х憰浣圭湴閻╂垶绁撮崚棰佺濞嗩摴ysref娣団�冲娇*/
         },
         /* Deframer A settings */
         .deframerA = 
@@ -330,8 +338,8 @@ fr9009Init_t talInit =
             .Np = 16,                /* Np (converter sample resolution) */
             .syncbOutLvdsPnInvert = 0,
             .enableManualLaneXbar = 1, /* 0=auto, 1=manual */
-            .sysrefDisable = 0,                 /*0锛欶rameA/B 姝ｅ父鐩戞祴澶栭儴sysref 1锛氫笉浣跨敤澶栭儴sysref淇″彿*/
-            .sysrefOneShot = 0,                 /*0: 鎸夌収姝ｅ父鐨勫缓閾捐姹傦紝鎸佺画鐩戞祴sysref 1锛氬缓閾捐繃绋嬪彧瑕佹眰鐩戞祴鍒颁竴娆ysref淇″彿*/
+            .sysrefDisable = 0,                 /*0閿涙rameA/B 濮濓絽鐖堕惄鎴炵ゴ婢舵牠鍎磗ysref 1閿涙矮绗夋担璺ㄦ暏婢舵牠鍎磗ysref娣団�冲娇*/
+            .sysrefOneShot = 0,                 /*0: 閹稿鍙庡锝呯埗閻ㄥ嫬缂撻柧鎹愵洣濮瑰偊绱濋幐浣虹敾閻╂垶绁磗ysref 1閿涙艾缂撻柧鎹愮箖缁嬪褰х憰浣圭湴閻╂垶绁撮崚棰佺濞嗩摴ysref娣団�冲娇*/
         },
         .serAmplitude = 15,                    /* Serializer amplitude setting. Default = 15. Range is 0..15 */
         .serPreEmphasis = 3,                /* Serializer pre-emphasis setting. Default = 1 Range is 0..4 */
@@ -342,8 +350,8 @@ fr9009Init_t talInit =
         .sysrefLvdsPnInvert = 0              /*0= Do not PN invert SYSREF */
     },
     .fhm={
-        .fhm_rx_ch = 0xff,  /*0xff琛ㄧず绋嬪簭鏍规嵁寮�鍚�氶亾杩涜閰嶇疆*/
-        .fhm_orx_ch = 0xff,
+        .fhm_rx_ch = 0xff,  /* 0xff表示程序根据开启通道进行配置 */
+        .fhm_orx_ch = 0x00,
         .fhm_tx_ch = 0xff,
         .fhmEnable = FHM_MODE_EN,
         .fhmType = FHM_TYPE,
@@ -369,19 +377,15 @@ fr9009Init_t talInit =
             .fhmGpioPin = FHM_RF_TRIGGER_PIN_NUM,
             .fhmTriggerMode = FHM_RF_TRIGGER_MODE,
             .ch = 0x3,
-            .fhmFreqNums = 0,//FHM_RX_NCO_LEN,
+            .fhmFreqNums = FHM_RX_NCO_LEN,
             .fhmFrequencyList_KHz = rxNcoFreqs,
-            .fhmGpioPin = 0,
-            .fhmTriggerMode = FR_FHM_NON_GPIO_MODE,
         },
         .tx_nco={
-            .fhmGpioPin = FHM_ORF_TRIGGER_PIN_NUM,
-            .fhmTriggerMode = FHM_ORF_TRIGGER_MODE,
+            .fhmGpioPin = FHM_RF_TRIGGER_PIN_NUM,
+            .fhmTriggerMode = FHM_RF_TRIGGER_MODE,
             .ch = 0x3,
             .fhmFreqNums = FHM_TX_NCO_LEN,
             .fhmFrequencyList_KHz = txNcoFreqs,
-            .fhmGpioPin = 0,
-            .fhmTriggerMode = FR_FHM_NON_GPIO_MODE,
         }
 
     }
@@ -435,7 +439,7 @@ fr9009AgcCfg_t rxAgcCtrl =
         .apdLowThresh					= 23,/*15,*/ /*23,*/         /*!<AGC APD peak detect low threshold. default = 3dB below high threshold, 6-bit register value where max =0x3F, min = 0x00 */
         .apdLowGainModeLowThresh		= 19,         /*!<AGC APD peak detect low threshold. default = 3dB below high threshold, 6-bit register value where max = 0x3F, min = 0x00 . Set to 3dB below apdLowThresh  */
         .apdUpperThreshPeakExceededCnt	= 0xff,          /*!<AGC APD peak detect upper threshold count. Default = 0x06 8-bit register value where max = 0xFF, min = 0x20  */
-        .apdLowerThreshPeakExceededCnt	= 0xff,          /*!<AGC APD peak detect lower threshold count. Default = 0x03, 8-bit register value where max = 0xFF, min = 0x00聽 */
+        .apdLowerThreshPeakExceededCnt	= 0xff,          /*!<AGC APD peak detect lower threshold count. Default = 0x03, 8-bit register value where max = 0xFF, min = 0x00鑱� */
         .apdGainStepAttack				= 2,          /*!<AGC APD peak detect attack gain step. Default = 2dB step - based on gain table step size, 5-bit register  value, where max = 0x1F, min = 0x00  */
         .apdGainStepRecovery			= 0,          /*!<AGC APD gain index step size. Recommended to be same as hb2GainStepRecovery. Default = 0x00, 5-bit register value where max = 0x1F, min = 0x00  */
         .enableHb2Overload				= 1,          /*!<1-bit field, enables or disables the HB2 overload detector.  */
@@ -447,10 +451,10 @@ fr9009AgcCfg_t rxAgcCtrl =
         .hb2UnderRangeHighThresh			= 2311,        /*!<AGC HB2 output low threshold for 3rd interval for multiple time constant AGC mode. Valid range from  0 to 2^13, default = -14 dBFs */
         .hb2UpperThreshPeakExceededCnt	= 6,          /*!<AGC HB2 output upper threshold count. Default = 0x06, 8-bit register value where max = 0xFF, min =  0x20 */
         .hb2LowerThreshPeakExceededCnt	= 3,          /*!<AGC HB2 output lower threshold count. Default = 0x03, 8-bit register value where max = 0xFF, min = 0x00 */
-        .hb2GainStepHighRecovery		= 4,          /*!<AGC HB2 gain index step size. Valid range from  0 to 31, step锛坉efault锛� power should < (High-UnderRangeHigh)/2*/
+        .hb2GainStepHighRecovery		= 4,          /*!<AGC HB2 gain index step size. Valid range from  0 to 31, step閿涘潐efault閿涳拷 power should < (High-UnderRangeHigh)/2*/
         .hb2GainStepLowRecovery			= 16,          /*!<AGC HB2 gain index step size, when the HB2 Low Overrange interval 2 triggers. Valid range from  0 to 31*/
-        .hb2GainStepMidRecovery			= 8,          /*!<AGC HB2 gain index step size, when the HB2 Low Overrange interval 3 triggers. Valid range from  0 to 31, step锛坉efault锛� power should < (High-hb2UnderRangeMidThresh) - 3 */
-        .hb2GainStepAttack				= 4,          /*!<AGC HB2 output attack gain step. Valid range from  0 to 31 ,step锛坉efault 0.5db锛� power should < (High-UnderRangeHigh) - 1 */
+        .hb2GainStepMidRecovery			= 8,          /*!<AGC HB2 gain index step size, when the HB2 Low Overrange interval 3 triggers. Valid range from  0 to 31, step閿涘潐efault閿涳拷 power should < (High-hb2UnderRangeMidThresh) - 3 */
+        .hb2GainStepAttack				= 4,          /*!<AGC HB2 output attack gain step. Valid range from  0 to 31 ,step閿涘潐efault 0.5db閿涳拷 power should < (High-UnderRangeHigh) - 1 */
         .hb2OverloadPowerMode			= 1,
         .hb2OvrgSel						= 0,
         .hb2ThreshConfig					= 3,

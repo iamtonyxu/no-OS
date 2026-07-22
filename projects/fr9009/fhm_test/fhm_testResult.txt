@@ -1,0 +1,13 @@
+FH Mode							Ch			Test Result	Note
+FR_FHM_AUTO_RF_MODE				Tx1-RFLO	Pass	
+FR_FHM_AUTO_ORF_MODE			Tx1-ORFLO	Fail			No Signal detected!
+FR_FHM_AUTO_RF_ORF_MODE			Tx1-RFLO	Pass	
+FR_FHM_MANUAL_RF_MODE			Tx1-RFLO	Pass			GPIO toggle twice!
+FR_FHM_MANUAL_ORF_MODE			Tx1-ORFLO	Pass			GPIO toggle twice!
+FR_FHM_MANUAL_RF_ORF_MODE		Tx1-RFLO	Pass			GPIO toggle twice!
+									Tx2-ORFLO	Pass			Only hopping in RXLO Freq
+FHM_MANUAL_SINGLE_RF_ORF_MODE	Tx1-RFLO	Pass			GPIO toggle one time!
+									Tx2-ORFLO	Pass			GPIO toggle one time!
+FR_FHM_AUTO_NCO_MODE			Tx1-RFLO	Pass	
+FR_FHM_MANUAL_NCO_MODE			Tx1-RFLO	Fail			Failed to switch Freq
+

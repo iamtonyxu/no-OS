@@ -55,6 +55,8 @@
 #define CMD_TX_CONFIG			'C'
 #define CMD_TX_WAVEFORM_491M	'0'
 #define CMD_TX_WAVEFORM_245M	'1'
+#define CMD_FH_ENABLE           'J'
+#define CMD_FH_DISABLE          'K'
 
 /* global variables */
 uint32_t cap_buf[CAP_LENGTH_MAX];
@@ -113,7 +115,7 @@ static void load_tx_waveform(uint8_t waveform_sel);
 static uint32_t uart_recv_u32_le(void);
 static int download_tx_waveform_from_uart(void);
 static int config_tx_source_from_uart(void);
-
+static void trigger_fhm(void);
 
 #define UART_BASE_ADDR XPAR_XUARTPS_0_BASEADDR
 #define WF_MAGIC_0 'F'
@@ -147,6 +149,16 @@ void main_step(void)
 	gpio_direction_output(gpio_jesd_rx_reset, 1);
 	gpio_direction_output(gpio_jesd_rx_reset, 0);
 	rf_initialize();
+}
+
+static void trigger_fhm(void)
+{
+	// gpio rising edge will trigger freq hopping: 1 --> 0 --> 1
+	gpio_direction_output(gpio_br3109_gpio0, 1);
+	udelay(1);
+	gpio_direction_output(gpio_br3109_gpio0, 0);
+	udelay(1);
+	gpio_direction_output(gpio_br3109_gpio0, 1);
 }
 
 static void load_tx_waveform(uint8_t waveform_sel)
@@ -306,6 +318,14 @@ int main()
 	load_tx_waveform(CMD_TX_WAVEFORM_245M);
 #endif
 
+	/* gpio and fr9009 init */
+	gpio_init();
+	main_step();
+#if FHM_MODE_EN
+	FR9009_FhmStart(&brDev[0], 1);
+	#endif
+	#endif
+
 #if FR9009_DEVICE
 	status = axi_fr9009_selfTest();
 	if (status == XST_SUCCESS)
@@ -320,11 +340,6 @@ int main()
 		// CONFIG_8_REG for Tx test
 		CONFIG_8_REG_init(&config8);
 	}
-#endif
-
-	/* gpio and fr9009 init */
-	gpio_init();
-	main_step();
 #endif
 
 	usleep(100);
@@ -366,6 +381,22 @@ int main()
 				printf("%d %d\n", rx1_i, rx1_q);
 				printf("%d %d\n", rx2_i, rx2_q);
 			}
+		}
+		else if(c == CMD_FH_ENABLE)
+		{
+#if FHM_MODE_EN
+			if(brDev[0].devStateInfo.fhmtype <= FR_FHM_AUTO_NCO_MODE)
+			{
+			FR9009_FhmStart(&brDev[0], 1);
+			}
+			trigger_fhm();
+#endif
+			}
+		else if(c == CMD_FH_DISABLE)
+		{
+#if FHM_MODE_EN
+			FR9009_FhmStart(&brDev[0], 0);
+#endif
 		}
 		else if (c == CMD_EXIT)
 		{

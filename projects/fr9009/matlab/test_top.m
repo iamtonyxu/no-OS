@@ -4,8 +4,11 @@ clear all;
 %% data source select: "file" | "serial"
 dataSource = "serial";
 
-%% serial action select: "download" | "capture"
-serialAction = "download";
+%% serial action select: "download" | "capture" | "fh_enable" | "fh_disable"
+serialAction = "fh_enable";
+
+%% FH (Frequency Hopping) action: "enable" | "disable"
+fhAction = "enable";
 
 %% download waveform source: "file" | "generate"
 downloadWaveformSource = "generate";
@@ -22,13 +25,13 @@ cfg_fs_bb = 245.76e6; % default for file mode; serial mode overrides this per wa
 txWaveformMode = "491M"; % Should be 500M as ref clock is 125M instead of 122.88M
 
 %% tx source config: "dds" | "ddr" | "dc"
-txSourceCfg.source = "ddr";
+txSourceCfg.source = "dc";
 
 % source="dds" uses freq0/freq1 (Hz), script computes pinc0/pinc1 automatically
 % Formula: dds_pinc = round(freqHz / fsHz * 2^30)
 % Example at fs=245.76 MHz:
 % 5M -> 0x14D5555, 10M -> 0x29AAAAA, 12.288M -> 0x3333333, 20M -> 0x5355555, 30.72M -> 0x8000000
-txSourceCfg.dds.freq0Hz = 18e6;
+txSourceCfg.dds.freq0Hz = 10e6;
 txSourceCfg.dds.freq1Hz = 20e6;
 txSourceCfg.dds.poff0 = uint32(0);
 txSourceCfg.dds.poff1 = uint32(0);
@@ -47,11 +50,13 @@ case "file"
 
 case "serial"
     %% serial mode: waveform download and capture are independent actions
-    serialCfg.port = "COM3";          % modify by your local setup
+    serialCfg.port = "COM7";          % modify by your local setup
     serialCfg.baudRate = 115200;
     serialCfg.downloadCommand = uint8('D');
     serialCfg.configCommand = uint8('C');
     serialCfg.captureCommand = uint8('G');
+    serialCfg.fhEnableCommand = uint8('J');
+    serialCfg.fhDisableCommand = uint8('K');
     serialCfg.totalTimeoutSec = 25;      % full frame timeout
     serialCfg.idleTimeoutSec = 2;        % inter-line timeout
     serialCfg.pollIntervalSec = 0.005;
@@ -99,6 +104,12 @@ case "serial"
             signal = read_signal_from_serial_capture(serialCfg, expectedIqPairs);
             rx1 = signal(1:2:end);
             rx2 = signal(2:2:end);
+        case "fh_enable"
+            send_fh_command_over_serial(serialCfg, 'J');
+            return;
+        case "fh_disable"
+            send_fh_command_over_serial(serialCfg, 'K');
+            return;
         otherwise
             error("Unsupported serialAction: %s", serialAction);
     end
@@ -231,6 +242,28 @@ function configure_tx_source_over_serial(cfg, txSourceCfg, ~)
         error("Tx source config ack timeout. Last response: %s", lastLine);
     end
 
+end
+
+function send_fh_command_over_serial(cfg, cmdByte)
+    if exist('serialportfind', 'file') || exist('serialportfind', 'builtin')
+        existing = serialportfind("Port", cfg.port);
+        if ~isempty(existing)
+            delete(existing);
+        end
+    end
+
+    s = serialport(cfg.port, cfg.baudRate, "Timeout", 1);
+    cleanupObj = onCleanup(@() clear("s")); %#ok<NASGU>
+
+    configureTerminator(s, "LF");
+    flush(s);
+    write(s, uint8(cmdByte), "uint8");
+
+    if cmdByte == 'J'
+        fprintf("FH enable command sent.\n");
+    else
+        fprintf("FH disable command sent.\n");
+    end
 end
 
 function payload = build_tx_source_payload(txSourceCfg)
