@@ -10,7 +10,9 @@
 ################################################################################
 
 SRCS += $(PROJECT)/src/main.c \
-	$(PROJECT)/src/platform.c
+	$(PROJECT)/src/platform.c \
+	$(PROJECT)/src/axi_radio_hw_driver.c \
+	$(PROJECT)/src/axi_radio_hw_irq.c
 
 SRCS += $(DRIVERS)/api/no_os_spi.c \
 	$(DRIVERS)/api/no_os_gpio.c \
@@ -34,7 +36,9 @@ SRCS +=	$(PLATFORM_DRIVERS)/$(PLATFORM)_delay.c
 endif
 
 INCS += $(PROJECT)/src/platform_config.h \
-	$(PROJECT)/src/platform.h
+	$(PROJECT)/src/platform.h \
+	$(PROJECT)/src/axi_radio_hw_driver.h \
+	$(PROJECT)/src/axi_radio_hw_irq.h
 
 ifeq (linux,$(strip $(PLATFORM)))
 INCS +=	$(PLATFORM_DRIVERS)/linux_spi.h \
