@@ -1,0 +1,11 @@
+# Claude Code local settings
+.claude/
+
+# STM32CubeMX generated cache (regenerated on every code generation)
+.mxproject
+
+# IAR EWARM build output and workspace settings
+EWARM/settings/
+EWARM/spi_master/
+EWARM/*.dep
+EWARM/Backup of *
