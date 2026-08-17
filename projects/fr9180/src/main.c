@@ -87,7 +87,8 @@ int main(void)
 
 	/* Spin forever; each mailbox command is reported from the ISR. */
 	while (1) {
-		/* Wait for the SPI mailbox interrupt. */
+		xil_printf("Wait for the SPI mailbox interrupt.\n");
+		no_os_mdelay(1500u);
 	}
 
 	cleanup_platform();

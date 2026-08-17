@@ -91,7 +91,7 @@ int32_t axi_radio_hw_irq_init(struct axi_radio_hw_irq **device,
 		goto error_ctrl;
 
 	ret = no_os_irq_trigger_level_set(dev->irq_ctrl, dev->irq_id,
-					  NO_OS_IRQ_LEVEL_HIGH);
+					  NO_OS_IRQ_EDGE_RISING);
 	if (ret)
 		goto error_ctrl;
 
