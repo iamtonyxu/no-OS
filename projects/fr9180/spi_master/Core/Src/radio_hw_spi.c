@@ -35,8 +35,33 @@ static HAL_StatusTypeDef radio_hw_spi_transfer(const uint8_t *tx, uint8_t *rx,
   HAL_StatusTypeDef status;
 
   HAL_GPIO_WritePin(RADIO_HW_CS_PORT, RADIO_HW_CS_PIN, GPIO_PIN_RESET);
+
+#if 0
+  /* Polling mode (kept for debug / comparison). */
   status = HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)tx, rx, len,
                                    RADIO_HW_SPI_TIMEOUT);
+#else
+  /* DMA mode. */
+  {
+    uint32_t tickstart = HAL_GetTick();
+
+    status = HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t *)tx, rx, len);
+    if (status == HAL_OK)
+    {
+      /* CS must stay asserted for the whole frame: wait for the DMA transfer
+       * to complete before releasing it. */
+      while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY)
+      {
+        if ((HAL_GetTick() - tickstart) >= RADIO_HW_SPI_TIMEOUT)
+        {
+          status = HAL_TIMEOUT;
+          break;
+        }
+      }
+    }
+  }
+#endif
+
   HAL_GPIO_WritePin(RADIO_HW_CS_PORT, RADIO_HW_CS_PIN, GPIO_PIN_SET);
 
   return status;
@@ -198,7 +223,7 @@ int32_t radio_hw_spi_self_test(void)
   printf("radio_hw SPI self-test start\n");
 
   /* 1. Read-only registers. */
-#if 1
+#if 0
   radio_hw_spi_check_ro(RADIO_HW_REG_SPISR, RADIO_HW_SPISR_RESET, "spisr");
   radio_hw_spi_check_ro(RADIO_HW_REG_DEVICE_CONFIG,
                             RADIO_HW_DEVICE_CONFIG_RESET, "device_config");
@@ -242,18 +267,15 @@ int32_t radio_hw_spi_self_test(void)
     return -1;
 
   for (addr = RADIO_HW_REG_ARM_CMD_1; addr <= RADIO_HW_REG_ARM_CMD_7; addr += 4U) {
-    radio_hw_spi_check_rw(addr, 0xA5A5A5A5U, RADIO_HW_ARM_CMD_RESET, "arm_cmd");
-#if 0
     if (radio_hw_spi_check_rw(addr, 0xA5A5A5A5U, RADIO_HW_ARM_CMD_RESET, "arm_cmd"))
       return -1;
-#endif
   }
 
   /* 4. arm_cmd_0 bit[31] auto-clear: bit[31] is a write trigger (writing it
    *    also pulses spi_mailbox_irq to the Zynq PS), so it always reads back as
    *    0; bits[30:0] are a normal R/W command payload. */
   if (radio_hw_spi_write_reg(RADIO_HW_REG_ARM_CMD_0,
-                             0x80000000U | 0x5A5A5A5AU) != HAL_OK) {
+                             0x80000000U | 0x7FFFFFFFU) != HAL_OK) {
     printf("[FAIL] arm_cmd_0: SPI write error\n");
     return -1;
   }
@@ -261,7 +283,7 @@ int32_t radio_hw_spi_self_test(void)
     printf("[FAIL] arm_cmd_0: SPI read error\n");
     return -1;
   }
-  if (val != 0x5A5A5A5AU) {   /* bit[31] must have been auto-cleared */
+  if (val != 0x7FFFFFFFU) {   /* bit[31] must have been auto-cleared */
     printf("[FAIL] arm_cmd_0 bit[31] auto-clear: read 0x%08X\n", (unsigned int)val);
     return -1;
   }

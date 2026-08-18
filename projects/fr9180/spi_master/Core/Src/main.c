@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
@@ -123,6 +124,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
@@ -154,17 +156,9 @@ int main(void)
 #if 0
     radio_hw_console_poll();
 #else
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_0, 0xFFFFFFFFU, RADIO_HW_ARM_CMD_RESET, "arm_cmd_0");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_1, 0xF1111111U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_1");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_2, 0xF2222222U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_2");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_3, 0xF3333333U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_3");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_4, 0xF4444444U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_4");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_5, 0xF5555555U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_5");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_6, 0xF6666666U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_6");
-  radio_hw_spi_check_rw(RADIO_HW_REG_ARM_CMD_7, 0xF7777777U, RADIO_HW_ARM_CMD_RESET, "arm_cmd_7");
-  HAL_Delay(3000u);
-  HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin); // Indicates that the SPI master is running and polling the ARM command registers.
-  
+    radio_hw_spi_self_test();
+    HAL_Delay(3000u);
+    HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin); // The SPI master is polling the ARM command registers.
 #endif
   }
   /* USER CODE END 3 */
